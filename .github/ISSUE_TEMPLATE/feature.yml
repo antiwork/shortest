@@ -1,0 +1,29 @@
+name: Feature request
+description: Request a feature to make Shortest better
+type: feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Thank you for taking the time to suggest a new feature!
+  - type: textarea
+    id: description
+    attributes:
+      label: What
+      description: Please provide a detailed explanation of the feature you'd like to see added.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why
+      description: What is the motivation for this feature? How will it make Shortest better?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: Provide an example of how this feature would be used.
+    validations:
+      required: false

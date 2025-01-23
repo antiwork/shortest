@@ -16,8 +16,7 @@ export class GitHubTool {
   };
 
   constructor(secret?: string) {
-    dotenv.config({ path: ".env.local" });
-    dotenv.config({ path: ".env" });
+    dotenv.config({ path: [".env", ".env.local"] });
 
     this.totpSecret = secret || process.env.GITHUB_TOTP_SECRET || "";
 

@@ -1,6 +1,6 @@
 import { mkdirSync, existsSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
-import { join, resolve } from "path";
+import { join, resolve, basename } from "path";
 import { build, BuildOptions } from "esbuild";
 
 export class TestCompiler {
@@ -46,7 +46,7 @@ export class TestCompiler {
   }
 
   async compileFile(filePath: string): Promise<string> {
-    const fileName = filePath.split("/").pop()!.replace(".ts", ".mjs");
+    const fileName = basename(filePath).replace(".ts", ".mjs");
     const outputPath = join(this.cacheDir, fileName);
 
     const packageJson = {

@@ -1,0 +1,73 @@
+name: Bug report
+description: Create a bug report to make Shortest better
+type: bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Check if you're using the [latest version](https://github.com/anti-work/shortest/releases)
+      placeholder: 0.4.2
+  - type: input
+    id: repo
+    attributes:
+      label: Repository URL
+      description: Link to your reproduction using the [shortest-example](https://github.com/anti-work/shortest-example) template
+      placeholder: https://github.com/username/shortest-example
+    validations:
+      required: true
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual behavior
+      description: |
+        What happened? Include any error messages or unexpected output.
+        Screenshots are welcome, but text is strongly encouraged for searchability.
+      placeholder: Describe what went wrong...
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+      placeholder: Describe what you expected...
+    validations:
+      required: true
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Info
+      description: Run `npx envinfo --system --npmPackages '@antiwork/*' --binaries --browsers`
+      placeholder: |
+        System:
+          OS: macOS 15.2
+          CPU: (16) arm64 Apple M3 Max
+          Memory: 3.17 GB / 128.00 GB
+          Shell: 3.6.4 - /opt/homebrew/bin/fish
+        Binaries:
+          Node: 22.5.1 - ~/.asdf/installs/nodejs/22.5.1/bin/node
+          npm: 10.8.2 - ~/.asdf/plugins/nodejs/shims/npm
+          pnpm: 9.7.1 - ~/.asdf/shims/pnpm
+        Browsers:
+          Brave Browser: 131.1.73.105
+          Chrome: 132.0.6834.83
+          Safari: 18.2
+        npmPackages:
+          @antiwork/shortest: workspace:* => 0.4.2
+      render: shell
+    validations:
+      required: true
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Validations
+      options:
+        - label: I've checked for [existing issues](https://github.com/anti-work/shortest/issues)
+          required: true
+        - label: This is a concrete bug (for Q&A use [discussions](https://github.com/anti-work/shortest/discussions))
+          required: true

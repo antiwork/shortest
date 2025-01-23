@@ -32,7 +32,7 @@ export class MailosaurTool {
         text: message.text.body,
       };
     } catch (error) {
-      throw new ToolError(`Failed to fetch email: ${error}`);
+      throw new ToolError(`Mailosaur API error: ${error}`);
     }
   }
 }

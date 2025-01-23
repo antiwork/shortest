@@ -2,84 +2,91 @@
 
 Thanks for your interest in contributing! This document will help you get started.
 
-## Development Setup
+## Quick start
 
-1. Clone and Install
+1. Set up the repository
 ```bash
 git clone https://github.com/anti-work/shortest.git
 cd shortest
 pnpm install
 ```
 
-2. Setup CLI Locally
+2. Link CLI for local development
 ```bash
-cd packages/shortest
-pnpm link --global
-cd ../..
-pnpm link --global shortest
+cd packages/shortest && pnpm link --global
+cd ../.. && pnpm link --global shortest
 ```
 
-3. Environment Setup
+3. Configure environment
 ```bash
 cp .env.example .env.local
 # Add your ANTHROPIC_API_KEY to .env.local
 ```
 
-## Development Workflow
+## Development
 
-1. Create a new branch
+1. Create your feature branch
 ```bash
 git checkout -b feature/your-feature
 ```
 
-2. Run Tests
+2. Run the test suite
 ```bash
 pnpm test:ai
 pnpm test:browser
-pnpm test:coordinates
 pnpm test:github
 pnpm test:assertion
 ```
 
-3. Build Package
+3. Build the CLI package
 ```bash
-pnpm pkg:build
+pnpm cli:build
 ```
 
-## Pull Request Process
+## Pull requests
 
-1. Bump the version if needed
-2. Update documentation if needed
-3. Add or update tests
-4. Update CHANGELOG.md
-5. Ensure all tests pass
-6. Request review
+1. Update documentation if you're changing behavior
+2. Add or update tests for your changes
+3. Update CHANGELOG.md with your changes
+4. Make sure all tests pass
+5. Request a review from maintainers
+6. After reviews begin, avoid force-pushing to your branch
+   - Force-pushing rewrites history and makes review threads hard to follow
+   - Don't worry about messy commits - we squash everything when merging to `main`
 
-## Code Style
+## Style guide
 
-- Use TypeScript
-- Follow existing code style
-- Use meaningful variable names
+- Write in TypeScript
+- Follow the existing code patterns
+- Use clear, descriptive variable names
 
-## Commit Messages
+## Writing commit messages
 
-Format: `type(scope): message`
+We use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 
-Types:
-- feat: New feature
-- fix: Bug fix
-- docs: Documentation
-- chore: Maintenance
-- test: Tests
-- refactor: Code refactoring
+A commit message should be structured as follows:
+
+```bash
+type(scope): title
+
+description
+```
+
+Where type can be:
+* `feat`: new feature or enhancement
+* `fix`: bug fixes
+* `docs`: documentation-only changes
+* `test`: test-only changes
+* `refactor`: code improvements without behaviour changes
+* `chore`: maintenance/anything else
 
 Example:
 ```
-feat(browser): add support for iframe handling
+feat(cli): Add mobile testing support
 ```
 
-## Need Help?
+## Help
 
-- Open an issue for bugs
-- Start a discussion for features
-- Check existing issues and PRs
+- Check existing discussions/issues/PRs before creating new ones
+- Start a discussion for questions or ideas
+- Open an issue for bugs or problems

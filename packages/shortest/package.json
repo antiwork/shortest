@@ -1,6 +1,6 @@
 {
   "name": "@antiwork/shortest",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "AI-powered natural language end-to-end testing framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -21,7 +21,7 @@
     "dist/cli"
   ],
   "scripts": {
-    "build": "rm -rf dist && pnpm build:types && pnpm build:js && pnpm build:cli",
+    "build": "rimraf dist && pnpm build:types && pnpm build:js && pnpm build:cli",
     "prepare": "pnpm build",
     "prepublishOnly": "pnpm build",
     "postinstall": "node -e \"if (process.platform !== 'win32') { try { require('child_process').execSync('chmod +x dist/cli/bin.js') } catch (_) {} }\"",
@@ -47,25 +47,27 @@
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.24",
-    "tsx": "^4.7.1",
-    "typescript": "~5.6.2",
     "package-manager-detector": "0.2.8",
-    "tsup": "8.3.5"
+    "rimraf": "^6.0.1",
+    "tsup": "8.3.5",
+    "tsx": "^4.7.1",
+    "typescript": "~5.6.2"
   },
   "engines": {
     "node": ">=18"
   },
   "peerDependencies": {
     "@anthropic-ai/sdk": "0.32.0",
-    "mailosaur": "^8.7.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.20.1",
     "expect": "^29.7.0",
+    "mailosaur": "^8.7.0",
     "playwright": "^1.48.2"
   },
-  "author": "Antiwork",
+  "author": "Anti-Work",
   "license": "MIT",
   "repository": {
+    "directory": "packages/shortest",
     "type": "git",
     "url": "https://github.com/anti-work/shortest"
   },

@@ -1,4 +1,5 @@
 {
+  "name": "shortest-monorepo",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.7.1",
@@ -14,10 +15,9 @@
     "stripe:webhooks": "stripe listen --forward-to http://localhost:3000/api/stripe/webhook",
     "setup": "npx tsx lib/setup.ts",
 
-    "pkg:build": "cd packages/shortest && pnpm build",
-    "pkg:dev": "cd packages/shortest && pnpm dev",
-    "pkg:test": "cd packages/shortest && pnpm shortest",
-    "pkg:test:src": "npx tsx packages/shortest/src/cli/bin.ts",
+    "cli:build": "cd packages/shortest && pnpm build",
+    "cli:dev": "cd packages/shortest && pnpm dev",
+    "cli:test": "cd packages/shortest && pnpm shortest",
 
     "test": "pnpm shortest",
     "lint": "eslint .",
@@ -93,6 +93,7 @@
     "@typescript-eslint/eslint-plugin": "^8.18.2",
     "@typescript-eslint/parser": "^8.18.2",
     "@vitejs/plugin-react": "^4.3.1",
+    "dotenv": "^8.0.0",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.31.0",

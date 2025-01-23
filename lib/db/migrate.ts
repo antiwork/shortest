@@ -4,7 +4,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 
 import { client, db } from "@/lib/db/drizzle";
 
-dotenv.config();
+dotenv.config({ path: ".env.local" });
 
 async function main() {
   await migrate(db, {

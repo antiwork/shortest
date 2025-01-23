@@ -377,24 +377,19 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 
 1. Make changes to the package source code in `packages/shortest/`
 
-2. Test changes instantly during development (no build needed):
-```bash
-pnpm pkg:test:src -h
-```
-
-3. To test the actual built package:
+2. Build the package and test the changes:
 ```bash
 # One-time build
-pnpm pkg:build
+pnpm cli:build
 
 # Watch mode (rebuilds on changes)
-pnpm pkg:dev
+pnpm cli:dev
 
 # Test changes
 pnpm shortest --help
 ```
 
-4. To test in another project:
+3. To test in another project:
 ```bash
 # In Shortest package directory
 cd packages/shortest
