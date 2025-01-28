@@ -349,7 +349,17 @@ export class TestRunner {
       const compiledPath = await this.compiler.compileFile(file);
       await import(pathToFileURL(compiledPath).href);
 
-      const context = await this.browserManager.launch();
+      let context;
+      try {
+        context = await this.browserManager.launch();
+      } catch (error) {
+        console.error(
+          `Browser initialization failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+        return;
+      }
       const testContext = await this.createTestContext(context);
 
       try {
