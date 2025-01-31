@@ -37,8 +37,7 @@
     "test:github": "tsx tests/test-github.ts",
     "test:assertion": "tsx tests/test-assertion.ts",
     "test:keyboard": "tsx tests/test-keyboard.ts",
-    "test:email": "tsx tests/test-email.ts",
-    "test:config": "vitest run --config vitest.config.ts tests/test-config.ts"
+    "test:email": "tsx tests/test-email.ts"
   },
   "dependencies": {
     "chromium-bidi": "^0.5.2",
