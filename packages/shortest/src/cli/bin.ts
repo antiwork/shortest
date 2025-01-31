@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import pc from "picocolors";
+import { ZodError } from "zod";
 import { getConfig } from "..";
 import { GitHubTool } from "../browser/integrations/github";
-import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "../constants";
+import { ENV_LOCAL_FILENAME } from "../constants";
 import { TestRunner } from "../core/runner";
 
 process.removeAllListeners("warning");
@@ -108,6 +109,32 @@ function isValidArg(arg: string): boolean {
   return false;
 }
 
+function formatZodError(error: ZodError) {
+  return error.errors
+    .map((err) => {
+      const path = err.path.join(".");
+      const prefix = path ? `${path}: ` : "";
+
+      return `${prefix}${err.message}`;
+    })
+    .join("\n");
+}
+
+function formatError(error: unknown): string {
+  if (error instanceof ZodError) {
+    return formatZodError(error);
+  }
+
+  if (error instanceof Error) {
+    if (error.message.includes("Config")) {
+      return `Configuration error:\n${error.message}`;
+    }
+    return error.message;
+  }
+
+  return "An unknown error occurred";
+}
+
 async function main() {
   const args = process.argv.slice(2);
 
@@ -156,26 +183,7 @@ async function main() {
     const testPattern = cliTestPattern || config.testPattern;
     await runner.runTests(testPattern);
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message.includes("Config")) {
-        console.error(pc.red("\nConfiguration Error:"));
-        console.error(pc.dim(error.message));
-        console.error(
-          pc.dim(
-            `\nMake sure you have a valid ${CONFIG_FILENAME} with all required fields:`,
-          ),
-        );
-        console.error(pc.dim("  - headless: boolean"));
-        console.error(pc.dim("  - baseUrl: string"));
-        console.error(pc.dim("  - testPattern: string"));
-        console.error(pc.dim("  - anthropicKey: string"));
-        console.error();
-      } else {
-        console.error(pc.red("\nError:"), error.message);
-      }
-    } else {
-      console.error(pc.red("\nUnknown error occurred"));
-    }
+    console.error(pc.red("\nError:"), formatError(error));
     process.exit(1);
   }
 }

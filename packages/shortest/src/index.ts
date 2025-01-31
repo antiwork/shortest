@@ -10,6 +10,7 @@ import {
   TestContext,
   TestChain,
   ShortestConfig,
+  validateConfig,
 } from "./types";
 
 // to include the global expect in the generated d.ts file
@@ -46,23 +47,6 @@ if (!global.__shortest__) {
   dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
 }
 
-function validateConfig(config: Partial<ShortestConfig>) {
-  const missingFields: string[] = [];
-
-  if (config.headless === undefined) missingFields.push("headless");
-  if (!config.baseUrl) missingFields.push("baseUrl");
-  if (!config.testPattern) missingFields.push("testPattern");
-  if (!config.anthropicKey && !process.env.ANTHROPIC_API_KEY)
-    missingFields.push("anthropicKey");
-
-  if (missingFields.length > 0) {
-    throw new Error(
-      `Missing required fields in ${CONFIG_FILENAME}:\n` +
-        missingFields.map((field) => `  - ${field}`).join("\n"),
-    );
-  }
-}
-
 export async function initialize() {
   if (globalConfig) return globalConfig;
 
@@ -75,36 +59,32 @@ export async function initialize() {
     "shortest.config.mjs",
   ];
 
+  let configFileFound = false;
+
   for (const file of configFiles) {
-    try {
-      const module = await compiler.loadModule(file, process.cwd());
-      if (module.default) {
-        const config = module.default;
-        validateConfig(config);
-
-        globalConfig = {
-          ...config,
-          anthropicKey: process.env.ANTHROPIC_API_KEY || config.anthropicKey,
-        };
-
-        return globalConfig;
+    const module = await compiler.loadModule(file, process.cwd());
+    if (module.default) {
+      if (configFileFound) {
+        throw new Error(
+          `A second config file ${file} was found. Please remove it.`,
+        );
       }
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Config Error: ${error.message}`);
-      }
-      continue;
+
+      const config = module.default;
+      const validatedConfig = validateConfig(config);
+
+      globalConfig = {
+        ...validatedConfig,
+        anthropicKey:
+          process.env.ANTHROPIC_API_KEY || validatedConfig.anthropicKey,
+      };
+      configFileFound = true;
     }
   }
 
-  throw new Error(
-    `No config file found. Create ${CONFIG_FILENAME} in your project root.\n` +
-      "Required fields:\n" +
-      "  - headless: boolean\n" +
-      "  - baseUrl: string\n" +
-      "  - testPattern: string\n" +
-      "  - anthropicKey: string",
-  );
+  if (configFileFound) {
+    return globalConfig;
+  }
 }
 
 export function getConfig(): ShortestConfig {
