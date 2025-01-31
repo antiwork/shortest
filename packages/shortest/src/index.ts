@@ -59,51 +59,40 @@ export async function initializeConfig() {
     CONFIG_FILENAME.replace(/\.ts$/, ".mjs"),
   ];
 
-  let configFileFound = false;
-  let configFilesChecked = 0;
-  let firstConfigFileNotFound: Error | null = null;
-
+  let configs = [];
   for (const file of configFiles) {
     try {
-      configFilesChecked++;
       const module = await compiler.loadModule(file, process.cwd());
-
-      if (configFileFound) {
-        throw new ConfigError(
-          "duplicate-config",
-          `A second config file ${file} was found. Please remove it.`,
-        );
-      }
 
       const config = module.default;
       const parsedConfig = parseConfig(config);
-
-      globalConfig = {
-        ...parsedConfig,
-        anthropicKey:
-          process.env.ANTHROPIC_API_KEY || parsedConfig.anthropicKey,
-      };
-      configFileFound = true;
+      configs.push({
+        file,
+        config: parsedConfig,
+      });
     } catch (error) {
-      if (error instanceof ConfigError && error.type === "duplicate-config") {
-        throw error;
+      if (error instanceof ConfigError && error.type === "file-not-found") {
+        continue;
       }
-
-      if (
-        !firstConfigFileNotFound &&
-        error instanceof ConfigError &&
-        error.type === "file-not-found"
-      ) {
-        firstConfigFileNotFound = error;
-      }
-
-      if (!configFileFound && configFilesChecked === configFiles.length) {
-        throw (
-          firstConfigFileNotFound ||
-          new ConfigError("no-config", "No config file found")
-        );
-      }
+      throw error;
     }
+    if (configs.length > 1) {
+      throw new Error(
+        `Multiple config files found: ${configs.map((c) => c.file).join(", ")}. Please keep only one.`,
+      );
+    }
+
+    globalConfig = {
+      ...configs[0].config,
+      anthropicKey:
+        process.env.ANTHROPIC_API_KEY || configs[0].config.anthropicKey,
+    };
+  }
+  if (configs.length === 0) {
+    throw new ConfigError(
+      "no-config",
+      "No config file found. Please create one.",
+    );
   }
 
   return globalConfig;
@@ -111,10 +100,7 @@ export async function initializeConfig() {
 
 export function getConfig(): ShortestConfig {
   if (!globalConfig) {
-    throw new ConfigError(
-      "not-initialized",
-      "Config not initialized. Call initializeConfig() first",
-    );
+    throw new Error("Config not initialized. Call initializeConfig() first");
   }
   return globalConfig;
 }

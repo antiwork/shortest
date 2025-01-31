@@ -81,7 +81,10 @@ export class TestCompiler {
     const absolutePath = resolve(cwd, filePath);
 
     if (!existsSync(absolutePath)) {
-      throw new ConfigError("no-config", `Config file not found: ${filePath}`);
+      throw new ConfigError(
+        "file-not-found",
+        `Config file not found: ${filePath}`,
+      );
     }
 
     const result = await build({

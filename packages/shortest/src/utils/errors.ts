@@ -2,9 +2,7 @@ export type ConfigErrorType =
   | "duplicate-config"
   | "file-not-found"
   | "invalid-config"
-  | "no-config"
-  | "not-initialized";
-
+  | "no-config";
 export class ConfigError extends Error {
   type: ConfigErrorType;
 
