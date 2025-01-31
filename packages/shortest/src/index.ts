@@ -64,10 +64,9 @@ export async function initializeConfig() {
   let firstConfigFileNotFound: Error | null = null;
 
   for (const file of configFiles) {
-    let module: any;
     try {
       configFilesChecked++;
-      module = await compiler.loadModule(file, process.cwd());
+      const module = await compiler.loadModule(file, process.cwd());
 
       if (configFileFound) {
         throw new ConfigError(
