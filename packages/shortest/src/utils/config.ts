@@ -14,7 +14,6 @@ export const parseConfig = (config: unknown): ShortestConfig => {
 };
 
 const formatZodError = (error: ZodError) => {
-  console.log("[debug]: formatZodError", error.format());
   const errorsString = error.errors
     .map((err) => {
       const path = err.path.join(".");

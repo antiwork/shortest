@@ -61,16 +61,15 @@ export async function initialize() {
   ];
 
   let configFileFound = false;
-
   for (const file of configFiles) {
+    if (configFileFound) {
+      throw new ConfigError(
+        `A second config file ${file} was found. Please remove it.`,
+      );
+    }
+
     const module = await compiler.loadModule(file, process.cwd());
     if (module.default) {
-      if (configFileFound) {
-        throw new ConfigError(
-          `A second config file ${file} was found. Please remove it.`,
-        );
-      }
-
       const config = module.default;
       const parsedConfig = parseConfig(config);
 
@@ -80,7 +79,6 @@ export async function initialize() {
           process.env.ANTHROPIC_API_KEY || parsedConfig.anthropicKey,
       };
       configFileFound = true;
-      break;
     }
   }
 

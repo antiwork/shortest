@@ -84,22 +84,16 @@ export class TestCompiler {
       throw new ConfigError(`Config file not found: ${filePath}`);
     }
 
-    try {
-      const result = await build({
-        ...this.defaultOptions,
-        entryPoints: [absolutePath],
-        write: false,
-        external: ["shortest"],
-      });
+    const result = await build({
+      ...this.defaultOptions,
+      entryPoints: [absolutePath],
+      write: false,
+      external: ["shortest"],
+    });
 
-      const code = result.outputFiles[0].text;
-      const tempFile = join(this.cacheDir, "config.mjs");
-      writeFileSync(tempFile, code);
-      return import(`file://${tempFile}`);
-    } catch (error) {
-      throw new ConfigError(
-        `Failed to load config from ${absolutePath}: ${error}`,
-      );
-    }
+    const code = result.outputFiles[0].text;
+    const tempFile = join(this.cacheDir, "config.mjs");
+    writeFileSync(tempFile, code);
+    return import(`file://${tempFile}`);
   }
 }
