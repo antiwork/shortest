@@ -1,5 +1,4 @@
-import { z, ZodError } from "zod";
-import { ConfigError } from "./errors";
+import { z } from "zod";
 
 export interface ShortestConfig {
   headless: boolean;
@@ -31,27 +30,3 @@ export const configSchema = z
     message:
       "anthropicKey must be provided in config or ANTHROPIC_API_KEY environment variable",
   });
-
-export const validateConfig = (config: unknown): ShortestConfig => {
-  try {
-    return configSchema.parse(config);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new ConfigError(formatZodError(error));
-    }
-    throw error;
-  }
-};
-
-const formatZodError = (error: ZodError) => {
-  console.log("[debug]: formatZodError", error.format());
-  const errorsString = error.errors
-    .map((err) => {
-      const path = err.path.join(".");
-      const prefix = path ? `${path}: ` : "";
-      return `${prefix}${err.message}`;
-    })
-    .join("\n");
-
-  return `Invalid shortest.config\n${errorsString}`;
-};

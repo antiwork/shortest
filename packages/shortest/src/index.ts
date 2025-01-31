@@ -10,8 +10,8 @@ import {
   TestContext,
   TestChain,
   ShortestConfig,
-  validateConfig,
 } from "./types";
+import { parseConfig } from "./utils/config";
 import { ConfigError } from "./utils/errors";
 
 // to include the global expect in the generated d.ts file
@@ -56,8 +56,8 @@ export async function initialize() {
 
   const configFiles = [
     CONFIG_FILENAME,
-    "shortest.config.js",
-    "shortest.config.mjs",
+    CONFIG_FILENAME.replace(/\.ts$/, ".js"),
+    CONFIG_FILENAME.replace(/\.ts$/, ".mjs"),
   ];
 
   let configFileFound = false;
@@ -72,12 +72,12 @@ export async function initialize() {
       }
 
       const config = module.default;
-      const validatedConfig = validateConfig(config);
+      const parsedConfig = parseConfig(config);
 
       globalConfig = {
-        ...validatedConfig,
+        ...parsedConfig,
         anthropicKey:
-          process.env.ANTHROPIC_API_KEY || validatedConfig.anthropicKey,
+          process.env.ANTHROPIC_API_KEY || parsedConfig.anthropicKey,
       };
       configFileFound = true;
       break;
