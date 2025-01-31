@@ -61,15 +61,22 @@ export async function initialize() {
   ];
 
   let configFileFound = false;
-  for (const file of configFiles) {
-    if (configFileFound) {
-      throw new ConfigError(
-        `A second config file ${file} was found. Please remove it.`,
-      );
-    }
+  let configFilesChecked = 0;
+  let firstConfigFileNotFound: Error | null = null;
 
-    const module = await compiler.loadModule(file, process.cwd());
-    if (module.default) {
+  for (const file of configFiles) {
+    let module: any;
+    try {
+      configFilesChecked++;
+      module = await compiler.loadModule(file, process.cwd());
+
+      if (configFileFound) {
+        throw new ConfigError(
+          "duplicate-config",
+          `A second config file ${file} was found. Please remove it.`
+        );
+      }
+
       const config = module.default;
       const parsedConfig = parseConfig(config);
 
@@ -79,17 +86,37 @@ export async function initialize() {
           process.env.ANTHROPIC_API_KEY || parsedConfig.anthropicKey,
       };
       configFileFound = true;
+    } catch (error) {
+      if (error instanceof ConfigError && error.type === "duplicate-config") {
+        throw error;
+      }
+
+      if (
+        !firstConfigFileNotFound &&
+        error instanceof ConfigError &&
+        error.type === "file-not-found"
+      ) {
+        firstConfigFileNotFound = error;
+      }
+
+      if (!configFileFound && configFilesChecked === configFiles.length) {
+        throw (
+          firstConfigFileNotFound ||
+          new ConfigError("no-config", "No config file found")
+        );
+      }
     }
   }
 
-  if (configFileFound) {
-    return globalConfig;
-  }
+  return globalConfig;
 }
 
 export function getConfig(): ShortestConfig {
   if (!globalConfig) {
-    throw new ConfigError("Config not initialized. Call initialize() first");
+    throw new ConfigError(
+      "not-initialized",
+      "Config not initialized. Call initialize() first",
+    );
   }
   return globalConfig;
 }

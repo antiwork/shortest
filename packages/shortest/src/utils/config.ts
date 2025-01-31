@@ -7,7 +7,7 @@ export const parseConfig = (config: unknown): ShortestConfig => {
     return configSchema.parse(config);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      throw new ConfigError(formatZodError(error));
+      throw new ConfigError("invalid-config", formatZodError(error));
     }
     throw error;
   }
