@@ -47,7 +47,7 @@ if (!global.__shortest__) {
   dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
 }
 
-export async function initializeConfig() {
+export async function initializeConfig(configDir?: string) {
   if (globalConfig) return globalConfig;
 
   dotenv.config({ path: join(process.cwd(), ".env") });
@@ -62,7 +62,10 @@ export async function initializeConfig() {
   let configs = [];
   for (const file of configFiles) {
     try {
-      const module = await compiler.loadModule(file, process.cwd());
+      const module = await compiler.loadModule(
+        file,
+        configDir || process.cwd(),
+      );
 
       const config = module.default;
       const parsedConfig = parseConfig(config);
@@ -76,24 +79,26 @@ export async function initializeConfig() {
       }
       throw error;
     }
-    if (configs.length > 1) {
-      throw new Error(
-        `Multiple config files found: ${configs.map((c) => c.file).join(", ")}. Please keep only one.`,
-      );
-    }
-
-    globalConfig = {
-      ...configs[0].config,
-      anthropicKey:
-        process.env.ANTHROPIC_API_KEY || configs[0].config.anthropicKey,
-    };
   }
+
   if (configs.length === 0) {
     throw new ConfigError(
       "no-config",
       "No config file found. Please create one.",
     );
   }
+
+  if (configs.length > 1) {
+    throw new Error(
+      `Multiple config files found: ${configs.map((c) => c.file).join(", ")}. Please keep only one.`,
+    );
+  }
+
+  globalConfig = {
+    ...configs[0].config,
+    anthropicKey:
+      process.env.ANTHROPIC_API_KEY || configs[0].config.anthropicKey,
+  };
 
   return globalConfig;
 }
