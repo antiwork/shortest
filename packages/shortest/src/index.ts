@@ -12,6 +12,7 @@ import {
   ShortestConfig,
   validateConfig,
 } from "./types";
+import { ConfigError } from "./utils/errors";
 
 // to include the global expect in the generated d.ts file
 import "./globals";
@@ -65,7 +66,7 @@ export async function initialize() {
     const module = await compiler.loadModule(file, process.cwd());
     if (module.default) {
       if (configFileFound) {
-        throw new Error(
+        throw new ConfigError(
           `A second config file ${file} was found. Please remove it.`,
         );
       }
@@ -79,6 +80,7 @@ export async function initialize() {
           process.env.ANTHROPIC_API_KEY || validatedConfig.anthropicKey,
       };
       configFileFound = true;
+      break;
     }
   }
 
@@ -89,7 +91,7 @@ export async function initialize() {
 
 export function getConfig(): ShortestConfig {
   if (!globalConfig) {
-    throw new Error("Config not initialized. Call initialize() first");
+    throw new ConfigError("Config not initialized. Call initialize() first");
   }
   return globalConfig;
 }

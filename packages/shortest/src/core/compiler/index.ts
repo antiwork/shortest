@@ -2,6 +2,7 @@ import { mkdirSync, existsSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join, resolve, basename } from "path";
 import { build, BuildOptions } from "esbuild";
+import { ConfigError } from "../../types/errors";
 
 export class TestCompiler {
   private cacheDir: string;
@@ -80,7 +81,7 @@ export class TestCompiler {
     const absolutePath = resolve(cwd, filePath);
 
     if (!existsSync(absolutePath)) {
-      throw new Error(`Config file not found: ${filePath}`);
+      throw new ConfigError(`Config file not found: ${filePath}`);
     }
 
     try {
@@ -96,7 +97,9 @@ export class TestCompiler {
       writeFileSync(tempFile, code);
       return import(`file://${tempFile}`);
     } catch (error) {
-      throw new Error(`Failed to load config from ${absolutePath}: ${error}`);
+      throw new ConfigError(
+        `Failed to load config from ${absolutePath}: ${error}`,
+      );
     }
   }
 }

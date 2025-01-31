@@ -1,4 +1,5 @@
-import { z } from "zod";
+import { z, ZodError } from "zod";
+import { ConfigError } from "./errors";
 
 export interface ShortestConfig {
   headless: boolean;
@@ -21,9 +22,7 @@ const mailosaurSchema = z
 export const configSchema = z
   .object({
     headless: z.boolean(),
-    baseUrl: z
-      .string()
-      .url("baseUrl must be a valid URL (e.g. https://example.com)"),
+    baseUrl: z.string().url("must be a valid URL"),
     testPattern: z.string(),
     anthropicKey: z.string().optional(),
     mailosaur: mailosaurSchema,
@@ -34,5 +33,25 @@ export const configSchema = z
   });
 
 export const validateConfig = (config: unknown): ShortestConfig => {
-  return configSchema.parse(config);
+  try {
+    return configSchema.parse(config);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ConfigError(formatZodError(error));
+    }
+    throw error;
+  }
+};
+
+const formatZodError = (error: ZodError) => {
+  console.log("[debug]: formatZodError", error.format());
+  const errorsString = error.errors
+    .map((err) => {
+      const path = err.path.join(".");
+      const prefix = path ? `${path}: ` : "";
+      return `${prefix}${err.message}`;
+    })
+    .join("\n");
+
+  return `Invalid shortest.config\n${errorsString}`;
 };

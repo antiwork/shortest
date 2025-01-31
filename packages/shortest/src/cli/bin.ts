@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import pc from "picocolors";
-import { ZodError } from "zod";
 import { getConfig } from "..";
 import { GitHubTool } from "../browser/integrations/github";
 import { ENV_LOCAL_FILENAME } from "../constants";
@@ -109,32 +108,6 @@ function isValidArg(arg: string): boolean {
   return false;
 }
 
-function formatZodError(error: ZodError) {
-  return error.errors
-    .map((err) => {
-      const path = err.path.join(".");
-      const prefix = path ? `${path}: ` : "";
-
-      return `${prefix}${err.message}`;
-    })
-    .join("\n");
-}
-
-function formatError(error: unknown): string {
-  if (error instanceof ZodError) {
-    return formatZodError(error);
-  }
-
-  if (error instanceof Error) {
-    if (error.message.includes("Config")) {
-      return `Configuration error:\n${error.message}`;
-    }
-    return error.message;
-  }
-
-  return "An unknown error occurred";
-}
-
 async function main() {
   const args = process.argv.slice(2);
 
@@ -182,8 +155,8 @@ async function main() {
     const config = getConfig();
     const testPattern = cliTestPattern || config.testPattern;
     await runner.runTests(testPattern);
-  } catch (error) {
-    console.error(pc.red("\nError:"), formatError(error));
+  } catch (error: any) {
+    console.error(pc.red(`\n${error.name}:`), error.message);
     process.exit(1);
   }
 }
