@@ -1,13 +1,13 @@
 import pc from "picocolors";
 import { BrowserTool } from "../src/browser/core/browser-tool";
 import { BrowserManager } from "../src/browser/manager";
-import { getConfig, initialize } from "../src/index";
+import { getConfig, initializeConfig } from "../src/index";
 
 async function testBrowser() {
   const browserManager = new BrowserManager(getConfig());
 
   try {
-    await initialize();
+    await initializeConfig();
     console.log(pc.cyan("🚀 Launching browser..."));
     const context = await browserManager.launch();
     const page = context.pages()[0];

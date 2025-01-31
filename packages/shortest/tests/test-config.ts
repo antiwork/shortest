@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { validateConfig } from "../src/types/config";
+import { parseConfig } from "../src/utils/config";
 
-describe("Config Validation", () => {
+describe("Config parsing", () => {
   beforeEach(() => {
     delete process.env.ANTHROPIC_API_KEY;
   });
@@ -13,34 +13,32 @@ describe("Config Validation", () => {
       testPattern: ".*",
       anthropicKey: "test-key",
     };
-    expect(() => validateConfig(config)).not.toThrow();
+    expect(() => parseConfig(config)).not.toThrow();
   });
 
-  test("throws on invalid URL", () => {
+  test("throws on invalid baseUrl", () => {
     const config = {
       headless: true,
       baseUrl: "not-a-url",
       testPattern: ".*",
       anthropicKey: "test",
     };
-    expect(() => validateConfig(config)).toThrowError(
-      "baseUrl must be a valid URL",
-    );
+    expect(() => parseConfig(config)).toThrowError("must be a valid URL");
   });
 
-  test("throws on invalid regex", () => {
+  test("throws on invalid testPattern", () => {
     const config = {
       headless: true,
       baseUrl: "https://example.com",
-      testPattern: "[", // invalid regex
+      testPattern: null,
       anthropicKey: "test",
     };
-    expect(() => validateConfig(config)).toThrowError(
-      "testPattern must be a valid regular expression",
+    expect(() => parseConfig(config)).toThrowError(
+      "Expected string, received null",
     );
   });
 
-  test("throws when mailosaur config is incomplete", () => {
+  test("throws when Mailosaur config is incomplete", () => {
     const config = {
       headless: true,
       baseUrl: "https://example.com",
@@ -48,7 +46,7 @@ describe("Config Validation", () => {
       anthropicKey: "test",
       mailosaur: { apiKey: "key" }, // missing serverId
     };
-    expect(() => validateConfig(config)).toThrowError("Required");
+    expect(() => parseConfig(config)).toThrowError("Required");
   });
 
   test("accepts config when anthropicKey is in env", () => {
@@ -58,7 +56,7 @@ describe("Config Validation", () => {
       baseUrl: "https://example.com",
       testPattern: ".*",
     };
-    expect(() => validateConfig(config)).not.toThrow();
+    expect(() => parseConfig(config)).not.toThrow();
   });
 
   test("throws when anthropicKey is missing from both config and env", () => {
@@ -67,7 +65,7 @@ describe("Config Validation", () => {
       baseUrl: "https://example.com",
       testPattern: ".*",
     };
-    expect(() => validateConfig(config)).toThrowError(
+    expect(() => parseConfig(config)).toThrowError(
       "anthropicKey must be provided",
     );
   });

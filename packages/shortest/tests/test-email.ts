@@ -3,13 +3,12 @@ import pc from "picocolors";
 import { chromium } from "playwright";
 import { BrowserTool } from "../src/browser/core/browser-tool";
 import { BrowserManager } from "../src/browser/manager";
-import { initialize, getConfig } from "../src/index";
+import { getConfig, initializeConfig } from "../src/index";
 
 async function testEmailRendering() {
   console.log(pc.cyan("\n📧 Testing Email"));
 
-  // Initialize config
-  await initialize();
+  await initializeConfig();
   const config = getConfig();
 
   if (!config.mailosaur?.apiKey || !config.mailosaur?.serverId) {

@@ -9,7 +9,7 @@ import { AIClient } from "../../ai/client";
 import { BrowserTool } from "../../browser/core/browser-tool";
 import { BrowserManager } from "../../browser/manager";
 import { BaseCache } from "../../cache/cache";
-import { initialize, getConfig } from "../../index";
+import { initializeConfig, getConfig } from "../../index";
 import {
   TestFunction,
   TestContext,
@@ -61,8 +61,7 @@ export class TestRunner {
   }
 
   async initialize() {
-    // Initialize global config first
-    await initialize();
+    await initializeConfig();
     this.config = getConfig();
 
     // Override with CLI options

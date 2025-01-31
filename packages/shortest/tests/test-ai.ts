@@ -3,7 +3,7 @@ import * as playwright from "playwright";
 import { request } from "playwright";
 import { BrowserTool } from "../src/browser/core/browser-tool";
 import { BrowserManager } from "../src/browser/manager";
-import { getConfig, initialize } from "../src/index";
+import { getConfig, initializeConfig } from "../src/index";
 import type { TestFunction } from "../src/types/test";
 
 async function testAI() {
@@ -13,7 +13,7 @@ async function testAI() {
   const browserManager = new BrowserManager(getConfig());
 
   try {
-    await initialize();
+    await initializeConfig();
     console.log("🚀 Launching browser...");
     const context = await browserManager.launch();
     const page = context.pages()[0];

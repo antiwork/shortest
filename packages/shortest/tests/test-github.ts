@@ -2,14 +2,14 @@ import pc from "picocolors";
 import { BrowserTool } from "../src/browser/core/browser-tool";
 import { GitHubTool } from "../src/browser/integrations/github";
 import { BrowserManager } from "../src/browser/manager";
-import { getConfig, initialize } from "../src/index";
+import { getConfig, initializeConfig } from "../src/index";
 
 async function testGithubLogin() {
   const browserManager = new BrowserManager(getConfig());
   const githubTool = new GitHubTool();
 
   try {
-    await initialize();
+    await initializeConfig();
     console.log(pc.cyan("\n🚀 First browser launch..."));
     let context = await browserManager.launch();
     let page = context.pages()[0];

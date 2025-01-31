@@ -17,11 +17,10 @@ import { ConfigError } from "./utils/errors";
 // to include the global expect in the generated d.ts file
 import "./globals";
 
-// Initialize config
 let globalConfig: ShortestConfig | null = null;
 const compiler = new TestCompiler();
 
-// Initialize shortest namespace and globals
+// Initialize Shortest namespace and globals
 declare const global: {
   __shortest__: any;
   expect: any;
@@ -48,7 +47,7 @@ if (!global.__shortest__) {
   dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
 }
 
-export async function initialize() {
+export async function initializeConfig() {
   if (globalConfig) return globalConfig;
 
   dotenv.config({ path: join(process.cwd(), ".env") });
@@ -73,7 +72,7 @@ export async function initialize() {
       if (configFileFound) {
         throw new ConfigError(
           "duplicate-config",
-          `A second config file ${file} was found. Please remove it.`
+          `A second config file ${file} was found. Please remove it.`,
         );
       }
 
@@ -115,7 +114,7 @@ export function getConfig(): ShortestConfig {
   if (!globalConfig) {
     throw new ConfigError(
       "not-initialized",
-      "Config not initialized. Call initialize() first",
+      "Config not initialized. Call initializeConfig() first",
     );
   }
   return globalConfig;
