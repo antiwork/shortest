@@ -1,6 +1,10 @@
 name: CLI / Tests
 
-on: push
+on:
+  push:
+    paths:
+      - 'packages/shortest/**'
+
 permissions:
   contents: read
 
@@ -12,6 +16,9 @@ jobs:
   tests:
     name: "Unit"
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/shortest
     steps:
       - uses: actions/checkout@v4
 
@@ -28,7 +35,7 @@ jobs:
         run: pnpm install
 
       - name: Build
-        run: cd packages/shortest && pnpm build
+        run: pnpm build
 
       - name: Run tests
-        run: cd packages/shortest && pnpm test:unit
+        run: pnpm test:unit
