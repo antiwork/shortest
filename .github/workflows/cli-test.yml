@@ -1,8 +1,12 @@
 name: CLI / Unit tests
 
-on:
-  pull_request:
-    branches: ['*']
+on: push
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   tests:
