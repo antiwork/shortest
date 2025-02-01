@@ -3,16 +3,6 @@ import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
 import { getConfig } from "@/index";
 
-/**
- * Browser Integration Test
- *
- * Tests basic browser functionality:
- * - Browser launch and cleanup
- * - Page navigation
- * - Element location
- * - Mouse movements and clicks
- * - Screenshot capture
- */
 export async function main() {
   const browserManager = new BrowserManager(getConfig());
 
