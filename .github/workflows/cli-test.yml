@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'packages/shortest/**'
+      - '.github/workflows/cli-*.yml'
 
 permissions:
   contents: read
