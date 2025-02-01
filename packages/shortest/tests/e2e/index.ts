@@ -89,7 +89,7 @@ describe("End-to-end tests", async () => {
 
       // Pass skip function to the test
       await module.main({
-        skip: (reason?: string) => t.skip(reason || "Test skipped")
+        skip: (reason?: string) => t.skip(reason || "Test skipped"),
       });
     });
   }
