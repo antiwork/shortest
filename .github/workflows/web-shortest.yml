@@ -6,6 +6,8 @@ on:
 
 jobs:
   shortest:
+    # Skip running on forks, as there is no access to secrets
+    if: ${{ !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
