@@ -1,4 +1,4 @@
-name: CLI / Unit tests
+name: CLI / Tests
 
 on: push
 permissions:
@@ -10,6 +10,7 @@ concurrency:
 
 jobs:
   tests:
+    name: "Unit"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

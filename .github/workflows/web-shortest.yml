@@ -1,4 +1,4 @@
-name: "Web / End-to-end tests"
+name: "Web / Tests"
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   shortest:
-    name: "Shortest"
+    name: "End-to-end"
     # Skip running on forks, as there is no access to secrets
     if: ${{ !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
