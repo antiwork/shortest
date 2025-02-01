@@ -1,7 +1,7 @@
 import Mailosaur from "mailosaur";
 import pc from "picocolors";
 import { chromium } from "playwright";
-import { BrowserTool } from "@/browser/core/core";
+import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
 import { getConfig, initializeConfig } from "@/index";
 

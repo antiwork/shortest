@@ -137,6 +137,3 @@ export async function main() {
 
 console.log("🧪 Browser Integration Test");
 console.log("===========================");
-export async function testLoop() {
-  testBrowser().catch(console.error);
-}
