@@ -31,13 +31,8 @@
     "build:cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs --external:esbuild --external:punycode --external:playwright --external:@anthropic-ai/sdk --external:expect --external:dotenv",
     "build:cli": "esbuild src/cli/bin.ts --bundle --platform=node --format=esm --outdir=dist/cli --metafile=dist/meta-cli.json --external:fsevents --external:chokidar --external:glob --external:esbuild --external:events --external:path --external:fs --external:util --external:stream --external:os --external:assert --external:url --external:playwright --external:@anthropic-ai/sdk --external:expect --external:dotenv --external:otplib --external:picocolors --external:punycode --external:https --external:http --external:net --external:tls --external:crypto --external:mailosaur",
     "dev": "pnpm build --watch",
-    "test:ai": "tsx tests/test-ai.ts",
-    "test:browser": "tsx tests/test-browser.ts",
-    "test:coordinates": "tsx tests/test-coordinates.ts",
-    "test:github": "tsx tests/test-github.ts",
-    "test:assertion": "tsx tests/test-assertion.ts",
-    "test:keyboard": "tsx tests/test-keyboard.ts",
-    "test:email": "tsx tests/test-email.ts"
+    "test:unit": "npx vitest run -c vitest.config.ts",
+    "test:e2e": "node --import tsx --test tests/e2e/index.ts"
   },
   "dependencies": {
     "chromium-bidi": "^0.5.2",

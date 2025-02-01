@@ -1,7 +1,7 @@
 import pc from "picocolors";
-import { test } from "../src/index";
+import { test } from "@/index";
 
-async function testAssertions() {
+export async function main() {
   console.log(pc.cyan("\n🧪 Testing Assertion Implementation"));
   console.log(pc.cyan("================================"));
 
@@ -47,5 +47,3 @@ async function testAssertions() {
     console.error(pc.red("\n❌ Test script failed:"), error);
   }
 }
-
-testAssertions().catch(console.error);

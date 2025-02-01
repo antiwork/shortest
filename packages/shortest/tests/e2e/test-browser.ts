@@ -1,13 +1,22 @@
 import pc from "picocolors";
-import { BrowserTool } from "../src/browser/core/browser-tool";
-import { BrowserManager } from "../src/browser/manager";
-import { getConfig, initializeConfig } from "../src/index";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { BrowserManager } from "@/browser/manager";
+import { getConfig } from "@/index";
 
-async function testBrowser() {
+/**
+ * Browser Integration Test
+ *
+ * Tests basic browser functionality:
+ * - Browser launch and cleanup
+ * - Page navigation
+ * - Element location
+ * - Mouse movements and clicks
+ * - Screenshot capture
+ */
+export async function main() {
   const browserManager = new BrowserManager(getConfig());
 
   try {
-    await initializeConfig();
     console.log(pc.cyan("🚀 Launching browser..."));
     const context = await browserManager.launch();
     const page = context.pages()[0];
@@ -77,6 +86,7 @@ async function testBrowser() {
     console.log(pc.green("\n✅ All coordinate tests completed"));
   } catch (error) {
     console.error(pc.red("❌ Test failed:"), error);
+    throw error;
   } finally {
     console.log(pc.cyan("\n🧹 Cleaning up..."));
     await browserManager.close();
@@ -85,4 +95,3 @@ async function testBrowser() {
 
 console.log(pc.cyan("🧪 Mouse Coordinate Test"));
 console.log(pc.cyan("======================="));
-testBrowser().catch(console.error);

@@ -1,0 +1,29 @@
+name: CLI / Unit tests
+
+on:
+  pull_request:
+    branches: ['*']
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.7.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '21'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: cd packages/shortest && pnpm build
+
+      - name: Run tests
+        run: cd packages/shortest && pnpm test:unit

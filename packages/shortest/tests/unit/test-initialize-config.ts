@@ -1,7 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { ConfigError } from "../src/utils/errors";
 
 describe("initializeConfig", () => {
   const tempDir = path.join(process.cwd(), "temp-test-config");
@@ -29,7 +28,7 @@ describe("initializeConfig", () => {
       `,
     );
 
-    const { initializeConfig } = await import("../src");
+    const { initializeConfig } = await import("@/index");
     const config = await initializeConfig(tempDir);
     expect(config).toEqual({
       headless: true,
@@ -52,7 +51,7 @@ describe("initializeConfig", () => {
       `,
     );
 
-    const { initializeConfig } = await import("../src");
+    const { initializeConfig } = await import("@/index");
     const config = await initializeConfig(tempDir);
     expect(config).toEqual({
       headless: true,
@@ -77,7 +76,7 @@ describe("initializeConfig", () => {
       `,
     );
 
-    const { initializeConfig } = await import("../src");
+    const { initializeConfig } = await import("@/index");
     const config = await initializeConfig(tempDir);
     expect(config?.anthropicKey).toBe("env-key");
   });
@@ -107,16 +106,18 @@ describe("initializeConfig", () => {
       `,
     );
 
-    const { initializeConfig } = await import("../src");
+    const { initializeConfig } = await import("@/index");
     await expect(initializeConfig(tempDir)).rejects.toThrow(
       "Multiple config files found",
     );
   });
 
   test("throws when no config file exists", async () => {
-    const { initializeConfig } = await import("../src");
-    await expect(initializeConfig(tempDir)).rejects.toThrow(
-      new ConfigError("no-config", "No config file found. Please create one."),
-    );
+    const { initializeConfig } = await import("@/index");
+    await expect(initializeConfig(tempDir)).rejects.toMatchObject({
+      name: "ConfigError",
+      type: "no-config",
+      message: "No config file found. Please create one.",
+    });
   });
 });

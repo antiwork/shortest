@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { parseConfig } from "../src/utils/config";
+import { parseConfig } from "@/utils/config";
 
 describe("Config parsing", () => {
   beforeEach(() => {

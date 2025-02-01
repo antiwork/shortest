@@ -1,11 +1,11 @@
 import Mailosaur from "mailosaur";
 import pc from "picocolors";
 import { chromium } from "playwright";
-import { BrowserTool } from "../src/browser/core/browser-tool";
-import { BrowserManager } from "../src/browser/manager";
-import { getConfig, initializeConfig } from "../src/index";
+import { BrowserTool } from "@/browser/core/core";
+import { BrowserManager } from "@/browser/manager";
+import { getConfig, initializeConfig } from "@/index";
 
-async function testEmailRendering() {
+export async function main() {
   console.log(pc.cyan("\n📧 Testing Email"));
 
   await initializeConfig();
@@ -65,6 +65,3 @@ async function testEmailRendering() {
     throw error;
   }
 }
-
-// Run test
-testEmailRendering().catch(console.error);

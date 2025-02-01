@@ -1,10 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { SYSTEM_PROMPT } from "../src/ai/prompts";
-import { BrowserTool } from "../src/browser/core/browser-tool";
-import { BrowserManager } from "../src/browser/manager";
-import { getConfig, initializeConfig } from "../src/index";
+import { SYSTEM_PROMPT } from "@/ai/prompts";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { BrowserManager } from "@/browser/manager";
+import { getConfig, initializeConfig } from "@/index";
 
-async function testBrowser() {
+export async function main() {
   const browserManager = new BrowserManager(getConfig());
   const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
 
@@ -137,4 +137,6 @@ async function testBrowser() {
 
 console.log("🧪 Browser Integration Test");
 console.log("===========================");
-testBrowser().catch(console.error);
+export async function testLoop() {
+  testBrowser().catch(console.error);
+}

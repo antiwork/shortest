@@ -50,8 +50,10 @@ if (!global.__shortest__) {
 export async function initializeConfig(configDir?: string) {
   if (globalConfig) return globalConfig;
 
-  dotenv.config({ path: join(process.cwd(), ".env") });
-  dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
+  configDir = configDir || process.cwd();
+
+  dotenv.config({ path: join(configDir, ".env") });
+  dotenv.config({ path: join(configDir, ENV_LOCAL_FILENAME) });
 
   const configFiles = [
     CONFIG_FILENAME,
@@ -62,10 +64,7 @@ export async function initializeConfig(configDir?: string) {
   let configs = [];
   for (const file of configFiles) {
     try {
-      const module = await compiler.loadModule(
-        file,
-        configDir || process.cwd(),
-      );
+      const module = await compiler.loadModule(file, configDir);
 
       const config = module.default;
       const parsedConfig = parseConfig(config);

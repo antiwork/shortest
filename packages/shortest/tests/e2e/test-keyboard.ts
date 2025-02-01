@@ -1,9 +1,9 @@
 import pc from "picocolors";
-import { BrowserTool } from "../src/browser/core/browser-tool";
-import { BrowserManager } from "../src/browser/manager";
-import { getConfig, initializeConfig } from "../src/index";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { BrowserManager } from "@/browser/manager";
+import { getConfig, initializeConfig } from "@/index";
 
-async function testKeyboard() {
+export async function main() {
   const browserManager = new BrowserManager(getConfig());
 
   try {
@@ -43,7 +43,7 @@ async function testKeyboard() {
 
     // Test 4: Print current keyboard shortcuts mapping
     console.log(pc.cyan("\nCurrent Keyboard Shortcuts Configuration:"));
-    const { keyboardShortcuts } = await import("../src/browser/actions");
+    const { keyboardShortcuts } = await import("@/browser/actions");
     console.log(keyboardShortcuts);
   } catch (error) {
     console.error(pc.red("\n❌ Test failed:"), error);
@@ -55,4 +55,3 @@ async function testKeyboard() {
 
 console.log(pc.cyan("🧪 Keyboard Handling Test"));
 console.log(pc.cyan("======================="));
-testKeyboard().catch(console.error);

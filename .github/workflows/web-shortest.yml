@@ -1,4 +1,4 @@
-name: "Shortest Tests"
+name: "Web / End-to-end tests"
 
 on:
   pull_request:
