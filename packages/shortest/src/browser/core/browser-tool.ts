@@ -889,8 +889,8 @@ export class BrowserTool extends BaseBrowserTool {
     }
     try {
       await this.waitForDOMContentLoaded();
-      await page.evaluate(() => {
-        return new Promise<void>((resolve) => {
+      await page.evaluate(async () => {
+        return await new Promise<void>((resolve) => {
           const createTimeout = () => {
             return setTimeout(() => {
               resolve();
@@ -911,7 +911,6 @@ export class BrowserTool extends BaseBrowserTool {
           });
         });
       });
-      console.log("resolving...");
     } catch (error) {
       console.log("Failed to wait for stable DOM:", error);
       throw error;
@@ -943,8 +942,11 @@ export class BrowserTool extends BaseBrowserTool {
       });
 
       await Promise.race([
-        page.waitForLoadState("domcontentloaded"),
         timeoutPromise,
+        Promise.all([
+          page.waitForLoadState("domcontentloaded"),
+          page.waitForSelector("body"),
+        ]),
       ]);
     } catch (error) {
       console.error("Failed to wait for DOM Content Loaded:", error);
