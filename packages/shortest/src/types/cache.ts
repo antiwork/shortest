@@ -24,3 +24,7 @@ export interface CacheEntry {
 export interface CacheStore {
   [key: string]: CacheEntry | undefined;
 }
+
+export interface PendingCache {
+  steps?: CacheStep[];
+}

@@ -442,14 +442,10 @@ export class TestRunner {
       );
 
     if (!steps) {
-      return {
-        result: "fail" as const,
-        reason: "No steps to execute, running test in normal mode",
-        tokenUsage: { input: 0, output: 0 },
-      };
+      throw new Error("No steps to execute");
     }
     for (const step of steps) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await browserTool.waitForStableDOM();
       if (
         step.action?.input.action === BrowserActionEnum.MouseMove &&
         // @ts-expect-error Interface and actual values differ
@@ -462,12 +458,10 @@ export class TestRunner {
           await browserTool.getNormalizedComponentStringByCoords(x, y);
 
         if (componentStr !== step.extras.componentStr) {
-          return {
-            result: "fail" as const,
-            reason:
-              "Component UI elements are different, running test in normal mode",
-            tokenUsage: { input: 0, output: 0 },
-          };
+          console.log(
+            "Component UI elements are different, running test in normal mode",
+          );
+          throw new Error("Stale cache");
         }
       }
       if (step.action?.input) {

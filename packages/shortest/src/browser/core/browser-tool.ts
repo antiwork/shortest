@@ -875,4 +875,82 @@ export class BrowserTool extends BaseBrowserTool {
       },
     );
   }
+
+  /**
+   * Waits for DOM to stabilize
+   * DOM is considered stabilized when:
+   * - DOMContentLoaded is fired
+   * - No mutations are detected for 1 second (e.g new elements such as modals, popups, etc.)
+   */
+  public async waitForStableDOM(): Promise<void> {
+    const page = this.page;
+    if (!page) {
+      throw new Error("No page found.");
+    }
+    try {
+      await this.waitForDOMContentLoaded();
+      await page.evaluate(() => {
+        return new Promise<void>((resolve) => {
+          const createTimeout = () => {
+            return setTimeout(() => {
+              resolve();
+              observer.disconnect();
+            }, 1000);
+          };
+
+          let timeout = createTimeout();
+
+          const observer = new MutationObserver(() => {
+            clearTimeout(timeout);
+            timeout = createTimeout();
+          });
+
+          observer.observe(window.document.body, {
+            childList: true,
+            subtree: true,
+          });
+        });
+      });
+      console.log("resolving...");
+    } catch (error) {
+      console.log("Failed to wait for stable DOM:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * DOM is considered loaded when DOMContentLoaded is fired
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/Document/DOMContentLoaded_event
+   */
+  private async waitForDOMContentLoaded(
+    options: { timeout: number } = { timeout: 1000 },
+  ): Promise<void> {
+    const page = this.page;
+    if (!page) {
+      throw new Error("No page found.");
+    }
+    let timeoutHandle: NodeJS.Timeout;
+
+    try {
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          reject(
+            new Error(
+              `Timed out after ${options.timeout}ms waiting for the DOM to stabilize.`,
+            ),
+          );
+        }, options.timeout);
+      });
+
+      await Promise.race([
+        page.waitForLoadState("domcontentloaded"),
+        timeoutPromise,
+      ]);
+    } catch (error) {
+      console.error("Failed to wait for DOM Content Loaded:", error);
+      throw error;
+    } finally {
+      clearTimeout(timeoutHandle!);
+    }
+  }
 }
