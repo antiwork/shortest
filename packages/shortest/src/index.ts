@@ -2,6 +2,7 @@ import { join } from "path";
 import dotenv from "dotenv";
 import { expect as jestExpect } from "expect";
 import { APIRequest } from "./browser/core/api-request";
+import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "./constants";
 import { TestCompiler } from "./core/compiler";
 import {
   TestFunction,
@@ -10,15 +11,16 @@ import {
   TestChain,
   ShortestConfig,
 } from "./types";
+import { parseConfig } from "./utils/config";
+import { ConfigError } from "./utils/errors";
 
 // to include the global expect in the generated d.ts file
 import "./globals";
 
-// Initialize config
 let globalConfig: ShortestConfig | null = null;
 const compiler = new TestCompiler();
 
-// Initialize shortest namespace and globals
+// Initialize Shortest namespace and globals
 declare const global: {
   __shortest__: any;
   expect: any;
@@ -42,73 +44,67 @@ if (!global.__shortest__) {
   global.expect = global.__shortest__.expect;
 
   dotenv.config({ path: join(process.cwd(), ".env") });
-  dotenv.config({ path: join(process.cwd(), ".env.local") });
+  dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
 }
 
-function validateConfig(config: Partial<ShortestConfig>) {
-  const missingFields: string[] = [];
-
-  if (config.headless === undefined) missingFields.push("headless");
-  if (!config.baseUrl) missingFields.push("baseUrl");
-  if (!config.testPattern) missingFields.push("testPattern");
-  if (!config.anthropicKey && !process.env.ANTHROPIC_API_KEY)
-    missingFields.push("anthropicKey");
-
-  if (missingFields.length > 0) {
-    throw new Error(
-      `Missing required fields in shortest.config.ts:\n` +
-        missingFields.map((field) => `  - ${field}`).join("\n"),
-    );
-  }
-}
-
-export async function initialize() {
+export async function initializeConfig(configDir?: string) {
   if (globalConfig) return globalConfig;
 
-  dotenv.config({ path: join(process.cwd(), ".env") });
-  dotenv.config({ path: join(process.cwd(), ".env.local") });
+  configDir = configDir || process.cwd();
+
+  dotenv.config({ path: join(configDir, ".env") });
+  dotenv.config({ path: join(configDir, ENV_LOCAL_FILENAME) });
 
   const configFiles = [
-    "shortest.config.ts",
-    "shortest.config.js",
-    "shortest.config.mjs",
+    CONFIG_FILENAME,
+    CONFIG_FILENAME.replace(/\.ts$/, ".js"),
+    CONFIG_FILENAME.replace(/\.ts$/, ".mjs"),
   ];
 
+  let configs = [];
   for (const file of configFiles) {
     try {
-      const module = await compiler.loadModule(file, process.cwd());
-      if (module.default) {
-        const config = module.default;
-        validateConfig(config);
+      const module = await compiler.loadModule(file, configDir);
 
-        globalConfig = {
-          ...config,
-          anthropicKey: process.env.ANTHROPIC_API_KEY || config.anthropicKey,
-        };
-
-        return globalConfig;
-      }
+      const config = module.default;
+      const parsedConfig = parseConfig(config);
+      configs.push({
+        file,
+        config: parsedConfig,
+      });
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Config Error: ${error.message}`);
+      if (error instanceof ConfigError && error.type === "file-not-found") {
+        continue;
       }
-      continue;
+      throw error;
     }
   }
 
-  throw new Error(
-    "No config file found. Create shortest.config.ts in your project root.\n" +
-      "Required fields:\n" +
-      "  - headless: boolean\n" +
-      "  - baseUrl: string\n" +
-      "  - testPattern: string\n" +
-      "  - anthropicKey: string",
-  );
+  if (configs.length === 0) {
+    throw new ConfigError(
+      "no-config",
+      "No config file found. Please create one.",
+    );
+  }
+
+  if (configs.length > 1) {
+    throw new Error(
+      `Multiple config files found: ${configs.map((c) => c.file).join(", ")}. Please keep only one.`,
+    );
+  }
+
+  globalConfig = {
+    ...configs[0].config,
+    anthropicKey:
+      process.env.ANTHROPIC_API_KEY || configs[0].config.anthropicKey,
+  };
+
+  return globalConfig;
 }
 
 export function getConfig(): ShortestConfig {
   if (!globalConfig) {
-    throw new Error("Config not initialized. Call initialize() first");
+    throw new Error("Config not initialized. Call initializeConfig() first");
   }
   return globalConfig;
 }

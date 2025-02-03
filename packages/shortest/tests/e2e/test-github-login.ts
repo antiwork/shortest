@@ -1,15 +1,15 @@
 import pc from "picocolors";
-import { BrowserTool } from "../src/browser/core/browser-tool";
-import { GitHubTool } from "../src/browser/integrations/github";
-import { BrowserManager } from "../src/browser/manager";
-import { getConfig, initialize } from "../src/index";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { GitHubTool } from "@/browser/integrations/github";
+import { BrowserManager } from "@/browser/manager";
+import { getConfig, initializeConfig } from "@/index";
 
-async function testGithubLogin() {
+export async function main() {
   const browserManager = new BrowserManager(getConfig());
   const githubTool = new GitHubTool();
 
   try {
-    await initialize();
+    await initializeConfig();
     console.log(pc.cyan("\n🚀 First browser launch..."));
     let context = await browserManager.launch();
     let page = context.pages()[0];
@@ -85,4 +85,3 @@ async function testGithubLogin() {
 
 console.log(pc.cyan("🧪 Session Cleanup Test"));
 console.log(pc.cyan("===================="));
-testGithubLogin().catch(console.error);

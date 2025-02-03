@@ -1,19 +1,19 @@
 import pc from "picocolors";
 import * as playwright from "playwright";
 import { request } from "playwright";
-import { BrowserTool } from "../src/browser/core/browser-tool";
-import { BrowserManager } from "../src/browser/manager";
-import { getConfig, initialize } from "../src/index";
-import type { TestFunction } from "../src/types/test";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { BrowserManager } from "@/browser/manager";
+import { getConfig, initializeConfig } from "@/index";
+import type { TestFunction } from "@/types/test";
 
-async function testAI() {
+export async function main() {
   console.log(pc.cyan("\n🧪 Testing AI Integration"));
   console.log(pc.cyan("======================="));
 
   const browserManager = new BrowserManager(getConfig());
 
   try {
-    await initialize();
+    await initializeConfig();
     console.log("🚀 Launching browser...");
     const context = await browserManager.launch();
     const page = context.pages()[0];
@@ -95,4 +95,3 @@ async function testAI() {
 
 console.log("🤖 AI Integration Test");
 console.log("=====================");
-testAI().catch(console.error);

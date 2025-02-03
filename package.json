@@ -18,11 +18,12 @@
     "cli:build": "cd packages/shortest && pnpm build",
     "cli:dev": "cd packages/shortest && pnpm dev",
     "cli:test": "cd packages/shortest && pnpm shortest",
+    "cli:typecheck": "tsc -p packages/shortest/tsconfig.json --noEmit",
 
-    "test": "pnpm shortest",
+    "nextjs:typecheck": "tsc --noEmit --incremental",
+    "nextjs:test:e2e": "pnpm shortest",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "typecheck": "tsc --noEmit --incremental"
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.50",

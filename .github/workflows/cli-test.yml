@@ -1,0 +1,42 @@
+name: CLI / Tests
+
+on:
+  push:
+    paths:
+      - 'packages/shortest/**'
+      - '.github/workflows/cli-*.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  tests:
+    name: "Unit"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/shortest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.7.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '21'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test:unit

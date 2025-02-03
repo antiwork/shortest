@@ -1,6 +1,6 @@
 {
   "name": "@antiwork/shortest",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "AI-powered natural language end-to-end testing framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -18,7 +18,8 @@
   },
   "files": [
     "dist",
-    "dist/cli"
+    "dist/cli",
+    "src/shortest.config.ts.example"
   ],
   "scripts": {
     "build": "rimraf dist && pnpm build:types && pnpm build:js && pnpm build:cli",
@@ -30,13 +31,9 @@
     "build:cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs --external:esbuild --external:punycode --external:playwright --external:@anthropic-ai/sdk --external:expect --external:dotenv",
     "build:cli": "esbuild src/cli/bin.ts --bundle --platform=node --format=esm --outdir=dist/cli --metafile=dist/meta-cli.json --external:fsevents --external:chokidar --external:glob --external:esbuild --external:events --external:path --external:fs --external:util --external:stream --external:os --external:assert --external:url --external:playwright --external:@anthropic-ai/sdk --external:expect --external:dotenv --external:otplib --external:picocolors --external:punycode --external:https --external:http --external:net --external:tls --external:crypto --external:mailosaur",
     "dev": "pnpm build --watch",
-    "test:ai": "tsx tests/test-ai.ts",
-    "test:browser": "tsx tests/test-browser.ts",
-    "test:coordinates": "tsx tests/test-coordinates.ts",
-    "test:github": "tsx tests/test-github.ts",
-    "test:assertion": "tsx tests/test-assertion.ts",
-    "test:keyboard": "tsx tests/test-keyboard.ts",
-    "test:email": "tsx tests/test-email.ts"
+    "test:unit": "npx vitest run",
+    "test:unit:watch": "npx vitest --watch",
+    "test:e2e": "node --import tsx --test tests/e2e/index.ts"
   },
   "dependencies": {
     "chromium-bidi": "^0.5.2",
@@ -51,7 +48,9 @@
     "rimraf": "^6.0.1",
     "tsup": "8.3.5",
     "tsx": "^4.7.1",
-    "typescript": "~5.6.2"
+    "typescript": "~5.6.2",
+    "vitest": "^1.3.1",
+    "zod": "^3.23.8"
   },
   "engines": {
     "node": ">=18"

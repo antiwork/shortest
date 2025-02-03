@@ -1,4 +1,4 @@
-name: "Shortest Tests"
+name: "Web / Tests"
 
 on:
   pull_request:
@@ -6,6 +6,9 @@ on:
 
 jobs:
   shortest:
+    name: "End-to-end"
+    # Skip running on forks, as there is no access to secrets
+    if: ${{ !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -52,7 +55,7 @@ jobs:
         run: pnpm start -p 3000 & sleep 10
 
       - name: Run Shortest tests
-        run: pnpm shortest --headless
+        run: pnpm nextjs:test:e2e --headless
 
       - name: Upload artifacts
         if: failure()

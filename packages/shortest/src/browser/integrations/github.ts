@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { authenticator } from "otplib";
+import { ENV_LOCAL_FILENAME } from "../../constants";
 import { BrowserToolInterface } from "../../types/browser";
 
 export class GitHubTool {
@@ -16,7 +17,7 @@ export class GitHubTool {
   };
 
   constructor(secret?: string) {
-    dotenv.config({ path: [".env", ".env.local"] });
+    dotenv.config({ path: [".env", ENV_LOCAL_FILENAME] });
 
     this.totpSecret = secret || process.env.GITHUB_TOTP_SECRET || "";
 

@@ -9,7 +9,7 @@ import { AIClient } from "../../ai/client";
 import { BrowserTool } from "../../browser/core/browser-tool";
 import { BrowserManager } from "../../browser/manager";
 import { BaseCache } from "../../cache/cache";
-import { initialize, getConfig } from "../../index";
+import { initializeConfig, getConfig } from "../../index";
 import {
   TestFunction,
   TestContext,
@@ -61,8 +61,7 @@ export class TestRunner {
   }
 
   async initialize() {
-    // Initialize global config first
-    await initialize();
+    await initializeConfig();
     this.config = getConfig();
 
     // Override with CLI options
@@ -349,7 +348,17 @@ export class TestRunner {
       const compiledPath = await this.compiler.compileFile(file);
       await import(pathToFileURL(compiledPath).href);
 
-      const context = await this.browserManager.launch();
+      let context;
+      try {
+        context = await this.browserManager.launch();
+      } catch (error) {
+        console.error(
+          `Browser initialization failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+        return;
+      }
       const testContext = await this.createTestContext(context);
 
       try {

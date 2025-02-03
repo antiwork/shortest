@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import pc from "picocolors";
 import { BashTool } from "../browser/core/bash-tool";
 import { BrowserTool } from "../browser/core/browser-tool";
+import { CONFIG_FILENAME } from "../constants";
 import { ToolResult } from "../types";
 import { AIConfig, RequestBash, RequestComputer } from "../types/ai";
 import { CacheAction, PendingCache } from "../types/cache";
@@ -17,7 +18,7 @@ export class AIClient {
   constructor(config: AIConfig, debugMode: boolean = false) {
     if (!config.apiKey) {
       throw new Error(
-        "Anthropic API key is required. Set it in shortest.config.ts or ANTHROPIC_API_KEY env var",
+        `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
       );
     }
 
@@ -57,6 +58,10 @@ export class AIClient {
           toolOutputCallback,
         );
       } catch (error: any) {
+        if ([401, 403, 500].includes(error.status)) {
+          throw error;
+        }
+
         attempts++;
         if (attempts === maxRetries) throw error;
 

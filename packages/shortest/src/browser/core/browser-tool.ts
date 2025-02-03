@@ -17,7 +17,7 @@ import {
 import { join } from "path";
 import pc from "picocolors";
 import { Page } from "playwright";
-import { initialize, getConfig } from "../../index";
+import { getConfig, initializeConfig } from "../../index";
 import {
   TestContext,
   BrowserToolConfig,
@@ -73,7 +73,7 @@ export class BrowserTool extends BaseBrowserTool {
   }
 
   private async initialize(): Promise<void> {
-    await initialize();
+    await initializeConfig();
     this.config = getConfig();
 
     const initWithRetry = async () => {
