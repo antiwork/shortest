@@ -5,6 +5,13 @@ export interface ShortestConfig {
   baseUrl: string;
   testPattern: string;
   anthropicKey?: string;
+  ai: {
+    provider: "amazon-bedrock" | "anthropic";
+    region?: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    model?: "claude-3-5-sonnet";
+  };
   mailosaur?: {
     apiKey?: string;
     serverId?: string;
@@ -18,15 +25,18 @@ const mailosaurSchema = z
   })
   .optional();
 
-export const configSchema = z
-  .object({
-    headless: z.boolean(),
-    baseUrl: z.string().url("must be a valid URL"),
-    testPattern: z.string(),
-    anthropicKey: z.string().optional(),
-    mailosaur: mailosaurSchema,
-  })
-  .refine((config) => config.anthropicKey || process.env.ANTHROPIC_API_KEY, {
-    message:
-      "anthropicKey must be provided in config or ANTHROPIC_API_KEY environment variable",
-  });
+const aiSchema = z.object({
+  provider: z.enum(["amazon-bedrock", "anthropic"]),
+  region: z.string().optional(),
+  accessKeyId: z.string().optional(),
+  secretAccessKey: z.string().optional(),
+  model: z.enum(["claude-3-5-sonnet"]).optional(),
+});
+
+export const configSchema = z.object({
+  headless: z.boolean(),
+  baseUrl: z.string().url("must be a valid URL"),
+  testPattern: z.string(),
+  ai: aiSchema,
+  mailosaur: mailosaurSchema,
+});

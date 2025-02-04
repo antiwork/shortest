@@ -5,7 +5,7 @@ import pc from "picocolors";
 import { APIRequest, BrowserContext } from "playwright";
 import * as playwright from "playwright";
 import { request, APIRequestContext } from "playwright";
-import { AIClient } from "../../ai/client";
+import { LLMClient } from "@/ai/client_v2";
 import { BrowserTool } from "../../browser/core/browser-tool";
 import { BrowserManager } from "../../browser/manager";
 import { BaseCache } from "../../cache/cache";
@@ -187,15 +187,7 @@ export class TestRunner {
       };
     }
 
-    const aiClient = new AIClient(
-      {
-        apiKey: this.config.anthropicKey,
-        model: "claude-3-5-sonnet-20241022",
-        maxMessages: 10,
-        debug: this.debugAI,
-      },
-      this.debugAI,
-    );
+    const aiClient = new LLMClient(this.config.ai, browserTool, this.debugAI);
 
     // First get page state
     const initialState = await browserTool.execute({
@@ -281,7 +273,7 @@ export class TestRunner {
     }
 
     // Execute test with enhanced prompt
-    const result = await aiClient.processAction(prompt, browserTool);
+    const result = await aiClient.processAction(prompt);
 
     if (!result) {
       throw new Error("AI processing failed: no result returned");

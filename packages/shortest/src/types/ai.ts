@@ -1,4 +1,5 @@
 import { ActionInput } from "./browser";
+import { ShortestConfig } from "./config";
 
 export interface AIConfig {
   apiKey: string;
@@ -7,6 +8,7 @@ export interface AIConfig {
   debug?: boolean;
 }
 
+export type LLMConfig = ShortestConfig["ai"];
 export interface AIResponse {
   result: "pass" | "fail";
   reason: string;

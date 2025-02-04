@@ -3,7 +3,7 @@ import { spawn } from "child_process";
 type BashToolError = "timeout" | "network" | "unknown" | "unauthorized";
 
 export class BashTool {
-  public async execute(command: string): Promise<Record<string, any> | string> {
+  public async execute(command: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const child = spawn(command, { shell: true });
 

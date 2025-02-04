@@ -14,20 +14,16 @@
     "db:cleanup": "tsx lib/db/cleanup.ts",
     "stripe:webhooks": "stripe listen --forward-to http://localhost:3000/api/stripe/webhook",
     "setup": "npx tsx lib/setup.ts",
-
     "cli:build": "cd packages/shortest && pnpm build",
     "cli:dev": "cd packages/shortest && pnpm dev",
     "cli:test": "cd packages/shortest && pnpm shortest",
     "cli:typecheck": "tsc -p packages/shortest/tsconfig.json --noEmit",
-
     "nextjs:typecheck": "tsc --noEmit --incremental",
     "nextjs:test:e2e": "pnpm shortest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^0.0.50",
-    "@ai-sdk/openai": "^0.0.61",
     "@clerk/nextjs": "^5.6.0",
     "@faker-js/faker": "^8.4.1",
     "@octokit/rest": "^21.0.2",
