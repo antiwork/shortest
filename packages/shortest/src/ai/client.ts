@@ -1,6 +1,7 @@
 import {
   CoreMessage,
   CoreTool,
+  FinishReason,
   generateText,
   InvalidToolArgumentsError,
   LanguageModelV1,
@@ -9,39 +10,36 @@ import {
 } from "ai";
 import { z } from "zod";
 import { BrowserTool } from "../browser/core/browser-tool";
-import { LLMConfig } from "../types/ai";
-import { CacheStep } from "../types/cache";
+import { ILLMClient, ILLMClientOptions } from "../types/ai";
+import { CacheEntry, CacheStep } from "../types/cache";
 import { SYSTEM_PROMPT } from "./prompts";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createAIClient } from "./client-provider";
 import { BashTool } from "@/browser/core/bash-tool";
-import { ToolResult } from "@/types";
-
-type LLMResponse = any;
-
-interface ILLMClient {
-  processAction: (prompt: string) => LLMResponse;
-}
+import { TestFunction, ToolResult } from "@/types";
+import { sleep } from "@anthropic-ai/sdk/core";
+import { LLMError } from "@/utils/errors";
+import { formatZodError } from "@/utils/zod";
+import { BaseCache } from "@/cache/cache";
+import { llmResultSchema } from "./validation";
 
 export class LLMClient implements ILLMClient {
   private client: LanguageModelV1;
   private browserTool: BrowserTool;
   private conversationHistory: Array<CoreMessage> = [];
   private pendingCache: Partial<{ steps?: CacheStep[] }> = {};
+  private cache: BaseCache<CacheEntry>;
   private isDebugMode: boolean;
 
-  constructor(
-    config: LLMConfig,
-    browserTool: BrowserTool,
-    isDebugMode: boolean,
-  ) {
+  constructor({ config, browserTool, isDebugMode, cache }: ILLMClientOptions) {
     this.client = createAIClient(config);
     this.browserTool = browserTool;
-    // todo remove it once we have global debug mode access
+    // Todo remove it once we have global debug mode access
     this.isDebugMode = isDebugMode;
+    this.cache = cache;
   }
 
-  async processAction(prompt: string) {
+  async processAction(prompt: string, test: TestFunction) {
     try {
       // Push initial user prompt
       this.conversationHistory.push({
@@ -52,6 +50,7 @@ export class LLMClient implements ILLMClient {
       while (true) {
         let resp;
         try {
+          await sleep(1000);
           resp = await generateText({
             system: SYSTEM_PROMPT,
             model: this.client,
@@ -61,6 +60,7 @@ export class LLMClient implements ILLMClient {
             maxTokens: 1024,
             onStepFinish: async (event) => {
               function isMouseMove(args: any) {
+                console.log({ args });
                 return args.action === "mouse_move" && args.coordinate.length;
               }
 
@@ -68,7 +68,7 @@ export class LLMClient implements ILLMClient {
                 if (toolResult.toolName === "computer") {
                   let extras: Record<string, unknown> = {};
                   if (isMouseMove(toolResult.args)) {
-                    const [x, y] = (toolResult.anyArgs as any).coordinate;
+                    const [x, y] = (toolResult.args as any).coordinate;
                     extras.componentStr =
                       await this.browserTool.getNormalizedComponentStringByCoords(
                         x,
@@ -115,7 +115,39 @@ export class LLMClient implements ILLMClient {
         }
 
         this.conversationHistory.push(...resp.response.messages);
-        if (resp.finishReason !== "tool-calls") return resp;
+        if (resp.finishReason === "tool-calls") continue;
+        this.handleFinishReasonErrors(resp.finishReason);
+
+        // At this point, response reason is not a tool call, and it's not errored
+        const jsonMatch = resp.text.match(/{[\s\S]*}/)?.[0];
+
+        if (!jsonMatch) {
+          throw new LLMError("invalid-response", "LLM didn't return JSON.");
+        }
+
+        let parsedResponse;
+        try {
+          parsedResponse = llmResultSchema.parse(JSON.parse(jsonMatch));
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            throw new LLMError(
+              "invalid-response",
+              formatZodError(error, "Invalid LLM response."),
+            );
+          }
+          throw error;
+        }
+
+        if (parsedResponse.result === "pass") {
+          this.cache.set(test, this.pendingCache);
+        }
+
+        return {
+          response: parsedResponse,
+          metadata: {
+            usage: resp.usage,
+          },
+        };
       }
     } catch (error) {
       console.log("AI processing error occured");
@@ -214,5 +246,24 @@ export class LLMClient implements ILLMClient {
             text: result.output!,
           },
         ];
+  }
+
+  private handleFinishReasonErrors(reason: FinishReason): void {
+    switch (reason) {
+      case "length":
+        throw new LLMError(
+          "token-limit-exceeded",
+          "Generation stopped because the maximum token length was reached.",
+        );
+      case "content-filter":
+        throw new LLMError(
+          "unsafe-content-detected",
+          "Content filter violation: generation aborted.",
+        );
+      case "error":
+        throw new LLMError("unknown", "An error occurred during generation.");
+      case "other":
+        throw new LLMError("unknown", "An error occurred during generation.");
+    }
   }
 }

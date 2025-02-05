@@ -1,11 +1,10 @@
 import { pathToFileURL } from "url";
-import Anthropic from "@anthropic-ai/sdk";
 import { glob } from "glob";
 import pc from "picocolors";
 import { APIRequest, BrowserContext } from "playwright";
 import * as playwright from "playwright";
 import { request, APIRequestContext } from "playwright";
-import { LLMClient } from "@/ai/client_v2";
+import { LLMClient } from "@/ai/client";
 import { BrowserTool } from "../../browser/core/browser-tool";
 import { BrowserManager } from "../../browser/manager";
 import { BaseCache } from "../../cache/cache";
@@ -187,7 +186,12 @@ export class TestRunner {
       };
     }
 
-    const aiClient = new LLMClient(this.config.ai, browserTool, this.debugAI);
+    const llmClient = new LLMClient({
+      config: this.config.ai,
+      browserTool,
+      isDebugMode: this.debugAI,
+      cache: this.cache,
+    });
 
     // First get page state
     const initialState = await browserTool.execute({
@@ -273,33 +277,7 @@ export class TestRunner {
     }
 
     // Execute test with enhanced prompt
-    const result = await aiClient.processAction(prompt);
-
-    if (!result) {
-      throw new Error("AI processing failed: no result returned");
-    }
-
-    // Parse AI result first
-    const finalMessage = result.finalResponse.content.find(
-      (block: any) =>
-        block.type === "text" &&
-        (block as Anthropic.Beta.Messages.BetaTextBlock).text.includes(
-          '"result":',
-        ),
-    );
-
-    if (!finalMessage || finalMessage.type !== "text") {
-      throw new Error("No test result found in AI response");
-    }
-
-    const jsonMatch = (
-      finalMessage as Anthropic.Beta.Messages.BetaTextBlock
-    ).text.match(/{[\s\S]*}/);
-    if (!jsonMatch) {
-      throw new Error("Invalid test result format");
-    }
-
-    const aiResult = JSON.parse(jsonMatch[0]) as TestResult;
+    const { response, metadata } = await llmClient.processAction(prompt, test);
 
     // Execute after function if present
     if (test.afterFn) {
@@ -309,23 +287,28 @@ export class TestRunner {
         return {
           result: "fail" as const,
           reason:
-            aiResult.result === "fail"
-              ? `AI: ${aiResult.reason}, After: ${
+            response.result === "fail"
+              ? `AI: ${response.reason}, After: ${
                   error instanceof Error ? error.message : String(error)
                 }`
               : error instanceof Error
                 ? error.message
                 : String(error),
-          tokenUsage: result.tokenUsage,
+          tokenUsage: {
+            input: metadata.usage.promptTokens,
+            output: metadata.usage.completionTokens,
+          },
         };
       }
     }
 
-    if (aiResult.result === "pass") {
-      // batch set new chache if test is successful
-      await this.cache.set(test, result.pendingCache);
-    }
-    return { ...aiResult, tokenUsage: result.tokenUsage };
+    return {
+      ...response,
+      tokenUsage: {
+        input: metadata.usage.promptTokens,
+        output: metadata.usage.completionTokens,
+      },
+    };
   }
 
   private async executeTestFile(file: string) {

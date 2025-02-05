@@ -1,5 +1,10 @@
+import { LanguageModelUsage } from "ai";
 import { ActionInput } from "./browser";
 import { ShortestConfig } from "./config";
+import { CacheEntry } from "./cache";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { BaseCache } from "@/cache/cache";
+import { TestFunction } from "./test";
 
 export interface AIConfig {
   apiKey: string;
@@ -9,7 +14,8 @@ export interface AIConfig {
 }
 
 export type LLMConfig = ShortestConfig["ai"];
-export interface AIResponse {
+
+export interface LLMResponse {
   result: "pass" | "fail";
   reason: string;
 }
@@ -36,6 +42,26 @@ namespace RequestTypes {
   export interface ToolRequest<T extends Bash | Computer> {
     input: T extends Bash ? Bash : ActionInput;
   }
+}
+
+interface LLMProcessActionResult {
+  response: LLMResponse;
+  metadata: {
+    usage: LanguageModelUsage;
+  };
+}
+
+export interface ILLMClientOptions {
+  config: LLMConfig;
+  browserTool: BrowserTool;
+  isDebugMode: boolean;
+  cache: BaseCache<CacheEntry>;
+}
+export interface ILLMClient {
+  processAction(
+    prompt: string,
+    test: TestFunction,
+  ): Promise<LLMProcessActionResult>;
 }
 
 export type RequestBash = RequestTypes.ToolRequest<RequestTypes.Bash>;

@@ -1,3 +1,4 @@
+import { FALLBACK_LLM_MODEL } from "@/ai/constants";
 import { z } from "zod";
 
 export interface ShortestConfig {
@@ -6,10 +7,8 @@ export interface ShortestConfig {
   testPattern: string;
   anthropicKey?: string;
   ai: {
-    provider: "amazon-bedrock" | "anthropic";
-    region?: string;
-    accessKeyId?: string;
-    secretAccessKey?: string;
+    provider: "anthropic";
+    apiKey: string;
     model?: "claude-3-5-sonnet";
   };
   mailosaur?: {
@@ -26,11 +25,18 @@ const mailosaurSchema = z
   .optional();
 
 const aiSchema = z.object({
-  provider: z.enum(["amazon-bedrock", "anthropic"]),
-  region: z.string().optional(),
-  accessKeyId: z.string().optional(),
-  secretAccessKey: z.string().optional(),
-  model: z.enum(["claude-3-5-sonnet"]).optional(),
+  provider: z.enum(["anthropic"]),
+  apiKey: z.string(),
+  model: z.preprocess(
+    (value) => {
+      if (value === undefined) {
+        console.warn("Falling back to default model: claude-3-5-sonnet");
+        return "claude-3-5-sonnet";
+      }
+      return value;
+    },
+    z.enum(["claude-3-5-sonnet"]),
+  ),
 });
 
 export const configSchema = z.object({
