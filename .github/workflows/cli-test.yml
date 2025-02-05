@@ -1,7 +1,12 @@
 name: CLI / Tests
 
 on:
+  pull_request:
+    paths:
+      - 'packages/shortest/**'
+      - '.github/workflows/cli-*.yml'
   push:
+    branches: ["main"]
     paths:
       - 'packages/shortest/**'
       - '.github/workflows/cli-*.yml'
