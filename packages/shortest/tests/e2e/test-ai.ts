@@ -10,7 +10,8 @@ export async function main() {
   console.log(pc.cyan("\n🧪 Testing AI Integration"));
   console.log(pc.cyan("======================="));
 
-  const browserManager = new BrowserManager(getConfig());
+  const legacyOutputEnabled = true;
+  const browserManager = new BrowserManager(getConfig(), legacyOutputEnabled);
 
   try {
     await initializeConfig();
@@ -51,17 +52,22 @@ export async function main() {
       ],
     };
 
-    const browserTool = new BrowserTool(page, browserManager, {
-      width: 1920,
-      height: 1080,
-      testContext: {
-        page,
-        browser: browserManager.getBrowser()!,
-        playwright: playwrightObj,
-        currentTest: mockTest,
-        currentStepIndex: 0,
+    const browserTool = new BrowserTool(
+      page,
+      browserManager,
+      legacyOutputEnabled,
+      {
+        width: 1920,
+        height: 1080,
+        testContext: {
+          page,
+          browser: browserManager.getBrowser()!,
+          playwright: playwrightObj,
+          currentTest: mockTest,
+          currentStepIndex: 0,
+        },
       },
-    });
+    );
 
     // Test first callback
     console.log("\n🔍 Testing first callback:");

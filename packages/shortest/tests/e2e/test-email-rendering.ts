@@ -38,11 +38,17 @@ export async function main() {
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    const browserManager = new BrowserManager(config);
-    const browserTool = new BrowserTool(page, browserManager, {
-      width: 1280,
-      height: 720,
-    });
+    const legacyOutputEnabled = true;
+    const browserManager = new BrowserManager(config, legacyOutputEnabled);
+    const browserTool = new BrowserTool(
+      page,
+      browserManager,
+      legacyOutputEnabled,
+      {
+        width: 1280,
+        height: 720,
+      },
+    );
 
     // 3. Test render_email tool
     console.log("Testing email rendering...");

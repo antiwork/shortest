@@ -23,6 +23,7 @@ export class AIClient {
     legacyOutputEnabled: boolean,
     debugMode: boolean = false,
   ) {
+    this.legacyOutputEnabled = legacyOutputEnabled;
     this.log = getLogger();
     this.log.trace("Initializing AIClient", { config });
     if (!config.apiKey) {
