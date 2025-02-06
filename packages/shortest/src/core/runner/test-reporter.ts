@@ -161,22 +161,23 @@ export class TestReporter {
   }
 
   summary() {
+    const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
+    const totalTests = Object.keys(this.testResults).length;
+    const failedTests = Object.values(this.testResults).filter(
+      (t) => t.status === "failed",
+    ).length;
+    const passedTests = totalTests - failedTests;
+
     const { totalInputTokens, totalOutputTokens, totalCost } =
       this.calculateTotalTokenUsage();
-
-    const totalTests = Object.keys(this.testResults).length;
-    const passedTests = Object.values(this.testResults).filter(
-      (test) => test.status === "passed",
-    ).length;
-    const failedTests = totalTests - passedTests;
-
-    const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
+    const totalTokens = totalInputTokens + totalOutputTokens;
 
     const summaryLog = this.log
       .group("Test summary")
       .info("Total tests", { count: totalTests })
       .info("Passed tests", { count: passedTests })
       .info("Failed tests", { count: failedTests })
+      .info("Started at", { timestamp: this.startTime })
       .info("Duration", { seconds: duration });
 
     if (totalInputTokens > 0 || totalOutputTokens > 0) {
@@ -200,34 +201,33 @@ export class TestReporter {
         });
     }
     if (this.legacyOutputEnabled) {
-      console.log("\nTest Summary:");
+      console.log(pc.dim("⎯".repeat(50)), "\n");
+
+      const LABEL_WIDTH = 15;
       console.log(
-        pc.dim(
-          `  Duration: ${duration}s, Total tests: ${totalTests}, Passed: ${passedTests}, Failed: ${failedTests}`,
-        ),
+        pc.bold(" Tests".padEnd(LABEL_WIDTH)),
+        failedTests
+          ? `${pc.red(`${failedTests} failed`)} | ${pc.green(`${passedTests} passed`)}`
+          : pc.green(`${passedTests} passed`),
+        pc.dim(`(${totalTests})`),
       );
 
-      if (totalInputTokens > 0 || totalOutputTokens > 0) {
-        console.log(
-          pc.dim(
-            `  Total token usage - Input: ${totalInputTokens}, Output: ${totalOutputTokens}, Cost: $${totalCost.toFixed(
-              4,
-            )}`,
-          ),
-        );
-      }
-
-      if (failedTests > 0) {
-        console.log("\nFailed Tests:");
-        Object.entries(this.testResults)
-          .filter(([, test]) => test.status === "failed")
-          .forEach(([key, test]) => {
-            console.log(pc.red(`  ${key}`));
-            if (test.error) {
-              console.log(pc.dim(`    ${test.error.message}`));
-            }
-          });
-      }
+      console.log(
+        pc.bold(" Duration".padEnd(LABEL_WIDTH)),
+        pc.dim(`${duration}s`),
+      );
+      console.log(
+        pc.bold(" Started at".padEnd(LABEL_WIDTH)),
+        pc.dim(new Date(this.startTime).toLocaleTimeString()),
+      );
+      console.log(
+        pc.bold(" Tokens".padEnd(LABEL_WIDTH)),
+        pc.dim(
+          `${totalTokens.toLocaleString()} tokens ` +
+            `(≈ $${totalCost.toFixed(2)})`,
+        ),
+      );
+      console.log("\n", pc.dim("⎯".repeat(50)));
     }
   }
 
