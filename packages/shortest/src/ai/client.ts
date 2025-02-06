@@ -104,9 +104,8 @@ export class AIClient {
 
     this.log.debug("Making AI request", { prompt });
     if (this.debug && this.legacyOutputEnabled) {
-      console.log("Prompt:", prompt);
+      console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
     }
-
     messages.push({
       role: "user",
       content: prompt,
