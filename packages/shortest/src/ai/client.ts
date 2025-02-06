@@ -74,6 +74,7 @@ export class AIClient {
         attempts++;
         if (attempts === maxRetries) throw error;
 
+        this.log.info(`Retry attempt`, { attempt: attempts, maxRetries });
         if (this.legacyOutputEnabled) {
           console.log(`  Retry attempt ${attempts}/${maxRetries}`);
         }
@@ -103,8 +104,9 @@ export class AIClient {
     const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
 
+    this.log.debug("Making AI request", { prompt });
     if (this.debugMode && this.legacyOutputEnabled) {
-      console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
+      console.log("Prompt:", prompt);
     }
 
     messages.push({
@@ -137,12 +139,20 @@ export class AIClient {
         if (this.debugMode) {
           response.content.forEach((block) => {
             if (block.type === "text") {
+              this.log.info("Received AI response", { response });
+              if (this.legacyOutputEnabled) {
+                console.log("Response:", response);
+              }
               if (this.legacyOutputEnabled) {
                 console.log(pc.green("\n🤖 AI:"), pc.dim((block as any).text));
               }
             } else if (block.type === "tool_use") {
               const toolBlock =
                 block as Anthropic.Beta.Messages.BetaToolUseBlock;
+              this.log.info("Tool request", {
+                tool: toolBlock.name,
+                input: toolBlock.input,
+              });
               if (this.legacyOutputEnabled) {
                 console.log(pc.yellow("\n🔧 Tool Request:"), {
                   tool: toolBlock.name,
@@ -175,6 +185,7 @@ export class AIClient {
                     );
                     return { toolRequest, toolResult };
                   } catch (error) {
+                    this.log.error("Error executing bash command:", { error });
                     if (this.legacyOutputEnabled) {
                       console.error("Error executing bash command:", error);
                     }
@@ -212,6 +223,7 @@ export class AIClient {
 
                     return { toolRequest, toolResult };
                   } catch (error) {
+                    this.log.error("Error executing browser tool:", { error });
                     if (this.legacyOutputEnabled) {
                       console.error("Error executing browser tool:", error);
                     }
@@ -289,6 +301,10 @@ export class AIClient {
           }
           await new Promise((resolve) => setTimeout(resolve, 60000));
           continue;
+        }
+        this.log.error("AI request failed", { error });
+        if (this.legacyOutputEnabled) {
+          console.log("Error:", error);
         }
         throw error;
       }

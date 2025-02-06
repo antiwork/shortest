@@ -1,5 +1,7 @@
+import { AssertionError } from "assert";
 import pc from "picocolors";
-import { AssertionError, TestFunction } from "../../types";
+import { Log } from "../../log/log";
+import { TestFunction } from "../../types/test";
 
 export type TestStatus = "pending" | "running" | "passed" | "failed";
 
@@ -23,27 +25,35 @@ export class TestReporter {
   // token pricing (Claude 3.5 Sonnet)
   private readonly COST_PER_1K_INPUT_TOKENS = 0.003;
   private readonly COST_PER_1K_OUTPUT_TOKENS = 0.015;
+  private legacyOutputEnabled: boolean;
+  private log: Log;
 
-  constructor(private legacyOutputEnabled: boolean = false) {}
+  constructor(legacyOutputEnabled: boolean = false) {
+    this.legacyOutputEnabled = legacyOutputEnabled;
+    this.log = new Log();
+  }
 
   initializeTest(test: TestFunction, legacyOutputEnabled: boolean) {
-    const testKey = test.name || "Unnamed Test";
+    const testName = test.name || "Unnamed Test";
     this.currentTest = {
-      name: testKey,
+      name: testName,
       status: "pending",
     };
+    const testKey = `${this.currentFile}:${testName}`;
     this.testResults[testKey] = this.currentTest;
     this.legacyOutputEnabled = legacyOutputEnabled;
   }
 
   startFile(file: string) {
     this.currentFile = file;
+    this.log.info("Starting file", { file });
     if (this.legacyOutputEnabled) {
       console.log("📄", pc.blue(pc.bold(this.currentFile)));
     }
   }
 
   startTest(test: TestFunction) {
+    this.log.info("Starting test", { test: test.name });
     if (this.legacyOutputEnabled) {
       console.log(this.getStatusIcon("running"), test.name);
     }
@@ -54,39 +64,43 @@ export class TestReporter {
     error?: Error,
     tokenUsage?: TokenMetrics,
   ) {
-    if (!this.currentTest) {
-      throw new Error("Current test not initialized");
-    }
+    if (!this.currentTest) return;
 
-    this.testResults[this.currentTest.name].status = status;
-    this.testResults[this.currentTest.name].error = error;
-    this.testResults[this.currentTest.name].tokenUsage = tokenUsage;
+    this.currentTest.status = status;
+    this.currentTest.error = error;
+    this.currentTest.tokenUsage = tokenUsage;
 
-    const symbol = status === "passed" ? "✓" : "✗";
-    const color = status === "passed" ? pc.green : pc.red;
-
+    this.log.info("Test ended", {
+      test: this.currentTest.name,
+      status,
+      error,
+      tokenUsage,
+    });
     if (this.legacyOutputEnabled) {
-      console.log(`  ${color(`${symbol} ${status}`)}`);
-    }
+      console.log(
+        this.getStatusIcon(status),
+        status === "passed"
+          ? pc.green(this.currentTest.name)
+          : pc.red(this.currentTest.name),
+      );
 
-    if (tokenUsage) {
-      const totalTokens = tokenUsage.input + tokenUsage.output;
-      const cost = this.calculateCost(tokenUsage.input, tokenUsage.output);
-      if (this.legacyOutputEnabled) {
+      if (error) {
+        console.error(pc.red(error.message));
+      }
+
+      if (tokenUsage) {
         console.log(
           pc.dim(
-            `    ↳ ${totalTokens.toLocaleString()} tokens ` +
-              `(≈ $${cost.toFixed(2)})`,
+            `  Token usage - Input: ${tokenUsage.input}, Output: ${
+              tokenUsage.output
+            }, Cost: $${this.calculateCost(
+              tokenUsage.input,
+              tokenUsage.output,
+            ).toFixed(4)}`,
           ),
         );
       }
     }
-
-    if (error) {
-      this.reportError("Test Execution", error.message);
-    }
-
-    this.currentTest = null;
   }
 
   private calculateCost(inputTokens: number, outputTokens: number): number {
@@ -133,47 +147,56 @@ export class TestReporter {
   }
 
   summary() {
-    if (!this.legacyOutputEnabled) {
-      return;
-    }
-    const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
-    const totalTests = Object.keys(this.testResults).length;
-    const failedTests = Object.values(this.testResults).filter(
-      (t) => t.status === "failed",
-    ).length;
-    const passedTests = totalTests - failedTests;
-
     const { totalInputTokens, totalOutputTokens, totalCost } =
       this.calculateTotalTokenUsage();
-    const totalTokens = totalInputTokens + totalOutputTokens;
 
-    console.log(pc.dim("⎯".repeat(50)), "\n");
+    const totalTests = Object.keys(this.testResults).length;
+    const passedTests = Object.values(this.testResults).filter(
+      (test) => test.status === "passed",
+    ).length;
+    const failedTests = totalTests - passedTests;
 
-    const LABEL_WIDTH = 15;
-    console.log(
-      pc.bold(" Tests".padEnd(LABEL_WIDTH)),
-      failedTests
-        ? `${pc.red(`${failedTests} failed`)} | ${pc.green(`${passedTests} passed`)}`
-        : pc.green(`${passedTests} passed`),
-      pc.dim(`(${totalTests})`),
-    );
+    const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
 
-    console.log(
-      pc.bold(" Duration".padEnd(LABEL_WIDTH)),
-      pc.dim(`${duration}s`),
-    );
-    console.log(
-      pc.bold(" Started at".padEnd(LABEL_WIDTH)),
-      pc.dim(new Date(this.startTime).toLocaleTimeString()),
-    );
-    console.log(
-      pc.bold(" Tokens".padEnd(LABEL_WIDTH)),
-      pc.dim(
-        `${totalTokens.toLocaleString()} tokens ` +
-          `(≈ $${totalCost.toFixed(2)})`,
-      ),
-    );
-    console.log("\n", pc.dim("⎯".repeat(50)));
+    this.log.info("Test summary", {
+      totalTests,
+      passedTests,
+      failedTests,
+      duration,
+      totalInputTokens,
+      totalOutputTokens,
+      totalCost,
+    });
+    if (this.legacyOutputEnabled) {
+      console.log("\nTest Summary:");
+      console.log(
+        pc.dim(
+          `  Duration: ${duration}s, Total tests: ${totalTests}, Passed: ${passedTests}, Failed: ${failedTests}`,
+        ),
+      );
+
+      if (totalInputTokens > 0 || totalOutputTokens > 0) {
+        console.log(
+          pc.dim(
+            `  Total token usage - Input: ${totalInputTokens}, Output: ${totalOutputTokens}, Cost: $${totalCost.toFixed(
+              4,
+            )}`,
+          ),
+        );
+      }
+
+      if (failedTests > 0) {
+        console.log("\nFailed Tests:");
+        Object.entries(this.testResults)
+          .filter(([, test]) => test.status === "failed")
+          .forEach(([key, test]) => {
+            console.log(pc.red(`  ${key}`));
+            if (test.error) {
+              console.log(pc.dim(`    ${test.error.message}`));
+            }
+          });
+      }
+    }
   }
 
   allTestsPassed(): boolean {
@@ -183,20 +206,23 @@ export class TestReporter {
   }
 
   reportStatus(message: string) {
+    this.log.info("Status", { message });
     if (this.legacyOutputEnabled) {
-      console.log(pc.blue(`\n${message}`));
+      console.log(pc.dim(message));
     }
   }
 
   error(context: string, message: string) {
+    this.log.error(message, { context });
     if (this.legacyOutputEnabled) {
-      console.error(pc.red(`\n${context} Error: ${message}`));
+      console.error(pc.red(`${context}: ${message}`));
     }
   }
 
   reportError(context: string, message: string) {
+    this.log.error(message, { context });
     if (this.legacyOutputEnabled) {
-      console.error(pc.red(`\n${context} Error: ${message}`));
+      console.error(pc.red(`${context}: ${message}`));
     }
   }
 
@@ -205,18 +231,16 @@ export class TestReporter {
     status: "passed" | "failed",
     error?: AssertionError,
   ): void {
-    if (!this.legacyOutputEnabled) {
-      return;
-    }
-    const icon = status === "passed" ? "✓" : "✗";
-    const color = status === "passed" ? "green" : "red";
-
-    console.log(pc[color](`${icon} ${step}`));
-
-    if (error && status === "failed") {
-      console.log(pc.red(`  Expected: ${error.matcherResult?.expected}`));
-      console.log(pc.red(`  Received: ${error.matcherResult?.actual}`));
-      console.log(pc.red(`  Message: ${error.message}`));
+    this.log.info("Assertion", { step, status, error });
+    if (this.legacyOutputEnabled) {
+      if (status === "passed") {
+        console.log(pc.green(`✓ ${step}`));
+      } else {
+        console.log(pc.red(`✗ ${step}`));
+        if (error) {
+          console.log(pc.dim(error.message));
+        }
+      }
     }
   }
 }

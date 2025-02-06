@@ -373,6 +373,9 @@ export class TestRunner {
       try {
         context = await this.browserManager.launch();
       } catch (error) {
+        this.log.error("Browser initialization failed", {
+          error: error instanceof Error ? error.message : String(error),
+        });
         if (this.legacyOutputEnabled) {
           console.error(
             `Browser initialization failed: ${
@@ -380,9 +383,6 @@ export class TestRunner {
             }`,
           );
         }
-        this.log.error("Browser initialization failed", {
-          error: error instanceof Error ? error.message : String(error),
-        });
         return;
       }
       const testContext = await this.createTestContext(context);
@@ -469,6 +469,9 @@ export class TestRunner {
     browserTool: BrowserTool,
   ): Promise<TestResult> {
     const cachedTest = await this.cache.get(test);
+    this.log.debug("Running cached test", {
+      hash: hashData(test),
+    });
     if (this.debugAI && this.legacyOutputEnabled) {
       console.log(pc.green(`  Executing cached test ${hashData(test)}`));
     }
@@ -513,6 +516,10 @@ export class TestRunner {
         try {
           await browserTool.execute(step.action.input);
         } catch (error) {
+          this.log.error("Failed to execute step", {
+            input: step.action.input,
+            error,
+          });
           if (this.legacyOutputEnabled) {
             console.error(
               `Failed to execute step with input ${step.action.input}`,
