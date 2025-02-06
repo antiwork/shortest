@@ -1,35 +1,22 @@
 import { LanguageModelUsage } from "ai";
 import { ActionInput } from "./browser";
-import { ShortestConfig } from "./config";
 import { CacheEntry } from "./cache";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BaseCache } from "@/cache/cache";
 import { TestFunction } from "./test";
+import { LLMConfig } from "./config";
+import { LLMJSONResponse } from "@/ai/validation";
 
-export interface AIConfig {
-  apiKey: string;
-  model?: string;
-  maxMessages?: number;
-  debug?: boolean;
+export enum LLMSupportedProviders {
+  ANTHROPIC = "anthropic",
 }
+export type LLMSupportedProvidersType = `${LLMSupportedProviders}`;
 
-export type LLMConfig = ShortestConfig["ai"];
-
-export interface LLMResponse {
-  result: "pass" | "fail";
-  reason: string;
+export enum LLMSupportedModels {
+  CLAUDE_3_5_SONNET = "claude-3-5-sonnet",
 }
+export type LLMSupportedModelsType = `${LLMSupportedModels}`;
 
-export interface AIMessage {
-  role: "user" | "assistant";
-  content: string | AIMessageContent[];
-}
-
-export interface AIMessageContent {
-  type: "text" | "tool_use" | "tool_result";
-  text?: string;
-  tool_use_id?: string;
-}
 namespace RequestTypes {
   export interface Bash {
     command: string;
@@ -45,7 +32,7 @@ namespace RequestTypes {
 }
 
 interface LLMProcessActionResult {
-  response: LLMResponse;
+  response: LLMJSONResponse;
   metadata: {
     usage: LanguageModelUsage;
   };
@@ -61,7 +48,7 @@ export interface ILLMClient {
   processAction(
     prompt: string,
     test: TestFunction,
-  ): Promise<LLMProcessActionResult>;
+  ): Promise<LLMProcessActionResult | void>;
 }
 
 export type RequestBash = RequestTypes.ToolRequest<RequestTypes.Bash>;

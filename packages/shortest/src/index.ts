@@ -9,6 +9,7 @@ import {
   TestAPI,
   TestContext,
   TestChain,
+  ShortestPublicConfig,
   ShortestConfig,
 } from "./types";
 import { parseConfig } from "./utils/config";
@@ -95,8 +96,6 @@ export async function initializeConfig(configDir?: string) {
 
   globalConfig = {
     ...configs[0].config,
-    anthropicKey:
-      process.env.ANTHROPIC_API_KEY || configs[0].config.anthropicKey,
   };
 
   return globalConfig;
@@ -236,4 +235,4 @@ export const test: TestAPI = Object.assign(
 
 export const shortest: TestAPI = test;
 export { APIRequest };
-export type { ShortestConfig };
+export type { ShortestPublicConfig as ShortestConfig };

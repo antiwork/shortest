@@ -1,38 +1,39 @@
+import { LLMConfig, LLMSupportedModels, LLMSupportedProviders } from "@/types";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { LanguageModelV1 } from "ai";
-import { LLMConfig } from "../types/ai";
+import { LLM_AI_SDK_MODEL_ID_MAP } from "./constants";
 
-/**
- * Whitelisted models for each AI provider. The keys are the internal model names
- * and the values are the provider-specific model strings.
- */
-const MODEL_WHITELIST: {
-  [provider in LLMConfig["provider"]]: Record<string, string>;
-} = {
-  anthropic: {
-    "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",
-  },
-};
-
-/**
- * Creates an AI client based on the provided configuration.
- */
 export function createAIClient(config: LLMConfig): LanguageModelV1 {
-  const model = MODEL_WHITELIST[config.provider][config.model as string];
+  const model = getAISDKModelId(config.provider, config.model);
 
   switch (config.provider) {
     case "anthropic":
       return createAnthropicClient({ model, apiKey: config.apiKey });
+    default:
+      throw new Error(`Unsupported provider: ${config.provider}`);
   }
 }
 
-/**
- * Creates an Anthropic language model client.
- */
+export function getAISDKModelId(
+  provider: LLMSupportedProviders,
+  model: LLMSupportedModels,
+) {
+  return LLM_AI_SDK_MODEL_ID_MAP[provider][model];
+}
+
 function createAnthropicClient(params: {
   model: string;
   apiKey: string;
 }): LanguageModelV1 {
   const anthropic = createAnthropic({ apiKey: params.apiKey });
   return anthropic(params.model) as LanguageModelV1;
+}
+
+export function getDefaultProviderModel(
+  provider: LLMSupportedProviders,
+): LLMSupportedModels {
+  switch (provider) {
+    case LLMSupportedProviders.ANTHROPIC:
+      return LLMSupportedModels.CLAUDE_3_5_SONNET;
+  }
 }

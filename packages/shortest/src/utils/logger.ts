@@ -59,7 +59,7 @@ export class Logger {
     const symbol = status === "passed" ? "✓" : "✗";
     const color = status === "passed" ? pc.green : pc.red;
 
-    console.log(`  ${color(`${symbol} ${status}`)}`);
+    console.log(`\n  ${color(`${symbol} ${status}`)}`);
 
     if (tokenUsage) {
       const totalTokens = tokenUsage.input + tokenUsage.output;

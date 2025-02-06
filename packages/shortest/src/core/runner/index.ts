@@ -12,8 +12,8 @@ import { initializeConfig, getConfig } from "../../index";
 import {
   TestFunction,
   TestContext,
-  ShortestConfig,
   BrowserActionEnum,
+  ShortestConfig,
 } from "../../types";
 import { CacheEntry } from "../../types/cache";
 import { hashData } from "../../utils/crypto";
@@ -177,15 +177,6 @@ export class TestRunner {
       },
     });
 
-    // this may never happen as the config is initialized before this code is executed
-    if (!this.config.anthropicKey) {
-      return {
-        result: "fail" as const,
-        reason: "ANTHROPIC_KEY is not set",
-        tokenUsage: { input: 0, output: 0 },
-      };
-    }
-
     const llmClient = new LLMClient({
       config: this.config.ai,
       browserTool,
@@ -277,7 +268,8 @@ export class TestRunner {
     }
 
     // Execute test with enhanced prompt
-    const { response, metadata } = await llmClient.processAction(prompt, test);
+    const resp = await llmClient.processAction(prompt, test);
+    const { response, metadata } = resp!;
 
     // Execute after function if present
     if (test.afterFn) {
@@ -287,7 +279,7 @@ export class TestRunner {
         return {
           result: "fail" as const,
           reason:
-            response.result === "fail"
+            response?.result === "fail"
               ? `AI: ${response.reason}, After: ${
                   error instanceof Error ? error.message : String(error)
                 }`
@@ -295,18 +287,19 @@ export class TestRunner {
                 ? error.message
                 : String(error),
           tokenUsage: {
-            input: metadata.usage.promptTokens,
-            output: metadata.usage.completionTokens,
+            input: metadata.usage?.promptTokens ?? 0,
+            output: metadata.usage?.completionTokens ?? 0,
           },
         };
       }
     }
 
     return {
-      ...response,
+      result: response?.result ?? "fail",
+      reason: response?.reason ?? "No response received from LLM.",
       tokenUsage: {
-        input: metadata.usage.promptTokens,
-        output: metadata.usage.completionTokens,
+        input: metadata.usage?.promptTokens ?? 0,
+        output: metadata.usage?.completionTokens ?? 0,
       },
     };
   }

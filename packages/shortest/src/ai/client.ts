@@ -1,14 +1,15 @@
 import {
   CoreMessage,
   CoreTool,
-  FinishReason,
   generateText,
+  GenerateTextResult,
   InvalidToolArgumentsError,
   LanguageModelV1,
   NoSuchToolError,
   tool,
 } from "ai";
 import { z } from "zod";
+import pc from "picocolors";
 import { BrowserTool } from "../browser/core/browser-tool";
 import { ILLMClient, ILLMClientOptions } from "../types/ai";
 import { CacheEntry, CacheStep } from "../types/cache";
@@ -21,7 +22,7 @@ import { sleep } from "@anthropic-ai/sdk/core";
 import { LLMError } from "@/utils/errors";
 import { formatZodError } from "@/utils/zod";
 import { BaseCache } from "@/cache/cache";
-import { llmResultSchema } from "./validation";
+import { llmJSONResponseSchema } from "./validation";
 
 export class LLMClient implements ILLMClient {
   private client: LanguageModelV1;
@@ -40,118 +41,141 @@ export class LLMClient implements ILLMClient {
   }
 
   async processAction(prompt: string, test: TestFunction) {
-    try {
-      // Push initial user prompt
-      this.conversationHistory.push({
-        role: "user",
-        content: prompt,
-      });
-
-      while (true) {
-        let resp;
-        try {
-          await sleep(1000);
-          resp = await generateText({
-            system: SYSTEM_PROMPT,
-            model: this.client,
-            messages: this.conversationHistory,
-            tools: this.tools,
-            experimental_continueSteps: true,
-            maxTokens: 1024,
-            onStepFinish: async (event) => {
-              function isMouseMove(args: any) {
-                console.log({ args });
-                return args.action === "mouse_move" && args.coordinate.length;
-              }
-
-              for (const toolResult of event.toolResults as any) {
-                if (toolResult.toolName === "computer") {
-                  let extras: Record<string, unknown> = {};
-                  if (isMouseMove(toolResult.args)) {
-                    const [x, y] = (toolResult.args as any).coordinate;
-                    extras.componentStr =
-                      await this.browserTool.getNormalizedComponentStringByCoords(
-                        x,
-                        y,
-                      );
-                  }
-
-                  // Update pending cache
-                  this.pendingCache.steps = [
-                    ...(this.pendingCache.steps || []),
-                    {
-                      action: toolResult,
-                      reasoning: toolResult.text,
-                      result: toolResult.text,
-                      extras,
-                      timestamp: Date.now(),
-                    },
-                  ];
-                }
-              }
-            },
-          });
-        } catch (error) {
-          if (NoSuchToolError.isInstance(error)) {
-            console.log("Tool is not supported");
-          } else if (InvalidToolArgumentsError.isInstance(error)) {
-            console.log("Invalid arguments for a tool were provided");
-          }
+    let MAX_RETRIES = 3;
+    let retries = 0;
+    while (retries < MAX_RETRIES) {
+      try {
+        return await this.makeRequest(prompt, test);
+      } catch (error: any) {
+        if (this.isNonRetryableError(error)) {
           throw error;
         }
 
-        if (this.isDebugMode) {
-          for (const { toolName, args } of resp.toolCalls) {
-            process.stdout.write(
-              `\nTool call: '${toolName}' ${JSON.stringify(args)}`,
-            );
-          }
+        retries++;
+        if (retries === MAX_RETRIES) throw error;
 
-          for (const { toolName, result } of resp.toolResults) {
-            process.stdout.write(
-              `\nTool response: '${toolName}' ${JSON.stringify(result)}`,
-            );
-          }
-        }
-
-        this.conversationHistory.push(...resp.response.messages);
-        if (resp.finishReason === "tool-calls") continue;
-        this.handleFinishReasonErrors(resp.finishReason);
-
-        // At this point, response reason is not a tool call, and it's not errored
-        const jsonMatch = resp.text.match(/{[\s\S]*}/)?.[0];
-
-        if (!jsonMatch) {
-          throw new LLMError("invalid-response", "LLM didn't return JSON.");
-        }
-
-        let parsedResponse;
-        try {
-          parsedResponse = llmResultSchema.parse(JSON.parse(jsonMatch));
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            throw new LLMError(
-              "invalid-response",
-              formatZodError(error, "Invalid LLM response."),
-            );
-          }
-          throw error;
-        }
-
-        if (parsedResponse.result === "pass") {
-          this.cache.set(test, this.pendingCache);
-        }
-
-        return {
-          response: parsedResponse,
-          metadata: {
-            usage: resp.usage,
-          },
-        };
+        console.log(`  Retry attempt ${retries}/${MAX_RETRIES}`);
+        await sleep(5000 * retries);
       }
-    } catch (error) {
-      console.log("AI processing error occured");
-      throw error;
+    }
+  }
+
+  private async makeRequest(prompt: string, test: TestFunction) {
+    if (this.isDebugMode) {
+      console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
+    }
+
+    // Push initial user prompt
+    this.conversationHistory.push({
+      role: "user",
+      content: prompt,
+    });
+
+    while (true) {
+      let resp;
+      try {
+        await sleep(1000);
+        resp = await generateText({
+          system: SYSTEM_PROMPT,
+          model: this.client,
+          messages: this.conversationHistory,
+          tools: this.tools,
+          maxTokens: 1024,
+          onStepFinish: async (event) => {
+            function isMouseMove(args: any) {
+              return args.action === "mouse_move" && args.coordinate.length;
+            }
+
+            for (const toolResult of event.toolResults as any[]) {
+              let extras: Record<string, unknown> = {};
+              if (isMouseMove(toolResult.args)) {
+                const [x, y] = (toolResult.args as any).coordinate;
+                extras.componentStr =
+                  await this.browserTool.getNormalizedComponentStringByCoords(
+                    x,
+                    y,
+                  );
+              }
+
+              this.addToPendingCache({
+                reasoning: event.text,
+                action: {
+                  name: toolResult.args.action,
+                  input: toolResult.args,
+                  type: "tool_use",
+                },
+                result: toolResult.result.output,
+                extras,
+                timestamp: Date.now(),
+              });
+            }
+          },
+        });
+      } catch (error) {
+        if (NoSuchToolError.isInstance(error)) {
+          console.log("Tool is not supported");
+        } else if (InvalidToolArgumentsError.isInstance(error)) {
+          console.log("Invalid arguments for a tool were provided");
+        }
+        throw error;
+      }
+
+      if (this.isDebugMode) {
+        process.stdout.write(
+          `\nLLM step completed with finish reason: '${resp.finishReason}'`,
+        );
+
+        for (const { toolName, args } of resp.toolCalls) {
+          process.stdout.write(
+            `\nTool call: '${toolName}' ${JSON.stringify(args)}`,
+          );
+        }
+
+        for (const { toolName, result } of resp.toolResults as any) {
+          if (result.base64_image) {
+            result.base64_image = result.base64_image.substring(0, 25) + "...";
+          }
+
+          process.stdout.write(
+            `\nTool response: '${toolName}' ${JSON.stringify(result)}`,
+          );
+        }
+      }
+
+      this.conversationHistory.push(...resp.response.messages);
+      if (resp.finishReason === "tool-calls") continue;
+      this.processErrors(resp);
+
+      // At this point, response reason is not a tool call, and it's not errored
+      const jsonMatch = resp.text.match(/{[\s\S]*}/)?.[0];
+
+      if (!jsonMatch) {
+        throw new LLMError("invalid-response", "LLM didn't return JSON.");
+      }
+
+      let parsedResponse;
+      try {
+        parsedResponse = llmJSONResponseSchema.parse(JSON.parse(jsonMatch));
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new LLMError(
+            "invalid-response",
+            formatZodError(error, "Invalid LLM response."),
+          );
+        }
+        throw error;
+      }
+
+      if (parsedResponse.result === "pass") {
+        this.cache.set(test, this.pendingCache);
+      }
+
+      return {
+        response: parsedResponse,
+        metadata: {
+          usage: resp.usage,
+        },
+      };
     }
   }
 
@@ -248,7 +272,10 @@ export class LLMClient implements ILLMClient {
         ];
   }
 
-  private handleFinishReasonErrors(reason: FinishReason): void {
+  private processErrors(
+    resp: GenerateTextResult<Record<string, CoreTool>>,
+  ): void {
+    const reason = resp.finishReason;
     switch (reason) {
       case "length":
         throw new LLMError(
@@ -265,5 +292,13 @@ export class LLMClient implements ILLMClient {
       case "other":
         throw new LLMError("unknown", "An error occurred during generation.");
     }
+  }
+
+  private addToPendingCache(cacheStep: CacheStep) {
+    this.pendingCache.steps = [...(this.pendingCache.steps || []), cacheStep];
+  }
+
+  private isNonRetryableError(error: any) {
+    return [401, 403, 500].includes(error.status);
   }
 }

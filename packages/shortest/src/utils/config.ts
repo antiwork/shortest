@@ -5,7 +5,7 @@ import { formatZodError } from "./zod";
 
 export const parseConfig = (config: unknown): ShortestConfig => {
   try {
-    return configSchema.parse(config);
+    return configSchema.parse(config) as ShortestConfig;
   } catch (error) {
     if (error instanceof z.ZodError) {
       throw new ConfigError(

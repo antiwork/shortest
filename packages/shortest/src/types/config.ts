@@ -1,22 +1,16 @@
-import { FALLBACK_LLM_MODEL } from "@/ai/constants";
 import { z } from "zod";
+import {
+  LLMSupportedModels,
+  LLMSupportedModelsType,
+  LLMSupportedProviders,
+  LLMSupportedProvidersType,
+} from "./ai";
+import { getDefaultProviderModel } from "@/ai/client-provider";
+import { MakeOptional } from "@/utils/types";
 
-export interface ShortestConfig {
-  headless: boolean;
-  baseUrl: string;
-  testPattern: string;
-  anthropicKey?: string;
-  ai: {
-    provider: "anthropic";
-    apiKey: string;
-    model?: "claude-3-5-sonnet";
-  };
-  mailosaur?: {
-    apiKey?: string;
-    serverId?: string;
-  };
-}
-
+/**
+ * Schema for Mailosaur configuration.
+ */
 const mailosaurSchema = z
   .object({
     apiKey: z.string(),
@@ -24,25 +18,102 @@ const mailosaurSchema = z
   })
   .optional();
 
-const aiSchema = z.object({
-  provider: z.enum(["anthropic"]),
-  apiKey: z.string(),
-  model: z.preprocess(
-    (value) => {
-      if (value === undefined) {
-        console.warn("Falling back to default model: claude-3-5-sonnet");
-        return "claude-3-5-sonnet";
-      }
-      return value;
-    },
-    z.enum(["claude-3-5-sonnet"]),
-  ),
-});
+export interface MailosaurConfig {
+  apiKey: string;
+  serverId: string;
+}
 
-export const configSchema = z.object({
-  headless: z.boolean(),
-  baseUrl: z.string().url("must be a valid URL"),
-  testPattern: z.string(),
-  ai: aiSchema,
-  mailosaur: mailosaurSchema,
+/**
+ * Schema for the LLM (AI) configuration.
+ * If no model is provided, falls back to a default based on the provider.
+ */
+const llmSchema = z.object({
+  provider: z.literal(LLMSupportedProviders.ANTHROPIC),
+  apiKey: z.string(),
+  model: z
+    .enum([LLMSupportedModels.CLAUDE_3_5_SONNET])
+    .default(getDefaultProviderModel(LLMSupportedProviders.ANTHROPIC)),
 });
+export interface LLMConfig {
+  provider: LLMSupportedProviders;
+  apiKey: string;
+  model: LLMSupportedModels;
+}
+
+export interface LLMPPublicConfig {
+  provider: LLMSupportedProvidersType;
+  apiKey: string | undefined;
+  model?: LLMSupportedModelsType;
+}
+
+/**
+ * Base configuration interface.
+ */
+interface ConfigBase {
+  headless: boolean;
+  baseUrl: string;
+  testPattern: string;
+}
+
+// Internal resolved config, single source of truth
+export type ShortestConfig = ConfigBase & {
+  mailosaur?: MailosaurConfig;
+  ai: LLMConfig;
+};
+
+// Config used by Shortest users
+export type ShortestPublicConfig = ConfigBase &
+  Partial<{
+    mailosaur: MakeOptional<MailosaurConfig, "apiKey" | "serverId">;
+    ai: LLMPPublicConfig;
+    /** @deprecated Use the new 'ai' configuration instead */
+    anthropicKey: string;
+  }>;
+
+const rawConfigSchema = z
+  .object({
+    headless: z.boolean(),
+    baseUrl: z.string().url("must be a valid URL"),
+    testPattern: z.string(),
+    ai: llmSchema.optional(),
+    anthropicKey: z.string().optional(),
+    mailosaur: mailosaurSchema.optional(),
+  })
+  .strict();
+
+/**
+ * Main configuration schema.
+ * - Validates that either `ai` or the legacy `anthropicKey` is provided (but not both).
+ * - Transforms legacy configuration to the new format.
+ */
+export const configSchema = rawConfigSchema
+  .superRefine((config, ctx) => {
+    if (!config.ai && !config.anthropicKey && !process.env.ANTHROPIC_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "No AI configuration provided. Please provide either 'ai' or the legacy 'anthropicKey'.",
+      });
+    } else if (config.ai && config.anthropicKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Both 'ai' and legacy 'anthropicKey' are provided. Please use only one.",
+      });
+    }
+  })
+  .transform((config) => {
+    if (!config.ai && (config.anthropicKey || process.env.ANTHROPIC_API_KEY)) {
+      console.warn(
+        "Legacy configuration detected: the 'anthropicKey' option is deprecated and will be removed in future releases.",
+      );
+      config.ai = {
+        provider: LLMSupportedProviders.ANTHROPIC,
+        apiKey: (process.env.ANTHROPIC_API_KEY ??
+          config.anthropicKey) as string,
+        model: LLMSupportedModels.CLAUDE_3_5_SONNET,
+      };
+      delete config.anthropicKey;
+    }
+    return { ...config };
+  });

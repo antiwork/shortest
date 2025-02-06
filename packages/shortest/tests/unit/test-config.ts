@@ -1,17 +1,31 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { parseConfig } from "@/utils/config";
+import { LLMSupportedModels, LLMSupportedProviders } from "@/types";
 
 describe("Config parsing", () => {
   beforeEach(() => {
     delete process.env.ANTHROPIC_API_KEY;
   });
 
-  test("validates correct config", () => {
+  test("validates correct config with legacy anthropicKey", () => {
     const config = {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
       anthropicKey: "test-key",
+    };
+    expect(() => parseConfig(config)).not.toThrow();
+  });
+
+  test("validates correct config with ai configuration", () => {
+    const config = {
+      headless: true,
+      baseUrl: "https://example.com",
+      testPattern: ".*",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+      },
     };
     expect(() => parseConfig(config)).not.toThrow();
   });
@@ -59,14 +73,53 @@ describe("Config parsing", () => {
     expect(() => parseConfig(config)).not.toThrow();
   });
 
-  test("throws when anthropicKey is missing from both config and env", () => {
+  test("throws when neither anthropicKey nor ai configuration is provided", () => {
     const config = {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
     };
     expect(() => parseConfig(config)).toThrowError(
-      "anthropicKey must be provided",
+      "No AI configuration provided. Please provide either 'ai' or the legacy 'anthropicKey",
     );
+  });
+
+  test("throws when both anthropicKey and ai configurations are provided", () => {
+    const config = {
+      headless: true,
+      baseUrl: "https://example.com",
+      testPattern: ".*",
+      anthropicKey: "test-key",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+      },
+    };
+    expect(() => parseConfig(config)).toThrowError(
+      "Both 'ai' and legacy 'anthropicKey' are provided. Please use only one.",
+    );
+  });
+
+  test("transforms legacy anthropicKey into new AI object", () => {
+    const apiKey = "testKey";
+    const config = {
+      headless: true,
+      baseUrl: "https://example.com",
+      testPattern: ".*",
+      anthropicKey: apiKey,
+    };
+
+    const expectedConfig = {
+      headless: true,
+      baseUrl: "https://example.com",
+      testPattern: ".*",
+      ai: {
+        provider: LLMSupportedProviders.ANTHROPIC,
+        apiKey,
+        model: LLMSupportedModels.CLAUDE_3_5_SONNET, // defaults to CLAUDE_3_5_SONNET automatically
+      },
+    };
+
+    expect(parseConfig(config)).toEqual(expectedConfig);
   });
 });

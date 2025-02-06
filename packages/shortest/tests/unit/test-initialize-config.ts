@@ -1,9 +1,30 @@
+import { LLMSupportedModels, LLMSupportedProviders } from "@/types";
 import fs from "fs/promises";
 import path from "path";
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 describe("initializeConfig", () => {
   const tempDir = path.join(process.cwd(), "temp-test-config");
+
+  test("prefers env ANTHROPIC_API_KEY over config key", async () => {
+    process.env.ANTHROPIC_API_KEY = "env-key";
+
+    await fs.writeFile(
+      path.join(tempDir, "shortest.config.ts"),
+      `
+      export default {
+        headless: true,
+        baseUrl: 'https://example.com',
+        testPattern: '.*',
+        anthropicKey: 'test-key'
+      }
+      `,
+    );
+
+    const { initializeConfig } = await import("@/index");
+    const config = await initializeConfig(tempDir);
+    expect(config?.ai?.apiKey).toBe("env-key");
+  });
 
   beforeEach(async () => {
     vi.resetModules();
@@ -23,8 +44,12 @@ describe("initializeConfig", () => {
         headless: true,
         baseUrl: "https://example.com",
         testPattern: ".*",
-        anthropicKey: "test-key",
-      }
+        ai: {
+          provider: "${LLMSupportedProviders.ANTHROPIC}",
+          apiKey: "test-key",
+          model: "${LLMSupportedModels.CLAUDE_3_5_SONNET}"
+        }
+    }
       `,
     );
 
@@ -34,7 +59,11 @@ describe("initializeConfig", () => {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
-      anthropicKey: "test-key",
+      ai: {
+        provider: LLMSupportedProviders.ANTHROPIC,
+        apiKey: "test-key",
+        model: LLMSupportedModels.CLAUDE_3_5_SONNET,
+      },
     });
   });
 
@@ -46,7 +75,11 @@ describe("initializeConfig", () => {
         headless: true,
         baseUrl: 'https://example.com',
         testPattern: '.*',
-        anthropicKey: 'test-key'
+        ai: {
+          provider: "${LLMSupportedProviders.ANTHROPIC}",
+          apiKey: "test-key",
+          model: "${LLMSupportedModels.CLAUDE_3_5_SONNET}"
+        }
       }
       `,
     );
@@ -57,28 +90,12 @@ describe("initializeConfig", () => {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
-      anthropicKey: "test-key",
+      ai: {
+        provider: LLMSupportedProviders.ANTHROPIC,
+        apiKey: "test-key",
+        model: LLMSupportedModels.CLAUDE_3_5_SONNET,
+      },
     });
-  });
-
-  test("prefers env ANTHROPIC_API_KEY over config key", async () => {
-    process.env.ANTHROPIC_API_KEY = "env-key";
-
-    await fs.writeFile(
-      path.join(tempDir, "shortest.config.ts"),
-      `
-      export default {
-        headless: true,
-        baseUrl: 'https://example.com',
-        testPattern: '.*',
-        anthropicKey: 'config-key'
-      }
-      `,
-    );
-
-    const { initializeConfig } = await import("@/index");
-    const config = await initializeConfig(tempDir);
-    expect(config?.anthropicKey).toBe("env-key");
   });
 
   test("throws when multiple config files exist", async () => {
