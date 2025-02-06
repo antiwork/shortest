@@ -1,3 +1,4 @@
+// import crypto from "crypto";
 import { LogLevel } from "./config";
 
 export class LogEvent {
@@ -6,6 +7,7 @@ export class LogEvent {
   message: string;
   metadata: Record<string, any> = {};
   parent?: LogEvent;
+  parentEvents: LogEvent[] = [];
 
   constructor(
     level: LogLevel,
@@ -18,6 +20,7 @@ export class LogEvent {
     this.message = message;
     this.metadata = metadata ?? {};
     this.parent = parent;
+    this.parentEvents = parent ? [...parent.parentEvents, parent] : [];
   }
 
   toJSON(): Record<string, any> {

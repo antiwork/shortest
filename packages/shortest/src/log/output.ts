@@ -53,6 +53,7 @@ export class LogOutput {
 
   private static formatForTerminal(event: LogEvent): string {
     const { level, message, timestamp, metadata } = event;
+    const parentEvents = event.parentEvents;
     let colorFn = pc.white;
 
     switch (level) {
@@ -75,12 +76,20 @@ export class LogOutput {
 
     const parsedMetadata = LogOutput.parseAndFilterMetadata(metadata);
     const metadataStr = metadata
-      ? " " +
-        Object.entries(parsedMetadata)
+      ? Object.entries(parsedMetadata)
           .map(([k, v]) => `${pc.dim(k)}=${v}`)
           .join(" ")
-      : "";
+      : undefined;
 
-    return `${colorFn(`[${level}]`.padEnd(LogOutput.MAX_LEVEL_LENGTH + 2))} | ${timestamp} | ${message}${metadataStr}`;
+    let outputParts = [];
+    outputParts.push(colorFn(`${level}`.padEnd(LogOutput.MAX_LEVEL_LENGTH)));
+    outputParts.push(timestamp);
+    outputParts.push(...parentEvents.map((e) => pc.dim(e.message)));
+    outputParts.push(message);
+    if (metadataStr) {
+      outputParts.push(metadataStr);
+    }
+
+    return outputParts.join(" | ");
   }
 }

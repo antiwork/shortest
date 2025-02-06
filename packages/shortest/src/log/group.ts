@@ -5,25 +5,29 @@ export class LogGroup {
   private parentEvent: LogEvent;
   private log: Log;
 
-  constructor(log: Log, name: string) {
+  constructor(log: Log, name: string, parent?: LogEvent) {
     this.log = log;
-    this.parentEvent = new LogEvent("info", `Group: ${name}`);
-    this.log.log("info", `Start: ${name}`);
+    const parentEvent = new LogEvent("info", name, undefined, parent);
+    this.parentEvent = parentEvent;
   }
 
   info(message: string, metadata?: Record<string, any>) {
     this.log.log("info", message, metadata, this.parentEvent);
+    return this;
   }
 
   warn(message: string, metadata?: Record<string, any>) {
     this.log.log("warn", message, metadata, this.parentEvent);
+    return this;
   }
 
   error(message: string, metadata?: Record<string, any>) {
     this.log.log("error", message, metadata, this.parentEvent);
+    return this;
   }
 
-  end() {
-    this.log.info(`End: ${this.parentEvent.message}`);
+  group(name: string): LogGroup {
+    const group = new LogGroup(this.log, name, this.parentEvent);
+    return group;
   }
 }

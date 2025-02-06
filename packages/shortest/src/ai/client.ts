@@ -37,8 +37,6 @@ export class AIClient {
     this.model = "claude-3-5-sonnet-20241022";
     this.maxMessages = 10;
     this.debug = config.debug;
-    console.log(this.legacyOutputEnabled, "legacyOutputEnabled");
-    console.log(this.debug, "debug");
   }
 
   async processAction(
@@ -124,29 +122,35 @@ export class AIClient {
           betas: ["computer-use-2024-10-22"],
         });
 
-        if (!response?.content) {
-          throw new Error("Invalid response from AI: content is undefined");
-        }
-
         const tokenUsage = {
           input: response.usage.input_tokens,
           output: response.usage.output_tokens,
         };
 
-        if (this.debug) {
+        response.content.forEach((block) => {
+          if (block.type === "text") {
+            this.log.debug("🤖 Received AI response", {
+              response: (block as any).text,
+            });
+          } else if (block.type === "tool_use") {
+            const toolBlock = block as Anthropic.Beta.Messages.BetaToolUseBlock;
+            this.log.debug("🔧 Tool request", {
+              tool: toolBlock.name,
+              input: toolBlock.input,
+            });
+          }
+        });
+        if (this.debug && this.legacyOutputEnabled) {
           response.content.forEach((block) => {
             if (block.type === "text") {
-              this.log.info("Received AI response", { response });
-              if (this.legacyOutputEnabled) {
-                console.log("Response:", response);
-              }
+              this.log.debug("Received AI response", { response });
               if (this.legacyOutputEnabled) {
                 console.log(pc.green("\n🤖 AI:"), pc.dim((block as any).text));
               }
             } else if (block.type === "tool_use") {
               const toolBlock =
                 block as Anthropic.Beta.Messages.BetaToolUseBlock;
-              this.log.info("Tool request", {
+              this.log.debug("Tool request", {
                 tool: toolBlock.name,
                 input: toolBlock.input,
               });

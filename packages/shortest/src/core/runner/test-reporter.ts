@@ -88,9 +88,8 @@ export class TestReporter {
       this.log.info("Token usage", {
         input: tokenUsage.input,
         output: tokenUsage.output,
-        cost: this.calculateCost(tokenUsage.input, tokenUsage.output).toFixed(
-          4,
-        ),
+        costAmount: this.calculateCost(tokenUsage.input, tokenUsage.output),
+        costCurrency: "USD",
       });
     }
     if (this.legacyOutputEnabled) {
@@ -113,7 +112,7 @@ export class TestReporter {
             }, Cost: $${this.calculateCost(
               tokenUsage.input,
               tokenUsage.output,
-            ).toFixed(4)}`,
+            )}`,
           ),
         );
       }
@@ -123,7 +122,7 @@ export class TestReporter {
   private calculateCost(inputTokens: number, outputTokens: number): number {
     const inputCost = (inputTokens / 1000) * this.COST_PER_1K_INPUT_TOKENS;
     const outputCost = (outputTokens / 1000) * this.COST_PER_1K_OUTPUT_TOKENS;
-    return Number((inputCost + outputCost).toFixed(3));
+    return Math.round((inputCost + outputCost) * 1000) / 1000;
   }
 
   private calculateTotalTokenUsage(): {
@@ -175,21 +174,19 @@ export class TestReporter {
 
     const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
 
-    this.log.info("Test summary", {
-      totalTests,
-      passedTests,
-      failedTests,
-      duration,
-      totalInputTokens,
-      totalOutputTokens,
-      totalCost,
-    });
+    const summaryLog = this.log
+      .group("Test summary")
+      .info("Total tests", { count: totalTests })
+      .info("Passed tests", { count: passedTests })
+      .info("Failed tests", { count: failedTests })
+      .info("Duration", { seconds: duration });
 
     if (totalInputTokens > 0 || totalOutputTokens > 0) {
-      this.log.info("Token usage", {
+      summaryLog.info("Token usage", {
         input: totalInputTokens,
         output: totalOutputTokens,
-        cost: totalCost.toFixed(4),
+        costAmount: totalCost.toFixed(4),
+        costCurrency: "USD",
       });
     }
 
