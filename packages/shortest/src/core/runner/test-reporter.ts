@@ -1,6 +1,6 @@
 import { AssertionError } from "assert";
 import pc from "picocolors";
-import { Log } from "../../log/log";
+import { getLogger, Log } from "../../log/index";
 import { TestFunction } from "../../types/test";
 
 export type TestStatus = "pending" | "running" | "passed" | "failed";
@@ -28,9 +28,9 @@ export class TestReporter {
   private legacyOutputEnabled: boolean;
   private log: Log;
 
-  constructor(legacyOutputEnabled: boolean = false) {
+  constructor(legacyOutputEnabled: boolean) {
     this.legacyOutputEnabled = legacyOutputEnabled;
-    this.log = new Log();
+    this.log = getLogger();
   }
 
   initializeTest(test: TestFunction, legacyOutputEnabled: boolean) {
@@ -46,7 +46,7 @@ export class TestReporter {
 
   startFile(file: string) {
     this.currentFile = file;
-    this.log.info("Starting file", { file });
+    this.log.info("📄 Starting file", { file: this.currentFile });
     if (this.legacyOutputEnabled) {
       console.log("📄", pc.blue(pc.bold(this.currentFile)));
     }
@@ -76,6 +76,23 @@ export class TestReporter {
       error,
       tokenUsage,
     });
+    this.log.info(`${this.getStatusIcon(status)} ${this.currentTest.name}`, {
+      status,
+    });
+    if (error) {
+      this.log.error(error.message, {
+        error,
+      });
+    }
+    if (tokenUsage) {
+      this.log.info("Token usage", {
+        input: tokenUsage.input,
+        output: tokenUsage.output,
+        cost: this.calculateCost(tokenUsage.input, tokenUsage.output).toFixed(
+          4,
+        ),
+      });
+    }
     if (this.legacyOutputEnabled) {
       console.log(
         this.getStatusIcon(status),
@@ -167,6 +184,26 @@ export class TestReporter {
       totalOutputTokens,
       totalCost,
     });
+
+    if (totalInputTokens > 0 || totalOutputTokens > 0) {
+      this.log.info("Token usage", {
+        input: totalInputTokens,
+        output: totalOutputTokens,
+        cost: totalCost.toFixed(4),
+      });
+    }
+
+    if (failedTests > 0) {
+      this.log.info("Failed tests");
+      Object.entries(this.testResults)
+        .filter(([, test]) => test.status === "failed")
+        .forEach(([key, test]) => {
+          this.log.info(pc.red(`  ${key}`));
+          if (test.error) {
+            this.log.error(test.error.message);
+          }
+        });
+    }
     if (this.legacyOutputEnabled) {
       console.log("\nTest Summary:");
       console.log(

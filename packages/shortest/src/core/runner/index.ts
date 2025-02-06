@@ -61,7 +61,7 @@ export class TestRunner {
     this.noCache = noCache;
     this.compiler = new TestCompiler();
     this.legacyOutputEnabled = legacyOutputEnabled;
-    this.reporter = new TestReporter();
+    this.reporter = new TestReporter(legacyOutputEnabled);
     this.log = getLogger();
     this.cache = new BaseCache();
   }
@@ -205,15 +205,13 @@ export class TestRunner {
       };
     }
 
-    const aiClient = new AIClient(
-      {
-        apiKey: this.config.anthropicKey,
-        model: "claude-3-5-sonnet-20241022",
-        maxMessages: 10,
-        debug: this.debugAI,
-      },
-      this.debugAI,
-    );
+    const aiClient = new AIClient({
+      apiKey: this.config.anthropicKey,
+      model: "claude-3-5-sonnet-20241022",
+      maxMessages: 10,
+      debug: this.debugAI,
+      legacyOutputEnabled: this.legacyOutputEnabled,
+    });
 
     // First get page state
     const initialState = await browserTool.execute({
@@ -363,9 +361,6 @@ export class TestRunner {
 
       const filePathWithoutCwd = file.replace(this.cwd + "/", "");
       this.reporter.startFile(filePathWithoutCwd);
-      this.log.info("Starting file", {
-        file: filePathWithoutCwd,
-      });
       const compiledPath = await this.compiler.compileFile(file);
       await import(pathToFileURL(compiledPath).href);
 

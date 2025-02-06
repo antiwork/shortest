@@ -14,16 +14,12 @@ export class AIClient {
   private client: Anthropic;
   private model: string;
   private maxMessages: number;
-  private debugMode: boolean;
+  private debug: boolean;
   private log: Log;
   private legacyOutputEnabled: boolean;
 
-  constructor(
-    config: AIConfig,
-    legacyOutputEnabled: boolean,
-    debugMode: boolean = false,
-  ) {
-    this.legacyOutputEnabled = legacyOutputEnabled;
+  constructor(config: AIConfig) {
+    this.legacyOutputEnabled = config.legacyOutputEnabled;
     this.log = getLogger();
     this.log.trace("Initializing AIClient", { config });
     if (!config.apiKey) {
@@ -40,7 +36,9 @@ export class AIClient {
     });
     this.model = "claude-3-5-sonnet-20241022";
     this.maxMessages = 10;
-    this.debugMode = debugMode;
+    this.debug = config.debug;
+    console.log(this.legacyOutputEnabled, "legacyOutputEnabled");
+    console.log(this.debug, "debug");
   }
 
   async processAction(
@@ -105,7 +103,7 @@ export class AIClient {
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
 
     this.log.debug("Making AI request", { prompt });
-    if (this.debugMode && this.legacyOutputEnabled) {
+    if (this.debug && this.legacyOutputEnabled) {
       console.log("Prompt:", prompt);
     }
 
@@ -136,7 +134,7 @@ export class AIClient {
           output: response.usage.output_tokens,
         };
 
-        if (this.debugMode) {
+        if (this.debug) {
           response.content.forEach((block) => {
             if (block.type === "text") {
               this.log.info("Received AI response", { response });
