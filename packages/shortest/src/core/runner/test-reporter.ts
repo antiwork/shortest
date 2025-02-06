@@ -1,6 +1,6 @@
 import { AssertionError } from "assert";
 import pc from "picocolors";
-import { getLogger, Log } from "../../log/index";
+import { getLogger, Log, LogGroup } from "../../log/index";
 import { TestFunction } from "../../types/test";
 
 export type TestStatus = "pending" | "running" | "passed" | "failed";
@@ -22,11 +22,13 @@ export class TestReporter {
   private testResults: Record<string, TestResult> = {};
   private startTime: number = Date.now();
   private currentTest: TestResult | null = null;
+  public currentTestLog: LogGroup | undefined;
+  public currentFileLog: LogGroup | undefined;
+  private legacyOutputEnabled: boolean;
+  private log: Log;
   // token pricing (Claude 3.5 Sonnet)
   private readonly COST_PER_1K_INPUT_TOKENS = 0.003;
   private readonly COST_PER_1K_OUTPUT_TOKENS = 0.015;
-  private legacyOutputEnabled: boolean;
-  private log: Log;
 
   constructor(legacyOutputEnabled: boolean) {
     this.legacyOutputEnabled = legacyOutputEnabled;
@@ -34,26 +36,29 @@ export class TestReporter {
   }
 
   initializeTest(test: TestFunction, legacyOutputEnabled: boolean) {
-    const testName = test.name || "Unnamed Test";
+    const testName = test.name || "Untitled";
+    const testKey = `${this.currentFile}:${testName}`;
+
+    this.currentTestLog = this.currentFileLog?.group(testName);
     this.currentTest = {
       name: testName,
       status: "pending",
     };
-    const testKey = `${this.currentFile}:${testName}`;
     this.testResults[testKey] = this.currentTest;
     this.legacyOutputEnabled = legacyOutputEnabled;
   }
 
   startFile(file: string) {
     this.currentFile = file;
-    this.log.info("📄 Starting file", { file: this.currentFile });
+    this.currentFileLog = this.log.group(file);
+    this.currentFileLog.info("📄 Starting", { file: this.currentFile });
     if (this.legacyOutputEnabled) {
       console.log("📄", pc.blue(pc.bold(this.currentFile)));
     }
   }
 
   startTest(test: TestFunction) {
-    this.log.info(`${this.getStatusIcon("running")} Starting test`, {
+    this.currentTestLog?.info(`${this.getStatusIcon("running")} Starting`, {
       test: test.name,
     });
     if (this.legacyOutputEnabled) {
@@ -76,19 +81,19 @@ export class TestReporter {
     const symbol = status === "passed" ? "✓" : "✗";
     const color = status === "passed" ? pc.green : pc.red;
 
-    this.log.info(`${color(symbol)} Test ended`, {
+    this.currentTestLog?.info(`${color(symbol)} Test ended`, {
       test: this.currentTest.name,
       status,
       error,
       tokenUsage,
     });
     if (error) {
-      this.log.error(error.message, {
+      this.currentTestLog?.error(error.message, {
         error,
       });
     }
     if (tokenUsage) {
-      this.log.info("Token usage", {
+      this.currentTestLog?.info("Token usage", {
         input: tokenUsage.input,
         output: tokenUsage.output,
         costAmount: this.calculateCost(tokenUsage.input, tokenUsage.output),

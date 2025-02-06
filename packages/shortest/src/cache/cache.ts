@@ -19,8 +19,8 @@ export class BaseCache<T extends CacheEntry> {
   protected lockAcquired = false;
   protected lockAcquireFailures = 0;
 
-  constructor() {
-    this.testReporter = new TestReporter();
+  constructor(legacyOutputEnabled: boolean) {
+    this.testReporter = new TestReporter(legacyOutputEnabled);
     this.cacheFile = path.join(process.cwd(), ".shortest", "cache.json");
     this.lockFile = path.join(process.cwd(), ".shortest", "cache.lock");
     this.ensureDirectory();

@@ -63,7 +63,7 @@ export class TestRunner {
     this.legacyOutputEnabled = legacyOutputEnabled;
     this.reporter = new TestReporter(legacyOutputEnabled);
     this.log = getLogger();
-    this.cache = new BaseCache();
+    this.cache = new BaseCache(legacyOutputEnabled);
   }
 
   async initialize() {
@@ -403,7 +403,7 @@ export class TestRunner {
             result.result === "fail" ? new Error(result.reason) : undefined,
             result.tokenUsage,
           );
-          this.log.info("Test executed", {
+          this.reporter.currentTestLog?.info("Test executed", {
             test: test.name,
             ...result,
           });

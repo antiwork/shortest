@@ -1,6 +1,7 @@
 import { LogConfig } from "./config";
 import { Log } from "./log";
 export { Log };
+export { LogGroup } from "./group";
 
 let instance: Log | null = null;
 
