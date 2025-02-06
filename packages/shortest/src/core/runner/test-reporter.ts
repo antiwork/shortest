@@ -53,7 +53,9 @@ export class TestReporter {
   }
 
   startTest(test: TestFunction) {
-    this.log.info("Starting test", { test: test.name });
+    this.log.info(`${this.getStatusIcon("running")} Starting test`, {
+      test: test.name,
+    });
     if (this.legacyOutputEnabled) {
       console.log(this.getStatusIcon("running"), test.name);
     }
@@ -66,18 +68,19 @@ export class TestReporter {
   ) {
     if (!this.currentTest) return;
 
-    this.currentTest.status = status;
-    this.currentTest.error = error;
-    this.currentTest.tokenUsage = tokenUsage;
+    const testKey = `${this.currentFile}:${this.currentTest.name}`;
+    this.testResults[testKey].status = status;
+    this.testResults[testKey].error = error;
+    this.testResults[testKey].tokenUsage = tokenUsage;
 
-    this.log.info("Test ended", {
+    const symbol = status === "passed" ? "✓" : "✗";
+    const color = status === "passed" ? pc.green : pc.red;
+
+    this.log.info(`${color(symbol)} Test ended`, {
       test: this.currentTest.name,
       status,
       error,
       tokenUsage,
-    });
-    this.log.info(`${this.getStatusIcon(status)} ${this.currentTest.name}`, {
-      status,
     });
     if (error) {
       this.log.error(error.message, {
@@ -92,31 +95,26 @@ export class TestReporter {
         costCurrency: "USD",
       });
     }
-    if (this.legacyOutputEnabled) {
-      console.log(
-        this.getStatusIcon(status),
-        status === "passed"
-          ? pc.green(this.currentTest.name)
-          : pc.red(this.currentTest.name),
-      );
 
-      if (error) {
-        console.error(pc.red(error.message));
-      }
+    if (this.legacyOutputEnabled) {
+      console.log(`  ${color(`${symbol} ${status}`)}`);
 
       if (tokenUsage) {
+        const totalTokens = tokenUsage.input + tokenUsage.output;
+        const cost = this.calculateCost(tokenUsage.input, tokenUsage.output);
         console.log(
           pc.dim(
-            `  Token usage - Input: ${tokenUsage.input}, Output: ${
-              tokenUsage.output
-            }, Cost: $${this.calculateCost(
-              tokenUsage.input,
-              tokenUsage.output,
-            )}`,
+            `    ↳ ${totalTokens.toLocaleString()} tokens ` +
+              `(≈ $${cost.toFixed(2)})`,
           ),
         );
       }
+
+      if (error) {
+        this.reportError("Test Execution", error.message);
+      }
     }
+    this.currentTest = null;
   }
 
   private calculateCost(inputTokens: number, outputTokens: number): number {
