@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { parseConfig } from "@/utils/config";
 import { LLMSupportedModels, LLMSupportedProviders } from "@/types";
+import { parseConfig } from "@/utils/config";
 
 describe("Config parsing", () => {
   beforeEach(() => {

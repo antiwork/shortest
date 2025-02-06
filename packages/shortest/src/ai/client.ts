@@ -1,3 +1,5 @@
+import { anthropic } from "@ai-sdk/anthropic";
+import { sleep } from "@anthropic-ai/sdk/core";
 import {
   CoreMessage,
   CoreTool,
@@ -8,21 +10,19 @@ import {
   NoSuchToolError,
   tool,
 } from "ai";
-import { z } from "zod";
 import pc from "picocolors";
+import { z } from "zod";
 import { BrowserTool } from "../browser/core/browser-tool";
 import { ILLMClient, ILLMClientOptions } from "../types/ai";
 import { CacheEntry, CacheStep } from "../types/cache";
-import { SYSTEM_PROMPT } from "./prompts";
-import { anthropic } from "@ai-sdk/anthropic";
 import { createAIClient } from "./client-provider";
+import { SYSTEM_PROMPT } from "./prompts";
+import { llmJSONResponseSchema } from "./validation";
 import { BashTool } from "@/browser/core/bash-tool";
+import { BaseCache } from "@/cache/cache";
 import { TestFunction, ToolResult } from "@/types";
-import { sleep } from "@anthropic-ai/sdk/core";
 import { LLMError } from "@/utils/errors";
 import { formatZodError } from "@/utils/zod";
-import { BaseCache } from "@/cache/cache";
-import { llmJSONResponseSchema } from "./validation";
 
 export class LLMClient implements ILLMClient {
   private client: LanguageModelV1;

@@ -1,7 +1,7 @@
-import { LLMSupportedModels, LLMSupportedProviders } from "@/types";
 import fs from "fs/promises";
 import path from "path";
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { LLMSupportedModels, LLMSupportedProviders } from "@/types";
 
 describe("initializeConfig", () => {
   const tempDir = path.join(process.cwd(), "temp-test-config");

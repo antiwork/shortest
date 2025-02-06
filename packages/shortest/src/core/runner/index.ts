@@ -4,7 +4,6 @@ import pc from "picocolors";
 import { APIRequest, BrowserContext } from "playwright";
 import * as playwright from "playwright";
 import { request, APIRequestContext } from "playwright";
-import { LLMClient } from "@/ai/client";
 import { BrowserTool } from "../../browser/core/browser-tool";
 import { BrowserManager } from "../../browser/manager";
 import { BaseCache } from "../../cache/cache";
@@ -19,6 +18,7 @@ import { CacheEntry } from "../../types/cache";
 import { hashData } from "../../utils/crypto";
 import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
+import { LLMClient } from "@/ai/client";
 
 interface TestResult {
   result: "pass" | "fail";
