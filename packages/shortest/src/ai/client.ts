@@ -3,6 +3,7 @@ import pc from "picocolors";
 import { BashTool } from "../browser/core/bash-tool";
 import { BrowserTool } from "../browser/core/browser-tool";
 import { CONFIG_FILENAME } from "../constants";
+import { getLogger, Log } from "../log/index";
 import { ToolResult } from "../types";
 import { AIConfig, RequestBash, RequestComputer } from "../types/ai";
 import { CacheAction, CacheStep } from "../types/cache";
@@ -14,9 +15,15 @@ export class AIClient {
   private model: string;
   private maxMessages: number;
   private debugMode: boolean;
+  private log: Log;
 
   constructor(config: AIConfig, debugMode: boolean = false) {
+    this.log = getLogger();
+    this.log.trace("Initializing AIClient", { config });
     if (!config.apiKey) {
+      this.log.error(
+        `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
+      );
       throw new Error(
         `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
       );
@@ -86,10 +93,8 @@ export class AIClient {
     tokenUsage: { input: number; output: number };
   }> {
     const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
-    // temp cache store
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
 
-    // Log the conversation
     if (this.debugMode) {
       console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
     }
@@ -111,7 +116,10 @@ export class AIClient {
           tools: [...AITools],
           betas: ["computer-use-2024-10-22"],
         });
-        // Log AI response and tool usage
+
+        if (!response?.content) {
+          throw new Error("Invalid response from AI: content is undefined");
+        }
 
         const tokenUsage = {
           input: response.usage.input_tokens,
@@ -125,7 +133,6 @@ export class AIClient {
             } else if (block.type === "tool_use") {
               const toolBlock =
                 block as Anthropic.Beta.Messages.BetaToolUseBlock;
-
               console.log(pc.yellow("\n🔧 Tool Request:"), {
                 tool: toolBlock.name,
                 input: toolBlock.input,

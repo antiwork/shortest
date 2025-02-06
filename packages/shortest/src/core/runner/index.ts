@@ -9,7 +9,9 @@ import { AIClient } from "../../ai/client";
 import { BrowserTool } from "../../browser/core/browser-tool";
 import { BrowserManager } from "../../browser/manager";
 import { BaseCache } from "../../cache/cache";
+import { TestReporter } from "../../core/runner/test-reporter";
 import { initializeConfig, getConfig } from "../../index";
+import { getLogger, Log } from "../../log/index";
 import {
   TestFunction,
   TestContext,
@@ -18,7 +20,6 @@ import {
 } from "../../types";
 import { CacheEntry } from "../../types/cache";
 import { hashData } from "../../utils/crypto";
-import { Logger } from "../../utils/logger";
 import { TestCompiler } from "../compiler";
 
 interface TestResult {
@@ -35,11 +36,13 @@ export class TestRunner {
   private targetUrl: string | undefined;
   private compiler: TestCompiler;
   private browserManager!: BrowserManager;
-  private logger: Logger;
+  private TestReporter: TestReporter;
+  private log: Log;
   private debugAI: boolean;
   private noCache: boolean;
   private testContext: TestContext | null = null;
   private cache: BaseCache<CacheEntry>;
+  private legacyOutputEnabled: boolean;
 
   constructor(
     cwd: string,
@@ -48,6 +51,7 @@ export class TestRunner {
     targetUrl?: string,
     debugAI = false,
     noCache = false,
+    legacyOutputEnabled = false,
   ) {
     this.cwd = cwd;
     this.exitOnSuccess = exitOnSuccess;
@@ -56,7 +60,9 @@ export class TestRunner {
     this.debugAI = debugAI;
     this.noCache = noCache;
     this.compiler = new TestCompiler();
-    this.logger = new Logger();
+    this.legacyOutputEnabled = legacyOutputEnabled;
+    this.TestReporter = new TestReporter(this.legacyOutputEnabled);
+    this.log = getLogger();
     this.cache = new BaseCache();
   }
 
@@ -83,6 +89,7 @@ export class TestRunner {
   }
 
   private async findTestFiles(pattern?: string): Promise<string[]> {
+    this.log.trace("Finding test files", { pattern });
     const testPattern = pattern || this.config.testPattern || "**/*.test.ts";
 
     const files = await glob(testPattern, {
@@ -91,10 +98,13 @@ export class TestRunner {
     });
 
     if (files.length === 0) {
-      this.logger.error(
+      this.TestReporter.error(
         "Test Discovery",
         `No test files found matching: ${testPattern}`,
       );
+      this.log.error("No test files found matching", {
+        pattern: testPattern,
+      });
       process.exit(1);
     }
 
@@ -344,7 +354,10 @@ export class TestRunner {
       registry.currentFileTests = [];
 
       const filePathWithoutCwd = file.replace(this.cwd + "/", "");
-      this.logger.startFile(filePathWithoutCwd);
+      this.TestReporter.startFile(filePathWithoutCwd);
+      this.log.info("Starting file", {
+        file: filePathWithoutCwd,
+      });
       const compiledPath = await this.compiler.compileFile(file);
       await import(pathToFileURL(compiledPath).href);
 
@@ -357,6 +370,9 @@ export class TestRunner {
             error instanceof Error ? error.message : String(error)
           }`,
         );
+        this.log.error("Browser initialization failed", {
+          error: error instanceof Error ? error.message : String(error),
+        });
         return;
       }
       const testContext = await this.createTestContext(context);
@@ -374,14 +390,22 @@ export class TestRunner {
             await hook(testContext);
           }
 
-          this.logger.initializeTest(test);
-          this.logger.startTest(test);
+          this.TestReporter.initializeTest(test);
+          this.TestReporter.startTest(test);
+
+          this.log.info("Executing test", {
+            test: test.name,
+          });
           const result = await this.executeTest(test, context);
-          this.logger.endTest(
+          this.TestReporter.endTest(
             result.result === "pass" ? "passed" : "failed",
             result.result === "fail" ? new Error(result.reason) : undefined,
             result.tokenUsage,
           );
+          this.log.info("Test executed", {
+            test: test.name,
+            result,
+          });
 
           // Execute afterEach hooks with shared context
           for (const hook of registry.afterEachFns) {
@@ -404,7 +428,7 @@ export class TestRunner {
     } catch (error) {
       this.testContext = null; // Reset on error
       if (error instanceof Error) {
-        this.logger.endTest("failed", error);
+        this.TestReporter.endTest("failed", error);
       }
     }
   }
@@ -414,7 +438,7 @@ export class TestRunner {
     const files = await this.findTestFiles(pattern);
 
     if (files.length === 0) {
-      this.logger.error(
+      this.TestReporter.error(
         "Test Discovery",
         `No test files found matching the pattern: ${pattern || this.config.testPattern}`,
       );
@@ -425,9 +449,9 @@ export class TestRunner {
       await this.executeTestFile(file);
     }
 
-    this.logger.summary();
+    this.TestReporter.summary();
 
-    if (this.exitOnSuccess && this.logger.allTestsPassed()) {
+    if (this.exitOnSuccess && this.TestReporter.allTestsPassed()) {
       process.exit(0);
     } else {
       process.exit(1);

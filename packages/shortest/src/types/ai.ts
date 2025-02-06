@@ -1,5 +1,5 @@
+import { Log } from "../log/index";
 import { ActionInput } from "./browser";
-
 export interface AIConfig {
   apiKey: string;
   model?: string;

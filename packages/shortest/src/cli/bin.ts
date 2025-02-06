@@ -4,6 +4,7 @@ import { getConfig } from "..";
 import { GitHubTool } from "../browser/integrations/github";
 import { ENV_LOCAL_FILENAME } from "../constants";
 import { TestRunner } from "../core/runner";
+import { getLogger } from "../log/index";
 
 process.removeAllListeners("warning");
 process.on("warning", (warning) => {
@@ -20,6 +21,7 @@ const VALID_FLAGS = [
   "--headless",
   "--github-code",
   "--debug-ai",
+  "--legacy-output",
   "--help",
   "--no-cache",
   "-h",
@@ -94,7 +96,7 @@ async function handleGitHubCode(args: string[]) {
 }
 
 function isValidArg(arg: string): boolean {
-  // Check if it's a flag
+  console.log(arg);
   if (VALID_FLAGS.includes(arg)) {
     return true;
   }
@@ -109,7 +111,11 @@ function isValidArg(arg: string): boolean {
 }
 
 async function main() {
+  const log = getLogger({ level: "trace", output: "terminal" });
+  log.trace("Starting Shortest CLI with args", { args: process.argv });
   const args = process.argv.slice(2);
+
+  const legacyOutputEnabled = args.includes("--legacy-output");
 
   if (args[0] === "init") {
     await require("../commands/init").default();
@@ -122,6 +128,7 @@ async function main() {
   }
 
   if (args.includes("--github-code")) {
+    log.trace("Handling GitHub code argument");
     await handleGitHubCode(args);
   }
 
@@ -130,7 +137,10 @@ async function main() {
     .filter((arg) => !isValidArg(arg));
 
   if (invalidFlags.length > 0) {
-    console.error(`Error: Invalid argument(s): ${invalidFlags.join(", ")}`);
+    log.error("Invalid argument(s)", { invalidFlags });
+    if (legacyOutputEnabled) {
+      console.error(`Error: Invalid argument(s): ${invalidFlags.join(", ")}`);
+    }
     process.exit(1);
   }
 
@@ -142,6 +152,7 @@ async function main() {
   const debugAI = args.includes("--debug-ai");
   const noCache = args.includes("--no-cache");
 
+  log.trace("Initializing TestRunner");
   try {
     const runner = new TestRunner(
       process.cwd(),
@@ -150,13 +161,18 @@ async function main() {
       targetUrl,
       debugAI,
       noCache,
+      legacyOutputEnabled,
     );
     await runner.initialize();
     const config = getConfig();
     const testPattern = cliTestPattern || config.testPattern;
+    log.trace("Running tests", { testPattern });
     await runner.runTests(testPattern);
   } catch (error: any) {
-    console.error(pc.red(`\n${error.name}:`), error.message);
+    log.error("Error", { error });
+    if (legacyOutputEnabled) {
+      console.error(pc.red(`\n${error.name}:`), error.message);
+    }
     process.exit(1);
   }
 }

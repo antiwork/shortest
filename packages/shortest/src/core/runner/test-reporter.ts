@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import { AssertionError, TestFunction } from "../types";
+import { AssertionError, TestFunction } from "../../types";
 
 export type TestStatus = "pending" | "running" | "passed" | "failed";
 
@@ -15,32 +15,38 @@ interface TestResult {
   tokenUsage?: TokenMetrics;
 }
 
-export class Logger {
+export class TestReporter {
   private currentFile: string = "";
   private testResults: Record<string, TestResult> = {};
   private startTime: number = Date.now();
   private currentTest: TestResult | null = null;
-
   // token pricing (Claude 3.5 Sonnet)
   private readonly COST_PER_1K_INPUT_TOKENS = 0.003;
   private readonly COST_PER_1K_OUTPUT_TOKENS = 0.015;
 
-  initializeTest(test: TestFunction) {
+  constructor(private legacyOutputEnabled: boolean = false) {}
+
+  initializeTest(test: TestFunction, legacyOutputEnabled: boolean) {
     const testKey = test.name || "Unnamed Test";
     this.currentTest = {
       name: testKey,
       status: "pending",
     };
     this.testResults[testKey] = this.currentTest;
+    this.legacyOutputEnabled = legacyOutputEnabled;
   }
 
   startFile(file: string) {
     this.currentFile = file;
-    console.log("📄", pc.blue(pc.bold(this.currentFile)));
+    if (this.legacyOutputEnabled) {
+      console.log("📄", pc.blue(pc.bold(this.currentFile)));
+    }
   }
 
   startTest(test: TestFunction) {
-    console.log(this.getStatusIcon("running"), test.name);
+    if (this.legacyOutputEnabled) {
+      console.log(this.getStatusIcon("running"), test.name);
+    }
   }
 
   endTest(
@@ -59,17 +65,21 @@ export class Logger {
     const symbol = status === "passed" ? "✓" : "✗";
     const color = status === "passed" ? pc.green : pc.red;
 
-    console.log(`  ${color(`${symbol} ${status}`)}`);
+    if (this.legacyOutputEnabled) {
+      console.log(`  ${color(`${symbol} ${status}`)}`);
+    }
 
     if (tokenUsage) {
       const totalTokens = tokenUsage.input + tokenUsage.output;
       const cost = this.calculateCost(tokenUsage.input, tokenUsage.output);
-      console.log(
-        pc.dim(
-          `    ↳ ${totalTokens.toLocaleString()} tokens ` +
-            `(≈ $${cost.toFixed(2)})`,
-        ),
-      );
+      if (this.legacyOutputEnabled) {
+        console.log(
+          pc.dim(
+            `    ↳ ${totalTokens.toLocaleString()} tokens ` +
+              `(≈ $${cost.toFixed(2)})`,
+          ),
+        );
+      }
     }
 
     if (error) {
@@ -123,6 +133,9 @@ export class Logger {
   }
 
   summary() {
+    if (this.legacyOutputEnabled) {
+      return;
+    }
     const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
     const totalTests = Object.keys(this.testResults).length;
     const failedTests = Object.values(this.testResults).filter(
@@ -170,15 +183,22 @@ export class Logger {
   }
 
   reportStatus(message: string) {
+    if (this.disabled) {
+      return;
+    }
     console.log(pc.blue(`\n${message}`));
   }
 
   error(context: string, message: string) {
-    console.error(pc.red(`\n${context} Error: ${message}`));
+    if (this.legacyOutputEnabled) {
+      console.error(pc.red(`\n${context} Error: ${message}`));
+    }
   }
 
   reportError(context: string, message: string) {
-    console.error(pc.red(`\n${context} Error: ${message}`));
+    if (this.legacyOutputEnabled) {
+      console.error(pc.red(`\n${context} Error: ${message}`));
+    }
   }
 
   reportAssertion(
@@ -186,6 +206,9 @@ export class Logger {
     status: "passed" | "failed",
     error?: AssertionError,
   ): void {
+    if (this.disabled) {
+      return;
+    }
     const icon = status === "passed" ? "✓" : "✗";
     const color = status === "passed" ? "green" : "red";
 
