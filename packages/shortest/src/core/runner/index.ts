@@ -403,10 +403,6 @@ export class TestRunner {
             result.result === "fail" ? new Error(result.reason) : undefined,
             result.tokenUsage,
           );
-          this.reporter.currentTestLog?.info("Test executed", {
-            test: test.name,
-            ...result,
-          });
 
           // Execute afterEach hooks with shared context
           for (const hook of registry.afterEachFns) {
@@ -432,6 +428,7 @@ export class TestRunner {
         this.reporter.endTest("failed", error);
       }
     }
+    this.log.resetGroup();
   }
 
   async runTests(pattern?: string) {

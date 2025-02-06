@@ -1,6 +1,6 @@
 import { AssertionError } from "assert";
 import pc from "picocolors";
-import { getLogger, Log, LogGroup } from "../../log/index";
+import { getLogger, Log } from "../../log/index";
 import { TestFunction } from "../../types/test";
 
 export type TestStatus = "pending" | "running" | "passed" | "failed";
@@ -22,8 +22,6 @@ export class TestReporter {
   private testResults: Record<string, TestResult> = {};
   private startTime: number = Date.now();
   private currentTest: TestResult | null = null;
-  public currentTestLog: LogGroup | undefined;
-  public currentFileLog: LogGroup | undefined;
   private legacyOutputEnabled: boolean;
   private log: Log;
   // token pricing (Claude 3.5 Sonnet)
@@ -39,7 +37,7 @@ export class TestReporter {
     const testName = test.name || "Untitled";
     const testKey = `${this.currentFile}:${testName}`;
 
-    this.currentTestLog = this.currentFileLog?.group(testName);
+    this.log.setGroup(testName);
     this.currentTest = {
       name: testName,
       status: "pending",
@@ -50,15 +48,15 @@ export class TestReporter {
 
   startFile(file: string) {
     this.currentFile = file;
-    this.currentFileLog = this.log.group(file);
-    this.currentFileLog.info("📄 Starting", { file: this.currentFile });
+    this.log.setGroup(file);
+    this.log.info("📄 Starting", { file: this.currentFile });
     if (this.legacyOutputEnabled) {
       console.log("📄", pc.blue(pc.bold(this.currentFile)));
     }
   }
 
   startTest(test: TestFunction) {
-    this.currentTestLog?.info(`${this.getStatusIcon("running")} Starting`, {
+    this.log.info(`${this.getStatusIcon("running")} Starting`, {
       test: test.name,
     });
     if (this.legacyOutputEnabled) {
@@ -81,25 +79,26 @@ export class TestReporter {
     const symbol = status === "passed" ? "✓" : "✗";
     const color = status === "passed" ? pc.green : pc.red;
 
-    this.currentTestLog?.info(`${color(symbol)} Test ended`, {
+    this.log.info(`${color(symbol)} Test ended`, {
       test: this.currentTest.name,
       status,
       error,
       tokenUsage,
     });
     if (error) {
-      this.currentTestLog?.error(error.message, {
+      this.log.error(error.message, {
         error,
       });
     }
     if (tokenUsage) {
-      this.currentTestLog?.info("Token usage", {
+      this.log.info("Token usage", {
         input: tokenUsage.input,
         output: tokenUsage.output,
         costAmount: this.calculateCost(tokenUsage.input, tokenUsage.output),
         costCurrency: "USD",
       });
     }
+    this.log.resetGroup();
 
     if (this.legacyOutputEnabled) {
       console.log(`  ${color(`${symbol} ${status}`)}`);
@@ -177,16 +176,15 @@ export class TestReporter {
       this.calculateTotalTokenUsage();
     const totalTokens = totalInputTokens + totalOutputTokens;
 
-    const summaryLog = this.log
-      .group("Test summary")
-      .info("Total tests", { count: totalTests })
-      .info("Passed tests", { count: passedTests })
-      .info("Failed tests", { count: failedTests })
-      .info("Started at", { timestamp: this.startTime })
-      .info("Duration", { seconds: duration });
+    this.log.setGroup("Summary");
+    this.log.info("Total tests", { count: totalTests });
+    this.log.info("Passed tests", { count: passedTests });
+    this.log.info("Failed tests", { count: failedTests });
+    this.log.info("Started at", { timestamp: this.startTime });
+    this.log.info("Duration", { seconds: duration });
 
     if (totalInputTokens > 0 || totalOutputTokens > 0) {
-      summaryLog.info("Token usage", {
+      this.log.info("Token usage", {
         input: totalInputTokens,
         output: totalOutputTokens,
         costAmount: totalCost.toFixed(4),
@@ -205,6 +203,7 @@ export class TestReporter {
           }
         });
     }
+    this.log.resetGroup();
     if (this.legacyOutputEnabled) {
       console.log(pc.dim("⎯".repeat(50)), "\n");
 

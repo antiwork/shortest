@@ -6,6 +6,7 @@ import { LogOutput } from "./output";
 export class Log {
   private config: LogConfig;
   private events: LogEvent[] = [];
+  private currentGroup?: LogGroup;
 
   constructor(config: Partial<LogConfig> = {}) {
     this.config = LogConfigSchema.parse(config);
@@ -21,18 +22,28 @@ export class Log {
   private outputEvent(event: LogEvent): void {
     if (!this.config.enabled) return;
     if (!this.shouldLog(event.level)) return;
-    console.log(LogOutput.format(event, this.config.output));
+    console.log(LogOutput.render(event, this.config.output, this.currentGroup));
   }
 
-  log(
-    level: LogLevel,
-    message: string,
-    metadata?: Record<string, any>,
-    parent?: LogEvent,
-  ) {
-    const event = new LogEvent(level, message, metadata, parent);
+  log(level: LogLevel, message: string, metadata?: Record<string, any>) {
+    const event = new LogEvent(level, message, metadata);
     this.events.push(event);
     this.outputEvent(event);
+  }
+
+  setGroup(name: string): void {
+    this.log("trace", `Setting group: ${name}`);
+    this.currentGroup = new LogGroup(this, name, this.currentGroup);
+  }
+
+  resetGroup(): void {
+    this.log("trace", "Resetting group");
+    this.currentGroup = this.currentGroup?.parent;
+  }
+
+  resetAllGroups(): void {
+    this.log("trace", "Resetting all groups");
+    this.currentGroup = undefined;
   }
 
   trace(message: string, metadata?: Record<string, any>) {
@@ -53,10 +64,6 @@ export class Log {
 
   error(message: string, metadata?: Record<string, any>) {
     this.log("error", message, metadata);
-  }
-
-  group(name: string): LogGroup {
-    return new LogGroup(this, name);
   }
 
   setOutput(output: "terminal" | "ci" | "json"): void {

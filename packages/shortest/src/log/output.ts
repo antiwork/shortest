@@ -1,6 +1,7 @@
 import pc from "picocolors";
 import { LOG_LEVELS } from "./config";
 import { LogEvent } from "./event";
+import { LogGroup } from "./group";
 
 export class LogOutput {
   private static readonly MAX_LEVEL_LENGTH = Math.max(
@@ -9,18 +10,19 @@ export class LogOutput {
 
   private static readonly FILTERED_KEYS = ["apiKey"];
 
-  static format(
+  static render(
     event: LogEvent,
-    outputType: "terminal" | "ci" | "json",
+    format: "terminal" | "ci" | "json",
+    group?: LogGroup,
   ): string {
-    switch (outputType) {
+    switch (format) {
       case "json":
         return JSON.stringify(event.toJSON());
       case "ci":
         return `::${event.level}::${event.message}`;
       case "terminal":
       default:
-        return LogOutput.formatForTerminal(event);
+        return LogOutput.renderForTerminal(event, group);
     }
   }
 
@@ -51,9 +53,9 @@ export class LogOutput {
     );
   }
 
-  private static formatForTerminal(event: LogEvent): string {
+  private static renderForTerminal(event: LogEvent, group?: LogGroup): string {
     const { level, message, timestamp, metadata } = event;
-    const parentEvents = event.parentEvents;
+    const groupIdentifiers = group ? group.getGroupIdentifiers() : [];
     let colorFn = pc.white;
 
     switch (level) {
@@ -84,7 +86,7 @@ export class LogOutput {
     let outputParts = [];
     outputParts.push(colorFn(`${level}`.padEnd(LogOutput.MAX_LEVEL_LENGTH)));
     outputParts.push(timestamp);
-    outputParts.push(...parentEvents.map((e) => pc.dim(e.message)));
+    outputParts.push(...groupIdentifiers.map((name) => pc.dim(name)));
     outputParts.push(message);
     if (metadataStr) {
       outputParts.push(metadataStr);

@@ -2,32 +2,50 @@ import { LogEvent } from "./event";
 import { Log } from "./log";
 
 export class LogGroup {
-  private parentEvent: LogEvent;
   private log: Log;
+  readonly parent?: LogGroup;
+  readonly name: string;
+  readonly event: LogEvent;
 
-  constructor(log: Log, name: string, parent?: LogEvent) {
+  constructor(log: Log, name: string, parent?: LogGroup) {
     this.log = log;
-    const parentEvent = new LogEvent("info", name, undefined, parent);
-    this.parentEvent = parentEvent;
+    this.name = name;
+    this.parent = parent;
+    this.event = new LogEvent("trace", name);
   }
 
   info(message: string, metadata?: Record<string, any>) {
-    this.log.log("info", message, metadata, this.parentEvent);
+    this.log.log("info", message, metadata);
     return this;
   }
 
   warn(message: string, metadata?: Record<string, any>) {
-    this.log.log("warn", message, metadata, this.parentEvent);
+    this.log.log("warn", message, metadata);
     return this;
   }
 
   error(message: string, metadata?: Record<string, any>) {
-    this.log.log("error", message, metadata, this.parentEvent);
+    this.log.log("error", message, metadata);
     return this;
   }
 
-  group(name: string): LogGroup {
-    const group = new LogGroup(this.log, name, this.parentEvent);
-    return group;
+  debug(message: string, metadata?: Record<string, any>) {
+    this.log.log("debug", message, metadata);
+    return this;
+  }
+
+  trace(message: string, metadata?: Record<string, any>) {
+    this.log.log("trace", message, metadata);
+    return this;
+  }
+
+  getGroupIdentifiers(): string[] {
+    const identifiers: string[] = [];
+    let current: LogGroup | undefined = this;
+    while (current) {
+      identifiers.unshift(current.name);
+      current = current.parent;
+    }
+    return identifiers;
   }
 }
