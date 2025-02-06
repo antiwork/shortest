@@ -108,10 +108,11 @@ export const getInstallCmd = async () => {
     }
   }
 
-  const command = resolveCommand(packageManager.agent, "install", [
-    "@antiwork/shortest",
-    "--save-dev",
-  ]);
+  const command = resolveCommand(
+    packageManager.agent,
+    packageManager.agent === "yarn" ? "add" : "install",
+    ["@antiwork/shortest", "--save-dev"]
+  );
 
   if (!command) {
     throw new Error(`Unsupported package manager: ${packageManager.agent}`);
