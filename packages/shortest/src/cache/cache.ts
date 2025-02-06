@@ -9,7 +9,7 @@ export class BaseCache<T extends CacheEntry> {
   private readonly CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
   private readonly CLEANUP_PROBABILITY = 0.03; // 3% chance
 
-  private TestReporter: TestReporter;
+  private testReporter: TestReporter;
 
   private cacheFile: string;
 
@@ -20,7 +20,7 @@ export class BaseCache<T extends CacheEntry> {
   protected lockAcquireFailures = 0;
 
   constructor() {
-    this.TestReporter = new TestReporter();
+    this.testReporter = new TestReporter();
     this.cacheFile = path.join(process.cwd(), ".shortest", "cache.json");
     this.lockFile = path.join(process.cwd(), ".shortest", "cache.lock");
     this.ensureDirectory();
@@ -49,7 +49,7 @@ export class BaseCache<T extends CacheEntry> {
 
   public async get(key: Record<any, any>): Promise<T | null> {
     if (!(await this.acquireLock())) {
-      this.TestReporter.error(
+      this.testReporter.error(
         "Cache",
         "Failed to acquire lock for set operation",
       );
@@ -60,7 +60,7 @@ export class BaseCache<T extends CacheEntry> {
       const cache = this.read();
       return (cache[hashedKey] as T | undefined) ?? null;
     } catch {
-      this.TestReporter.error("Cache", "Failed to get");
+      this.testReporter.error("Cache", "Failed to get");
       return null;
     } finally {
       this.releaseLock();
@@ -72,7 +72,7 @@ export class BaseCache<T extends CacheEntry> {
     value: Partial<T["data"]>,
   ): Promise<void> {
     if (!(await this.acquireLock())) {
-      this.TestReporter.error(
+      this.testReporter.error(
         "Cache",
         "Failed to acquire lock for set operation",
       );
@@ -93,7 +93,7 @@ export class BaseCache<T extends CacheEntry> {
 
       this.write(cache);
     } catch {
-      this.TestReporter.error("Cache", "Failed to set");
+      this.testReporter.error("Cache", "Failed to set");
       this.reset();
     } finally {
       this.releaseLock();
@@ -107,7 +107,7 @@ export class BaseCache<T extends CacheEntry> {
     try {
       fs.writeFileSync(this.cacheFile, "{}");
     } catch {
-      this.TestReporter.error("Cache", "Failed to reset");
+      this.testReporter.error("Cache", "Failed to reset");
     } finally {
       this.releaseLock();
     }
@@ -117,13 +117,13 @@ export class BaseCache<T extends CacheEntry> {
     try {
       fs.writeFileSync(this.cacheFile, JSON.stringify(cache, null, 2));
     } catch {
-      this.TestReporter.error("Cache", "Failed to write");
+      this.testReporter.error("Cache", "Failed to write");
     }
   }
 
   public async delete(key: Record<string, any>): Promise<void> {
     if (!(await this.acquireLock())) {
-      this.TestReporter.error(
+      this.testReporter.error(
         "Cache",
         "Failed to acquire lock for delete operation",
       );
@@ -138,10 +138,10 @@ export class BaseCache<T extends CacheEntry> {
         delete cache[hashedKey];
         this.write(cache);
       } else {
-        this.TestReporter.error("Cache", "Failed to delete: entry not found");
+        this.testReporter.error("Cache", "Failed to delete: entry not found");
       }
     } catch {
-      this.TestReporter.error("Cache", "Failed to delete");
+      this.testReporter.error("Cache", "Failed to delete");
     }
   }
 
@@ -162,7 +162,7 @@ export class BaseCache<T extends CacheEntry> {
         this.write(cache);
       }
     } catch {
-      this.TestReporter.error("Cache", "Failed to cleanup");
+      this.testReporter.error("Cache", "Failed to cleanup");
     }
   }
 
@@ -182,14 +182,14 @@ export class BaseCache<T extends CacheEntry> {
         this.lockAcquired = true;
         return true;
       } catch {
-        this.TestReporter.error("Cache", "Failed to acquire lock");
+        this.testReporter.error("Cache", "Failed to acquire lock");
         await new Promise((resolve) => setTimeout(resolve, 5));
       }
     }
-    this.TestReporter.error("Cache", "Failed to acquire lock after timeout");
+    this.testReporter.error("Cache", "Failed to acquire lock after timeout");
     this.lockAcquireFailures++;
     if (this.lockAcquireFailures >= 3) {
-      this.TestReporter.error(
+      this.testReporter.error(
         "Cache",
         "Failed to acquire lock 3 times in a row. Releasing lock manually.",
       );
@@ -205,7 +205,7 @@ export class BaseCache<T extends CacheEntry> {
       }
       this.lockAcquired = false;
     } catch {
-      this.TestReporter.error("Cache", "Failed to release lock");
+      this.testReporter.error("Cache", "Failed to release lock");
     }
   }
 
@@ -219,7 +219,7 @@ export class BaseCache<T extends CacheEntry> {
     process.on("SIGINT", releaseLockAndExit);
     process.on("SIGTERM", releaseLockAndExit);
     process.on("uncaughtException", (err) => {
-      this.TestReporter.error("Cache", err.message);
+      this.testReporter.error("Cache", err.message);
       if (this.lockAcquired) {
         releaseLockAndExit();
       }

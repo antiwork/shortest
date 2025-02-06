@@ -36,13 +36,13 @@ export class TestRunner {
   private targetUrl: string | undefined;
   private compiler: TestCompiler;
   private browserManager!: BrowserManager;
-  private TestReporter: TestReporter;
-  private log: Log;
+  private reporter: TestReporter;
   private debugAI: boolean;
   private noCache: boolean;
   private testContext: TestContext | null = null;
   private cache: BaseCache<CacheEntry>;
   private legacyOutputEnabled: boolean;
+  private log: Log;
 
   constructor(
     cwd: string,
@@ -61,7 +61,7 @@ export class TestRunner {
     this.noCache = noCache;
     this.compiler = new TestCompiler();
     this.legacyOutputEnabled = legacyOutputEnabled;
-    this.TestReporter = new TestReporter(this.legacyOutputEnabled);
+    this.reporter = new TestReporter();
     this.log = getLogger();
     this.cache = new BaseCache();
   }
@@ -98,7 +98,7 @@ export class TestRunner {
     });
 
     if (files.length === 0) {
-      this.TestReporter.error(
+      this.reporter.error(
         "Test Discovery",
         `No test files found matching: ${testPattern}`,
       );
@@ -354,7 +354,7 @@ export class TestRunner {
       registry.currentFileTests = [];
 
       const filePathWithoutCwd = file.replace(this.cwd + "/", "");
-      this.TestReporter.startFile(filePathWithoutCwd);
+      this.reporter.startFile(filePathWithoutCwd);
       this.log.info("Starting file", {
         file: filePathWithoutCwd,
       });
@@ -390,14 +390,10 @@ export class TestRunner {
             await hook(testContext);
           }
 
-          this.TestReporter.initializeTest(test);
-          this.TestReporter.startTest(test);
-
-          this.log.info("Executing test", {
-            test: test.name,
-          });
+          this.reporter.initializeTest(test, this.legacyOutputEnabled);
+          this.reporter.startTest(test);
           const result = await this.executeTest(test, context);
-          this.TestReporter.endTest(
+          this.reporter.endTest(
             result.result === "pass" ? "passed" : "failed",
             result.result === "fail" ? new Error(result.reason) : undefined,
             result.tokenUsage,
@@ -428,7 +424,7 @@ export class TestRunner {
     } catch (error) {
       this.testContext = null; // Reset on error
       if (error instanceof Error) {
-        this.TestReporter.endTest("failed", error);
+        this.reporter.endTest("failed", error);
       }
     }
   }
@@ -438,7 +434,7 @@ export class TestRunner {
     const files = await this.findTestFiles(pattern);
 
     if (files.length === 0) {
-      this.TestReporter.error(
+      this.reporter.error(
         "Test Discovery",
         `No test files found matching the pattern: ${pattern || this.config.testPattern}`,
       );
@@ -449,9 +445,9 @@ export class TestRunner {
       await this.executeTestFile(file);
     }
 
-    this.TestReporter.summary();
+    this.reporter.summary();
 
-    if (this.exitOnSuccess && this.TestReporter.allTestsPassed()) {
+    if (this.exitOnSuccess && this.reporter.allTestsPassed()) {
       process.exit(0);
     } else {
       process.exit(1);
