@@ -49,7 +49,10 @@ export class BaseCache<T extends CacheEntry> {
 
   public async get(key: Record<any, any>): Promise<T | null> {
     if (!(await this.acquireLock())) {
-      this.testReporter.error("Cache", "Failed to acquire lock for set operation");
+      this.testReporter.error(
+        "Cache",
+        "Failed to acquire lock for set operation",
+      );
       return null;
     }
     try {
@@ -69,7 +72,10 @@ export class BaseCache<T extends CacheEntry> {
     value: Partial<T["data"]>,
   ): Promise<void> {
     if (!(await this.acquireLock())) {
-      this.testReporter.error("Cache", "Failed to acquire lock for set operation");
+      this.testReporter.error(
+        "Cache",
+        "Failed to acquire lock for set operation",
+      );
       return;
     }
     try {
@@ -117,7 +123,10 @@ export class BaseCache<T extends CacheEntry> {
 
   public async delete(key: Record<string, any>): Promise<void> {
     if (!(await this.acquireLock())) {
-      this.testReporter.error("Cache", "Failed to acquire lock for delete operation");
+      this.testReporter.error(
+        "Cache",
+        "Failed to acquire lock for delete operation",
+      );
       return;
     }
 
