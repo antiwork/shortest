@@ -86,10 +86,9 @@ export class AIClient {
     tokenUsage: { input: number; output: number };
   }> {
     const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
-    // temp cache store
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
-
-    // Log the conversation
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
     if (this.debugMode) {
       console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
     }
@@ -113,9 +112,11 @@ export class AIClient {
         });
         // Log AI response and tool usage
 
+        totalInputTokens += response.usage.input_tokens;
+        totalOutputTokens += response.usage.output_tokens;
         const tokenUsage = {
-          input: response.usage.input_tokens,
-          output: response.usage.output_tokens,
+          input: totalInputTokens,
+          output: totalOutputTokens,
         };
 
         if (this.debugMode) {
