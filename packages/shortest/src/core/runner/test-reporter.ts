@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import { AssertionError, TestFunction } from "../types";
+import { AssertionError, TestFunction } from "../../types";
 
 export type TestStatus = "pending" | "running" | "passed" | "failed";
 
@@ -15,7 +15,7 @@ interface TestResult {
   tokenUsage?: TokenMetrics;
 }
 
-export class Logger {
+export class TestReporter {
   private currentFile: string = "";
   private testResults: Record<string, TestResult> = {};
   private startTime: number = Date.now();
