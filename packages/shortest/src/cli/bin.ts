@@ -18,12 +18,13 @@ process.on("warning", (warning) => {
 });
 
 const VALID_FLAGS = [
-  "--headless",
-  "--github-code",
   "--debug-ai",
-  "--legacy-output",
+  "--github-code",
+  "--headless",
   "--help",
+  "--log-enabled",
   "--no-cache",
+  "--no-legacy-output",
   "-h",
 ];
 const VALID_PARAMS = ["--target", "--secret"];
@@ -96,7 +97,6 @@ async function handleGitHubCode(args: string[]) {
 }
 
 function isValidArg(arg: string): boolean {
-  console.log(arg);
   if (VALID_FLAGS.includes(arg)) {
     return true;
   }
@@ -111,11 +111,17 @@ function isValidArg(arg: string): boolean {
 }
 
 async function main() {
-  const log = getLogger({ level: "trace", output: "terminal" });
-  log.trace("Starting Shortest CLI with args", { args: process.argv });
   const args = process.argv.slice(2);
 
-  const legacyOutputEnabled = args.includes("--legacy-output");
+  const logEnabled = args.includes("--log-enabled");
+  const log = getLogger({
+    level: "trace",
+    output: "terminal",
+    enabled: logEnabled,
+  });
+  log.trace("Starting Shortest CLI", { args: process.argv });
+
+  const legacyOutputEnabled = !args.includes("--no-legacy-output");
 
   if (args[0] === "init") {
     await require("../commands/init").default();
@@ -166,7 +172,6 @@ async function main() {
     await runner.initialize();
     const config = getConfig();
     const testPattern = cliTestPattern || config.testPattern;
-    log.trace("Running tests", { testPattern });
     await runner.runTests(testPattern);
   } catch (error: any) {
     log.error("Error", { error });

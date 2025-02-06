@@ -19,6 +19,7 @@ export class Log {
   }
 
   private outputEvent(event: LogEvent): void {
+    if (!this.config.enabled) return;
     if (!this.shouldLog(event.level)) return;
     console.log(LogOutput.format(event, this.config.output));
   }

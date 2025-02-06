@@ -85,7 +85,10 @@ export class TestRunner {
       };
     }
 
-    this.browserManager = new BrowserManager(this.config);
+    this.browserManager = new BrowserManager(
+      this.config,
+      this.legacyOutputEnabled,
+    );
   }
 
   private async findTestFiles(pattern?: string): Promise<string[]> {
@@ -178,15 +181,20 @@ export class TestRunner {
 
     // Use the shared context
     const testContext = await this.createTestContext(context);
-    const browserTool = new BrowserTool(testContext.page, this.browserManager, {
-      width: 1920,
-      height: 1080,
-      testContext: {
-        ...testContext,
-        currentTest: test,
-        currentStepIndex: 0,
+    const browserTool = new BrowserTool(
+      testContext.page,
+      this.browserManager,
+      this.legacyOutputEnabled,
+      {
+        width: 1920,
+        height: 1080,
+        testContext: {
+          ...testContext,
+          currentTest: test,
+          currentStepIndex: 0,
+        },
       },
-    });
+    );
 
     // this may never happen as the config is initialized before this code is executed
     if (!this.config.anthropicKey) {
@@ -365,11 +373,13 @@ export class TestRunner {
       try {
         context = await this.browserManager.launch();
       } catch (error) {
-        console.error(
-          `Browser initialization failed: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+        if (this.legacyOutputEnabled) {
+          console.error(
+            `Browser initialization failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
         this.log.error("Browser initialization failed", {
           error: error instanceof Error ? error.message : String(error),
         });
@@ -459,7 +469,7 @@ export class TestRunner {
     browserTool: BrowserTool,
   ): Promise<TestResult> {
     const cachedTest = await this.cache.get(test);
-    if (this.debugAI) {
+    if (this.debugAI && this.legacyOutputEnabled) {
       console.log(pc.green(`  Executing cached test ${hashData(test)}`));
     }
 
@@ -503,10 +513,12 @@ export class TestRunner {
         try {
           await browserTool.execute(step.action.input);
         } catch (error) {
-          console.error(
-            `Failed to execute step with input ${step.action.input}`,
-            error,
-          );
+          if (this.legacyOutputEnabled) {
+            console.error(
+              `Failed to execute step with input ${step.action.input}`,
+              error,
+            );
+          }
         }
       }
     }

@@ -133,7 +133,7 @@ export class TestReporter {
   }
 
   summary() {
-    if (this.legacyOutputEnabled) {
+    if (!this.legacyOutputEnabled) {
       return;
     }
     const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
@@ -183,10 +183,9 @@ export class TestReporter {
   }
 
   reportStatus(message: string) {
-    if (this.disabled) {
-      return;
+    if (this.legacyOutputEnabled) {
+      console.log(pc.blue(`\n${message}`));
     }
-    console.log(pc.blue(`\n${message}`));
   }
 
   error(context: string, message: string) {
@@ -206,7 +205,7 @@ export class TestReporter {
     status: "passed" | "failed",
     error?: AssertionError,
   ): void {
-    if (this.disabled) {
+    if (!this.legacyOutputEnabled) {
       return;
     }
     const icon = status === "passed" ? "✓" : "✗";

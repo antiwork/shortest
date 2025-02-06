@@ -16,8 +16,13 @@ export class AIClient {
   private maxMessages: number;
   private debugMode: boolean;
   private log: Log;
+  private legacyOutputEnabled: boolean;
 
-  constructor(config: AIConfig, debugMode: boolean = false) {
+  constructor(
+    config: AIConfig,
+    legacyOutputEnabled: boolean,
+    debugMode: boolean = false,
+  ) {
     this.log = getLogger();
     this.log.trace("Initializing AIClient", { config });
     if (!config.apiKey) {
@@ -68,7 +73,9 @@ export class AIClient {
         attempts++;
         if (attempts === maxRetries) throw error;
 
-        console.log(`  Retry attempt ${attempts}/${maxRetries}`);
+        if (this.legacyOutputEnabled) {
+          console.log(`  Retry attempt ${attempts}/${maxRetries}`);
+        }
         await new Promise((r) => setTimeout(r, 5000 * attempts));
       }
     }
@@ -95,7 +102,7 @@ export class AIClient {
     const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
 
-    if (this.debugMode) {
+    if (this.debugMode && this.legacyOutputEnabled) {
       console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
     }
 
@@ -129,14 +136,18 @@ export class AIClient {
         if (this.debugMode) {
           response.content.forEach((block) => {
             if (block.type === "text") {
-              console.log(pc.green("\n🤖 AI:"), pc.dim((block as any).text));
+              if (this.legacyOutputEnabled) {
+                console.log(pc.green("\n🤖 AI:"), pc.dim((block as any).text));
+              }
             } else if (block.type === "tool_use") {
               const toolBlock =
                 block as Anthropic.Beta.Messages.BetaToolUseBlock;
-              console.log(pc.yellow("\n🔧 Tool Request:"), {
-                tool: toolBlock.name,
-                input: toolBlock.input,
-              });
+              if (this.legacyOutputEnabled) {
+                console.log(pc.yellow("\n🔧 Tool Request:"), {
+                  tool: toolBlock.name,
+                  input: toolBlock.input,
+                });
+              }
             }
           });
         }
@@ -163,7 +174,9 @@ export class AIClient {
                     );
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    console.error("Error executing bash command:", error);
+                    if (this.legacyOutputEnabled) {
+                      console.error("Error executing bash command:", error);
+                    }
                     throw error;
                   }
                 default:
@@ -198,7 +211,9 @@ export class AIClient {
 
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    console.error("Error executing browser tool:", error);
+                    if (this.legacyOutputEnabled) {
+                      console.error("Error executing browser tool:", error);
+                    }
                     throw error;
                   }
               }
@@ -268,7 +283,9 @@ export class AIClient {
         }
       } catch (error: any) {
         if (error.message?.includes("rate_limit")) {
-          console.log("⏳ Rate limited, waiting 60s...");
+          if (this.legacyOutputEnabled) {
+            console.log("⏳ Rate limited, waiting 60s...");
+          }
           await new Promise((resolve) => setTimeout(resolve, 60000));
           continue;
         }

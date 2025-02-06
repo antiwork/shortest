@@ -13,6 +13,7 @@ export const LOG_LEVELS: LogLevel[] = [
 export const LogConfigSchema = z.object({
   level: z.enum(LOG_LEVELS as [string, ...string[]]).default("info"),
   output: z.enum(["terminal", "ci", "json"]).default("terminal"),
+  enabled: z.boolean().default(false),
 });
 
 export type LogConfig = z.infer<typeof LogConfigSchema>;
