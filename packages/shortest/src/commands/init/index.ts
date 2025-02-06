@@ -111,7 +111,7 @@ export const getInstallCmd = async () => {
   const command = resolveCommand(
     packageManager.agent,
     packageManager.agent === "yarn" ? "add" : "install",
-    ["@antiwork/shortest", "--save-dev"]
+    ["@antiwork/shortest", "--save-dev"],
   );
 
   if (!command) {
