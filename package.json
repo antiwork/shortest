@@ -24,6 +24,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.1.6",
     "@clerk/nextjs": "^5.6.0",
     "@faker-js/faker": "^8.4.1",
     "@octokit/rest": "^21.1.0",
