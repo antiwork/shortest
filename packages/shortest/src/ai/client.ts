@@ -296,6 +296,7 @@ export class AIClient {
         }
       } catch (error: any) {
         if (error.message?.includes("rate_limit")) {
+          this.log.debug("⏳ Rate limited, waiting 60s...");
           if (this.legacyOutputEnabled) {
             console.log("⏳ Rate limited, waiting 60s...");
           }

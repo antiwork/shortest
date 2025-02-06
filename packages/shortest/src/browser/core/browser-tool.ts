@@ -729,9 +729,10 @@ export class BrowserTool extends BaseBrowserTool {
     });
 
     writeFileSync(filePath, buffer);
-    this.log.debug("Screenshot saved", { filePath });
+    const filePathWithoutCwd = filePath.replace(process.cwd() + "/", "");
+    this.log.debug("Screenshot saved", { filePath: filePathWithoutCwd });
     if (this.legacyOutputEnabled) {
-      console.log(`  Screenshot saved to: ${filePath}`);
+      console.log(`  Screenshot saved to: ${filePathWithoutCwd}`);
     }
 
     return {

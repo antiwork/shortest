@@ -410,7 +410,7 @@ export class TestRunner {
           );
           this.log.info("Test executed", {
             test: test.name,
-            result,
+            ...result,
           });
 
           // Execute afterEach hooks with shared context
