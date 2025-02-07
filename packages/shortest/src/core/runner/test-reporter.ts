@@ -56,8 +56,9 @@ export class TestReporter {
   }
 
   startTest(test: TestFunction) {
-    this.log.info(`${this.getStatusIcon("running")} Starting`, {
+    this.log.info(test.name ?? "Untitled", {
       test: test.name,
+      status: "running",
     });
     if (this.legacyOutputEnabled) {
       console.log(this.getStatusIcon("running"), test.name);

@@ -4,8 +4,8 @@ import { LogGroup } from "./group";
 import { LogOutput } from "./output";
 
 export class Log {
-  private config: LogConfig;
-  private events: LogEvent[] = [];
+  readonly config: LogConfig;
+  // private events: LogEvent[] = [];
   private currentGroup?: LogGroup;
 
   constructor(config: Partial<LogConfig> = {}) {
@@ -22,12 +22,12 @@ export class Log {
   private outputEvent(event: LogEvent): void {
     if (!this.config.enabled) return;
     if (!this.shouldLog(event.level)) return;
-    console.log(LogOutput.render(event, this.config.output, this.currentGroup));
+    LogOutput.render(event, this.config.format, this.currentGroup);
   }
 
   log(level: LogLevel, message: string, metadata?: Record<string, any>) {
     const event = new LogEvent(level, message, metadata);
-    this.events.push(event);
+    // this.events.push(event);
     this.outputEvent(event);
   }
 
@@ -64,9 +64,5 @@ export class Log {
 
   error(message: string, metadata?: Record<string, any>) {
     this.log("error", message, metadata);
-  }
-
-  setOutput(output: "terminal" | "ci" | "json"): void {
-    this.config.output = output;
   }
 }

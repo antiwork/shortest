@@ -4,6 +4,7 @@ import { getConfig } from "..";
 import { GitHubTool } from "../browser/integrations/github";
 import { ENV_LOCAL_FILENAME } from "../constants";
 import { TestRunner } from "../core/runner";
+import { LogLevel, LogFormat } from "../log/config";
 import { getLogger } from "../log/index";
 
 process.removeAllListeners("warning");
@@ -27,7 +28,7 @@ const VALID_FLAGS = [
   "--no-legacy-output",
   "-h",
 ];
-const VALID_PARAMS = ["--target", "--secret"];
+const VALID_PARAMS = ["--target", "--secret", "--log-level", "--log-format"];
 
 function showHelp() {
   console.log(`
@@ -110,16 +111,27 @@ function isValidArg(arg: string): boolean {
   return false;
 }
 
+function getParamValue(args: string[], paramName: string): string | undefined {
+  const param = args.find((arg) => arg.startsWith(paramName));
+  if (param) {
+    return param.split("=")[1];
+  }
+  return undefined;
+}
+
 async function main() {
   const args = process.argv.slice(2);
 
   const logEnabled = args.includes("--log-enabled");
+  const logLevel = getParamValue(args, "--log-level");
+  const logFormat = getParamValue(args, "--log-format");
   const log = getLogger({
-    level: "trace",
-    output: "terminal",
+    level: logLevel as LogLevel,
+    format: logFormat as LogFormat,
     enabled: logEnabled,
   });
   log.trace("Starting Shortest CLI", { args: process.argv });
+  log.trace("Log config", { ...log.config });
 
   const legacyOutputEnabled = !args.includes("--no-legacy-output");
 

@@ -389,6 +389,7 @@ export class TestRunner {
         }
 
         // Execute tests in order they were defined
+        this.log.info(`Running ${registry.currentFileTests.length} test(s)`);
         for (const test of registry.currentFileTests) {
           // Execute beforeEach hooks with shared context
           for (const hook of registry.beforeEachFns) {
