@@ -3,6 +3,7 @@ import eslintPluginImport from "eslint-plugin-import";
 import eslintPluginPrettier from "eslint-plugin-prettier";
 import typescriptEslintPlugin from "@typescript-eslint/eslint-plugin";
 import typescriptEslintParser from "@typescript-eslint/parser";
+import noConsoleUsageEslintPlugin from "./config/eslint/plugins/no-console-usage.js";
 
 export default [
   {
@@ -52,4 +53,5 @@ export default [
       },
     },
   },
+  ...noConsoleUsageEslintPlugin.configs.recommended,
 ];
