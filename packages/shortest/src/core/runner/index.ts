@@ -18,7 +18,7 @@ import { CacheEntry } from "../../types/cache";
 import { hashData } from "../../utils/crypto";
 import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
-import { LLMClient } from "@/ai/client";
+import { AIClient } from "@/ai/client";
 
 interface TestResult {
   result: "pass" | "fail";
@@ -177,7 +177,7 @@ export class TestRunner {
       },
     });
 
-    const llmClient = new LLMClient({
+    const aiClient = new AIClient({
       config: this.config.ai,
       browserTool,
       isDebugMode: this.debugAI,
@@ -268,7 +268,7 @@ export class TestRunner {
     }
 
     // Execute test with enhanced prompt
-    const resp = await llmClient.processAction(prompt, test);
+    const resp = await aiClient.processAction(prompt, test);
     const { response, metadata } = resp!;
 
     // Execute after function if present

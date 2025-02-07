@@ -13,7 +13,7 @@ import {
 import pc from "picocolors";
 import { z } from "zod";
 import { BrowserTool } from "../browser/core/browser-tool";
-import { ILLMClient, ILLMClientOptions } from "../types/ai";
+import { IAIClient, AIClientOptions } from "../types/ai";
 import { CacheEntry, CacheStep } from "../types/cache";
 import { createAIClient } from "./client-provider";
 import { SYSTEM_PROMPT } from "./prompts";
@@ -24,7 +24,7 @@ import { TestFunction, ToolResult } from "@/types";
 import { LLMError } from "@/utils/errors";
 import { formatZodError } from "@/utils/zod";
 
-export class LLMClient implements ILLMClient {
+export class AIClient implements IAIClient {
   private client: LanguageModelV1;
   private browserTool: BrowserTool;
   private conversationHistory: Array<CoreMessage> = [];
@@ -32,7 +32,7 @@ export class LLMClient implements ILLMClient {
   private cache: BaseCache<CacheEntry>;
   private isDebugMode: boolean;
 
-  constructor({ config, browserTool, isDebugMode, cache }: ILLMClientOptions) {
+  constructor({ config, browserTool, isDebugMode, cache }: AIClientOptions) {
     this.client = createAIClient(config);
     this.browserTool = browserTool;
     // Todo remove it once we have global debug mode access

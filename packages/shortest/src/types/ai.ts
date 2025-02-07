@@ -38,18 +38,18 @@ interface LLMProcessActionResult {
   };
 }
 
-export interface ILLMClientOptions {
+export type RequestBash = RequestTypes.ToolRequest<RequestTypes.Bash>;
+export type RequestComputer = RequestTypes.ToolRequest<RequestTypes.Computer>;
+
+export interface AIClientOptions {
   config: LLMConfig;
   browserTool: BrowserTool;
   isDebugMode: boolean;
   cache: BaseCache<CacheEntry>;
 }
-export interface ILLMClient {
+export interface IAIClient {
   processAction(
     prompt: string,
     test: TestFunction,
   ): Promise<LLMProcessActionResult | void>;
 }
-
-export type RequestBash = RequestTypes.ToolRequest<RequestTypes.Bash>;
-export type RequestComputer = RequestTypes.ToolRequest<RequestTypes.Computer>;

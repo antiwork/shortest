@@ -92,13 +92,13 @@ export const configSchema = rawConfigSchema
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message:
-          "No AI configuration provided. Please provide either 'ai' or the legacy 'anthropicKey'.",
+          "No AI configuration provided. Please provide the 'ai' configuration.",
       });
     } else if (config.ai && config.anthropicKey) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message:
-          "Both 'ai' and legacy 'anthropicKey' are provided. Please use only one.",
+          "Both 'ai' and legacy 'anthropicKey' are provided. Please remove the deprecated 'anthropicKey'.",
       });
     }
   })

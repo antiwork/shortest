@@ -80,7 +80,7 @@ describe("Config parsing", () => {
       testPattern: ".*",
     };
     expect(() => parseConfig(config)).toThrowError(
-      "No AI configuration provided. Please provide either 'ai' or the legacy 'anthropicKey",
+      "No AI configuration provided. Please provide the 'ai' configuration.",
     );
   });
 
@@ -96,7 +96,7 @@ describe("Config parsing", () => {
       },
     };
     expect(() => parseConfig(config)).toThrowError(
-      "Both 'ai' and legacy 'anthropicKey' are provided. Please use only one.",
+      "Both 'ai' and legacy 'anthropicKey' are provided. Please remove the deprecated 'anthropicKey'.",
     );
   });
 
