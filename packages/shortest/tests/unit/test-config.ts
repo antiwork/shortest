@@ -17,7 +17,7 @@ describe("Config parsing", () => {
     expect(() => parseConfig(config)).not.toThrow();
   });
 
-  test("validates correct config with ai configuration", () => {
+  test("validates correct config with AI configuration", () => {
     const config = {
       headless: true,
       baseUrl: "https://example.com",
