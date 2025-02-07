@@ -73,7 +73,7 @@ describe("Config parsing", () => {
     expect(() => parseConfig(config)).not.toThrow();
   });
 
-  test("throws when neither anthropicKey nor ai configuration is provided", () => {
+  test("throws when neither anthropicKey nor AI configuration is provided", () => {
     const config = {
       headless: true,
       baseUrl: "https://example.com",
