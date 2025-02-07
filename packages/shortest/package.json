@@ -36,7 +36,6 @@
     "test:e2e": "node --import tsx --test tests/e2e/index.ts"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "^1.1.6",
     "@ai-sdk/anthropic": "^1.1.6",
     "ai": "^3.4.0",
     "chromium-bidi": "^0.5.24",
