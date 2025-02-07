@@ -105,7 +105,7 @@ export const configSchema = rawConfigSchema
   .transform((config) => {
     if (!config.ai && (config.anthropicKey || process.env.ANTHROPIC_API_KEY)) {
       console.warn(
-        "Legacy configuration detected: the 'anthropicKey' option is deprecated and will be removed in future releases.",
+        "'anthropicKey' option id deprecated. Use the new 'ai' option structure instead.",
       );
       config.ai = {
         provider: LLMSupportedProviders.ANTHROPIC,
