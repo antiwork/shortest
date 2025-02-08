@@ -1,7 +1,7 @@
+import { AnthropicConfig } from "@/types";
 import fs from "fs/promises";
 import path from "path";
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { LLMSupportedModels, LLMSupportedProviders } from "@/types";
 
 describe("initializeConfig", () => {
   const tempDir = path.join(process.cwd(), "temp-test-config");
@@ -23,7 +23,7 @@ describe("initializeConfig", () => {
 
     const { initializeConfig } = await import("@/index");
     const config = await initializeConfig(tempDir);
-    expect(config?.ai?.apiKey).toBe("env-key");
+    expect((config.ai as AnthropicConfig).apiKey).toBe("env-key");
   });
 
   beforeEach(async () => {
@@ -45,9 +45,9 @@ describe("initializeConfig", () => {
         baseUrl: "https://example.com",
         testPattern: ".*",
         ai: {
-          provider: "${LLMSupportedProviders.ANTHROPIC}",
+          provider: "anthropic",
           apiKey: "test-key",
-          model: "${LLMSupportedModels.CLAUDE_3_5_SONNET}"
+          model: "claude-3-5-sonnet"
         }
     }
       `,
@@ -60,9 +60,9 @@ describe("initializeConfig", () => {
       baseUrl: "https://example.com",
       testPattern: ".*",
       ai: {
-        provider: LLMSupportedProviders.ANTHROPIC,
+        provider: "anthropic",
         apiKey: "test-key",
-        model: LLMSupportedModels.CLAUDE_3_5_SONNET,
+        model: "claude-3-5-sonnet",
       },
     });
   });
@@ -76,9 +76,9 @@ describe("initializeConfig", () => {
         baseUrl: 'https://example.com',
         testPattern: '.*',
         ai: {
-          provider: "${LLMSupportedProviders.ANTHROPIC}",
+          provider: "anthropic",
           apiKey: "test-key",
-          model: "${LLMSupportedModels.CLAUDE_3_5_SONNET}"
+          model: "claude-3-5-sonnet"
         }
       }
       `,
@@ -91,9 +91,9 @@ describe("initializeConfig", () => {
       baseUrl: "https://example.com",
       testPattern: ".*",
       ai: {
-        provider: LLMSupportedProviders.ANTHROPIC,
+        provider: "anthropic",
         apiKey: "test-key",
-        model: LLMSupportedModels.CLAUDE_3_5_SONNET,
+        model: "claude-3-5-sonnet",
       },
     });
   });

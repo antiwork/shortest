@@ -1,10 +1,11 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { LLMSupportedModels, LLMSupportedProviders } from "@/types";
 import { parseConfig } from "@/utils/config";
+import { AmazonBedrockProviderConfig } from "@/types";
 
 describe("Config parsing", () => {
   beforeEach(() => {
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.SHORTEST_AWS_REGION;
   });
 
   test("validates correct config with legacy anthropicKey", () => {
@@ -114,12 +115,32 @@ describe("Config parsing", () => {
       baseUrl: "https://example.com",
       testPattern: ".*",
       ai: {
-        provider: LLMSupportedProviders.ANTHROPIC,
+        provider: "anthropic",
         apiKey,
-        model: LLMSupportedModels.CLAUDE_3_5_SONNET, // defaults to CLAUDE_3_5_SONNET automatically
+        model: "claude-3-5-sonnet", // defaults to claude-3-5-sonnet automatically
       },
     };
 
     expect(parseConfig(config)).toEqual(expectedConfig);
+  });
+
+  test("should take ommited provider props from env", () => {
+    process.env.SHORTEST_AWS_REGION = "test-env";
+    const config = {
+      headless: true,
+      baseUrl: "https://example.com",
+      testPattern: ".*",
+      ai: {
+        provider: "amazon-bedrock",
+        // region ommited
+        accessKeyId: "test-key",
+        secretAccessKey: "test-key",
+      },
+    };
+    const parsedConfig = parseConfig(config);
+
+    expect((parsedConfig.ai as AmazonBedrockProviderConfig).region).toBe(
+      "test-env",
+    );
   });
 });

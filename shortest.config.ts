@@ -5,8 +5,7 @@ export default {
   baseUrl: "http://localhost:3000",
   testPattern: "app/**/*.test.ts",
   ai: {
-    provider: "anthropic",
-    apiKey: process.env.ANTHROPIC_API_KEY,
+    provider: "amazon-bedrock",
   },
   mailosaur: {
     apiKey: process.env.MAILOSAUR_API_KEY,

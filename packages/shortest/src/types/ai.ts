@@ -1,22 +1,11 @@
 import { LanguageModelUsage } from "ai";
 import { ActionInput } from "./browser";
 import { CacheEntry } from "./cache";
-import { LLMConfig } from "./config";
+import { AIConfig } from "./config";
 import { TestFunction } from "./test";
 import { LLMJSONResponse } from "@/ai/validation";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BaseCache } from "@/cache/cache";
-
-export enum LLMSupportedProviders {
-  ANTHROPIC = "anthropic",
-}
-export type LLMSupportedProvidersType = `${LLMSupportedProviders}`;
-
-export enum LLMSupportedModels {
-  CLAUDE_3_5_SONNET = "claude-3-5-sonnet",
-}
-export type LLMSupportedModelsType = `${LLMSupportedModels}`;
-
 namespace RequestTypes {
   export interface Bash {
     command: string;
@@ -42,7 +31,7 @@ export type RequestBash = RequestTypes.ToolRequest<RequestTypes.Bash>;
 export type RequestComputer = RequestTypes.ToolRequest<RequestTypes.Computer>;
 
 export interface AIClientOptions {
-  config: LLMConfig;
+  config: AIConfig;
   browserTool: BrowserTool;
   isDebugMode: boolean;
   cache: BaseCache<CacheEntry>;
@@ -53,3 +42,5 @@ export interface IAIClient {
     test: TestFunction,
   ): Promise<LLMProcessActionResult | void>;
 }
+
+export type AISupportedModels = "claude-3-5-sonnet";

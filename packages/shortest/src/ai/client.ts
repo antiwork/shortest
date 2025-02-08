@@ -1,4 +1,5 @@
 import { anthropic } from "@ai-sdk/anthropic";
+import { bedrock } from "@ai-sdk/amazon-bedrock";
 import { sleep } from "@anthropic-ai/sdk/core";
 import {
   CoreMessage,
@@ -15,7 +16,7 @@ import { z } from "zod";
 import { BrowserTool } from "../browser/core/browser-tool";
 import { IAIClient, AIClientOptions } from "../types/ai";
 import { CacheEntry, CacheStep } from "../types/cache";
-import { createAIClient } from "./client-provider";
+import { createAIProvider } from "./provider";
 import { SYSTEM_PROMPT } from "./prompts";
 import { llmJSONResponseSchema } from "./validation";
 import { BashTool } from "@/browser/core/bash-tool";
@@ -23,6 +24,7 @@ import { BaseCache } from "@/cache/cache";
 import { TestFunction, ToolResult } from "@/types";
 import { LLMError } from "@/utils/errors";
 import { formatZodError } from "@/utils/zod";
+import { getConfig } from "..";
 
 export class AIClient implements IAIClient {
   private client: LanguageModelV1;
@@ -32,8 +34,8 @@ export class AIClient implements IAIClient {
   private cache: BaseCache<CacheEntry>;
   private isDebugMode: boolean;
 
-  constructor({ config, browserTool, isDebugMode, cache }: AIClientOptions) {
-    this.client = createAIClient(config);
+  constructor({ browserTool, isDebugMode, cache }: AIClientOptions) {
+    this.client = createAIProvider(getConfig().ai);
     this.browserTool = browserTool;
     // Todo remove it once we have global debug mode access
     this.isDebugMode = isDebugMode;
@@ -41,7 +43,7 @@ export class AIClient implements IAIClient {
   }
 
   async processAction(prompt: string, test: TestFunction) {
-    let MAX_RETRIES = 3;
+    let MAX_RETRIES = 1;
     let retries = 0;
     while (retries < MAX_RETRIES) {
       try {
