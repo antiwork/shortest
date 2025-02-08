@@ -1,5 +1,4 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { bedrock } from "@ai-sdk/amazon-bedrock";
 import { sleep } from "@anthropic-ai/sdk/core";
 import {
   CoreMessage,

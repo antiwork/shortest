@@ -26,7 +26,6 @@ export function createAIProvider(config: AIConfig): LanguageModelV1 {
       const anthropic = createAnthropic({ apiKey: config.apiKey });
       return anthropic(anthropicModelMapping[config.model]) as LanguageModelV1;
     case "amazon-bedrock":
-      console.log("creating bedrock client");
       const amazonBedrock = createAmazonBedrock({
         region: config.region,
         accessKeyId: config.accessKeyId,
