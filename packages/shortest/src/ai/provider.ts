@@ -1,5 +1,5 @@
-import { createAnthropic } from "@ai-sdk/anthropic";
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { LanguageModelV1 } from "ai";
 import { AIConfig } from "@/types";
 

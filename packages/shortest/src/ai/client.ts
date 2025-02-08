@@ -12,18 +12,18 @@ import {
 } from "ai";
 import pc from "picocolors";
 import { z } from "zod";
+import { getConfig } from "..";
 import { BrowserTool } from "../browser/core/browser-tool";
 import { IAIClient, AIClientOptions } from "../types/ai";
 import { CacheEntry, CacheStep } from "../types/cache";
-import { createAIProvider } from "./provider";
 import { SYSTEM_PROMPT } from "./prompts";
+import { createAIProvider } from "./provider";
 import { llmJSONResponseSchema } from "./validation";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BaseCache } from "@/cache/cache";
 import { TestFunction, ToolResult } from "@/types";
 import { LLMError } from "@/utils/errors";
 import { formatZodError } from "@/utils/zod";
-import { getConfig } from "..";
 
 export class AIClient implements IAIClient {
   private client: LanguageModelV1;

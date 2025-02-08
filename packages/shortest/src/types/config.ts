@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { AISupportedModels } from "./ai";
-import { MakeOptional } from "@/utils/types";
 import { getShortestEnv } from "@/utils/get-from-env";
+import { MakeOptional } from "@/utils/types";
 
 // #startblock Mailosaur
 const mailosaurSchema = z
