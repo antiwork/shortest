@@ -18,10 +18,9 @@ export class TestReporter {
   private testsCount: number = 0;
   private passedTestsCount: number = 0;
   private failedTestsCount: number = 0;
-  private totalTestsCount: number = 0;
   private totalInputTokens: number = 0;
   private totalOutputTokens: number = 0;
-  private totalCost: number = 0;
+  private aiCost: number = 0;
 
   constructor(legacyOutputEnabled: boolean) {
     this.legacyOutputEnabled = legacyOutputEnabled;
@@ -45,7 +44,7 @@ export class TestReporter {
   }
 
   onTestStart(test: TestFunction) {
-    this.totalTestsCount++;
+    this.testsCount++;
     // this.reporterLog.setGroup(testName);
     // this.reporterLog.info(testName, {
     //   test: testName,
@@ -65,18 +64,18 @@ export class TestReporter {
         this.failedTestsCount++;
         break;
     }
-    let testCost = 0;
+    let testAICost = 0;
     if (testResult.tokenUsage) {
       this.totalInputTokens += testResult.tokenUsage.input;
       this.totalOutputTokens += testResult.tokenUsage.output;
-      testCost = this.calculateCost(
+      testAICost = this.calculateCost(
         testResult.tokenUsage.input,
         testResult.tokenUsage.output,
       );
-      this.totalCost += testCost;
+      this.aiCost += testAICost;
     }
     // this.reporterLog.info(
-    //   `${testResult.status} (${testResult.reason}) - ${testCost.toFixed(4)} USD`,
+    //   `${testResult.status} (${testResult.reason}) - ${testAICost.toFixed(4)} USD`,
     // );
     // this.reporterLog.resetGroup();
 
@@ -139,7 +138,7 @@ export class TestReporter {
   private summary() {
     const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
     const totalTokens = this.totalInputTokens + this.totalOutputTokens;
-    const totalCost = this.calculateCost(
+    const aiCost = this.calculateCost(
       this.totalInputTokens,
       this.totalOutputTokens,
     );
@@ -155,7 +154,7 @@ export class TestReporter {
     //   this.reporterLog.info("Token usage", {
     //     input: totalInputTokens,
     //     output: totalOutputTokens,
-    //     costAmount: totalCost.toFixed(4),
+    //     costAmount: aiCost.toFixed(4),
     //     costCurrency: "USD",
     //   });
     // }
@@ -182,7 +181,7 @@ export class TestReporter {
         this.failedTestsCount
           ? `${pc.red(`${this.failedTestsCount} failed`)} | ${pc.green(`${this.passedTestsCount} passed`)}`
           : pc.green(`${this.passedTestsCount} passed`),
-        pc.dim(`(${this.totalTestsCount})`),
+        pc.dim(`(${this.testsCount})`),
       );
 
       console.log(
@@ -197,7 +196,7 @@ export class TestReporter {
         pc.bold(" Tokens".padEnd(LABEL_WIDTH)),
         pc.dim(
           `${totalTokens.toLocaleString()} tokens ` +
-            `(≈ $${totalCost.toFixed(2)})`,
+            `(≈ $${aiCost.toFixed(2)})`,
         ),
       );
       console.log("\n", pc.dim("⎯".repeat(50)));
@@ -205,7 +204,7 @@ export class TestReporter {
   }
 
   allTestsPassed(): boolean {
-    return this.totalTestsCount === this.passedTestsCount;
+    return this.testsCount === this.passedTestsCount;
   }
 
   error(context: string, message: string) {

@@ -29,22 +29,23 @@ export const TokenMetricsSchema = z.object({
 });
 export type TokenMetrics = z.infer<typeof TokenMetricsSchema>;
 
+const STATUSES = ["pending", "running", "passed", "failed"] as const;
+export type TestStatus = (typeof STATUSES)[number];
+
 export const TestResultSchema = z.object({
   test: z.any() as z.ZodType<TestFunction>,
-  status: z.enum(["pending", "running", "passed", "failed"]),
+  status: z.enum(STATUSES),
   reason: z.string(),
-  tokenUsage: TokenMetricsSchema.default({}),
+  tokenUsage: TokenMetricsSchema.default({ input: 0, output: 0 }),
 });
 export type TestResult = z.infer<typeof TestResultSchema>;
 
 export const FileResultSchema = z.object({
   filePath: z.string(),
-  status: z.enum(["failed", "passed"]),
+  status: z.enum(STATUSES),
   reason: z.string(),
 });
 export type FileResult = z.infer<typeof FileResultSchema>;
-
-export type TestStatus = "pending" | "running" | "passed" | "failed";
 
 export class TestRunner {
   private config!: ShortestConfig;
@@ -374,7 +375,6 @@ export class TestRunner {
       registry.currentFileTests = [];
 
       const filePathWithoutCwd = file.replace(this.cwd + "/", "");
-      // this.reporter.startFile(filePathWithoutCwd);
       const compiledPath = await this.compiler.compileFile(file);
       await import(pathToFileURL(compiledPath).href);
 
@@ -449,7 +449,6 @@ export class TestRunner {
         };
 
         this.reporter.onFileEnd(fileResult);
-        // this.reporter.endTest("failed", error);
       }
     }
   }
@@ -472,7 +471,6 @@ export class TestRunner {
     }
 
     this.reporter.onRunEnd();
-    // this.reporter.summary();
 
     if (this.exitOnSuccess && this.reporter.allTestsPassed()) {
       process.exit(0);
