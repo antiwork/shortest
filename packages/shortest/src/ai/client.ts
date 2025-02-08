@@ -101,6 +101,8 @@ export class AIClient {
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
 
     this.log.debug("Making AI request", { prompt });
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
     if (this.debug && this.legacyOutputEnabled) {
       console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
     }
@@ -122,9 +124,11 @@ export class AIClient {
           betas: ["computer-use-2024-10-22"],
         });
 
+        totalInputTokens += response.usage.input_tokens;
+        totalOutputTokens += response.usage.output_tokens;
         const tokenUsage = {
-          input: response.usage.input_tokens,
-          output: response.usage.output_tokens,
+          input: totalInputTokens,
+          output: totalOutputTokens,
         };
 
         response.content.forEach((block) => {
@@ -140,20 +144,17 @@ export class AIClient {
             });
           }
         });
+
         if (this.debug && this.legacyOutputEnabled) {
           response.content.forEach((block) => {
             if (block.type === "text") {
-              this.log.debug("Received AI response", { response });
               if (this.legacyOutputEnabled) {
                 console.log(pc.green("\n🤖 AI:"), pc.dim((block as any).text));
               }
             } else if (block.type === "tool_use") {
               const toolBlock =
                 block as Anthropic.Beta.Messages.BetaToolUseBlock;
-              this.log.debug("Tool request", {
-                tool: toolBlock.name,
-                input: toolBlock.input,
-              });
+
               if (this.legacyOutputEnabled) {
                 console.log(pc.yellow("\n🔧 Tool Request:"), {
                   tool: toolBlock.name,
@@ -181,9 +182,9 @@ export class AIClient {
               switch (toolRequest.name) {
                 case "bash":
                   try {
-                    const toolResult = await new BashTool().execute(
-                      (toolRequest as RequestBash).input.command,
-                    );
+                    const toolResult = await new BashTool(
+                      this.legacyOutputEnabled,
+                    ).execute((toolRequest as RequestBash).input.command);
                     return { toolRequest, toolResult };
                   } catch (error) {
                     this.log.error("Error executing bash command:", { error });

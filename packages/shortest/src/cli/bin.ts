@@ -135,7 +135,7 @@ async function main() {
   const legacyOutputEnabled = !args.includes("--no-legacy-output");
 
   if (args[0] === "init") {
-    await require("../commands/init").default();
+    await require("./init").default();
     process.exit(0);
   }
 

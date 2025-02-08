@@ -121,6 +121,7 @@ function createTestChain(
     const tests = nameOrFn.map((name) => {
       const test: TestFunction = {
         name,
+        filePath: "",
         expectations: [],
       };
 
@@ -142,6 +143,7 @@ function createTestChain(
     registry.directTestCounter++;
     const test: TestFunction = {
       name: `Direct Test #${registry.directTestCounter}`,
+      filePath: "",
       directExecution: true,
       fn: nameOrFn,
     };
@@ -162,6 +164,7 @@ function createTestChain(
   // Rest of existing createTestChain implementation...
   const test: TestFunction = {
     name: nameOrFn,
+    filePath: "",
     payload: typeof payloadOrFn === "function" ? undefined : payloadOrFn,
     fn: typeof payloadOrFn === "function" ? payloadOrFn : fn,
     expectations: [],

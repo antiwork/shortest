@@ -39,6 +39,7 @@ export async function main() {
     // Mock test data with callback
     const mockTest: TestFunction = {
       name: "Test with callback",
+      filePath: "test-ai.ts",
       fn: async () => {
         console.log("Callback executed: Main test");
       },

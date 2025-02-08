@@ -5,35 +5,47 @@ import pc from "picocolors";
 import { APIRequest, BrowserContext } from "playwright";
 import * as playwright from "playwright";
 import { request, APIRequestContext } from "playwright";
-import { AIClient } from "../../ai/client";
-import { BrowserTool } from "../../browser/core/browser-tool";
-import { BrowserManager } from "../../browser/manager";
-import { BaseCache } from "../../cache/cache";
-import { TestReporter } from "../../core/runner/test-reporter";
-import { initializeConfig, getConfig } from "../../index";
-import { getLogger, Log } from "../../log/index";
+import { z } from "zod";
+import { AIClient } from "@/ai/client";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { BrowserManager } from "@/browser/manager";
+import { BaseCache } from "@/cache/cache";
+import { TestReporter } from "@/core/runner/test-reporter";
+import { initializeConfig, getConfig } from "@/index";
+import { getLogger, Log } from "@/log/index";
 import {
   TestFunction,
   TestContext,
   ShortestConfig,
   BrowserActionEnum,
-} from "../../types";
-import { CacheEntry } from "../../types/cache";
-import { hashData } from "../../utils/crypto";
-import { TestCompiler } from "../compiler";
+} from "@/types";
+import { CacheEntry } from "@/types/cache";
+import { hashData } from "@/utils/crypto";
+import { TestCompiler } from "@/core/compiler";
 
-export type TestStatus = "pending" | "running" | "passed" | "failed";
+export const TokenMetricsSchema = z.object({
+  input: z.number().default(0),
+  output: z.number().default(0),
+});
+export type TokenMetrics = z.infer<typeof TokenMetricsSchema>;
 
-export interface TokenMetrics {
-  input: number;
-  output: number;
-}
-export interface TestResult {
-  test: TestFunction;
-  status: TestStatus;
-  reason: string;
-  tokenUsage?: TokenMetrics;
-}
+const STATUSES = ["pending", "running", "passed", "failed"] as const;
+export type TestStatus = (typeof STATUSES)[number];
+
+export const TestResultSchema = z.object({
+  test: z.any() as z.ZodType<TestFunction>,
+  status: z.enum(STATUSES),
+  reason: z.string(),
+  tokenUsage: TokenMetricsSchema.default({ input: 0, output: 0 }),
+});
+export type TestResult = z.infer<typeof TestResultSchema>;
+
+export const FileResultSchema = z.object({
+  filePath: z.string(),
+  status: z.enum(STATUSES),
+  reason: z.string(),
+});
+export type FileResult = z.infer<typeof FileResultSchema>;
 
 export class TestRunner {
   private config!: ShortestConfig;
@@ -316,7 +328,7 @@ export class TestRunner {
       (block: any) =>
         block.type === "text" &&
         (block as Anthropic.Beta.Messages.BetaTextBlock).text.includes(
-          '"result":',
+          '"status":',
         ),
     );
 
@@ -369,11 +381,6 @@ export class TestRunner {
       registry.currentFileTests = [];
 
       const filePathWithoutCwd = file.replace(this.cwd + "/", "");
-      this.reporter.onFileStart(
-        filePathWithoutCwd,
-        registry.currentFileTests.length,
-      );
-      // this.reporter.startFile(filePathWithoutCwd);
       const compiledPath = await this.compiler.compileFile(file);
       this.log.trace("Importing compiled file", {
         compiledPath,
@@ -406,6 +413,11 @@ export class TestRunner {
           await hook(testContext);
         }
 
+        this.reporter.onFileStart(
+          filePathWithoutCwd,
+          registry.currentFileTests.length,
+        );
+
         // Execute tests in order they were defined
         this.log.info(`Running ${registry.currentFileTests.length} test(s)`);
         for (const test of registry.currentFileTests) {
@@ -415,15 +427,8 @@ export class TestRunner {
           }
 
           this.reporter.onTestStart(test);
-          // this.reporter.initializeTest(test, this.legacyOutputEnabled);
-          // this.reporter.startTest(test);
           const testResult = await this.executeTest(test, context);
           this.reporter.onTestEnd(testResult);
-          // this.reporter.endTest(
-          //   result.result === "pass" ? "passed" : "failed",
-          //   result.result === "fail" ? new Error(result.reason) : undefined,
-          //   result.tokenUsage,
-          // );
 
           // Execute afterEach hooks with shared context
           for (const hook of registry.afterEachFns) {
@@ -442,16 +447,23 @@ export class TestRunner {
         registry.afterAllFns = [];
         registry.beforeEachFns = [];
         registry.afterEachFns = [];
+        const fileResult: FileResult = {
+          filePath: file,
+          status: "passed",
+          reason: "",
+        };
+        this.reporter.onFileEnd(fileResult);
       }
     } catch (error) {
       this.testContext = null; // Reset on error
       if (error instanceof Error) {
-        this.reporter.onTestEnd({
-          test: test,
+        const fileResult: FileResult = {
+          filePath: file,
           status: "failed",
           reason: error.message,
-        });
-        // this.reporter.endTest("failed", error);
+        };
+
+        this.reporter.onFileEnd(fileResult);
       }
     }
     this.log.resetGroup();
@@ -475,7 +487,6 @@ export class TestRunner {
     }
 
     this.reporter.onRunEnd();
-    // this.reporter.summary();
 
     if (this.exitOnSuccess && this.reporter.allTestsPassed()) {
       process.exit(0);
@@ -556,6 +567,7 @@ export class TestRunner {
       test: test,
       status: "passed",
       reason: "All actions successfully replayed from cache",
+      tokenUsage: { input: 0, output: 0 },
     };
   }
 }

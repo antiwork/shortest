@@ -207,7 +207,7 @@ export class BrowserTool extends BaseBrowserTool {
         !error.message.includes("context was destroyed") &&
         !error.message.includes("Target closed")
       ) {
-        this.log.debug("Cursor initialization failed", { error });
+        this.log.error("Cursor initialization failed", { error });
         if (this.legacyOutputEnabled) {
           console.warn("Cursor initialization failed:", error);
         }
@@ -436,7 +436,7 @@ export class BrowserTool extends BaseBrowserTool {
                 timeout: 5000,
               })
               .catch((error) => {
-                this.log.debug("Load timeout, continuing anyway", { error });
+                this.log.debug("⚠️ Load timeout, continuing anyway", { error });
                 if (this.legacyOutputEnabled) {
                   console.log("⚠️ Load timeout, continuing anyway", error);
                 }
@@ -484,7 +484,7 @@ export class BrowserTool extends BaseBrowserTool {
 
           const seconds = Math.round(duration / 1000);
           this.log.debug(
-            `Waiting for ${seconds} second${seconds !== 1 ? "s" : ""}...`,
+            `⏳ Waiting for ${seconds} second${seconds !== 1 ? "s" : ""}...`,
           );
           if (this.legacyOutputEnabled) {
             console.log(
@@ -548,7 +548,7 @@ export class BrowserTool extends BaseBrowserTool {
                 timeout: 5000,
               })
               .catch((error) => {
-                this.log.debug("Load timeout, continuing anyway", { error });
+                this.log.debug("⚠️ Load timeout, continuing anyway", { error });
                 if (this.legacyOutputEnabled) {
                   console.log("⚠️ Load timeout, continuing anyway", error);
                 }
@@ -834,7 +834,7 @@ export class BrowserTool extends BaseBrowserTool {
         }
       });
     } catch (error) {
-      this.log.error("Failed to cleanup screenshots:", { error });
+      this.log.error("Failed to clean up screenshots:", { error });
       if (this.legacyOutputEnabled) {
         console.warn("Failed to cleanup screenshots:", error);
       }
