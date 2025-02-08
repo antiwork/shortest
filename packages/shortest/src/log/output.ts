@@ -10,38 +10,36 @@ export class LogOutput {
 
   private static readonly FILTERED_KEYS = ["apiKey"];
 
-  static render(event: LogEvent, format: LogFormat, group?: LogGroup): string {
+  static render(
+    event: LogEvent,
+    format: LogFormat,
+    group?: LogGroup,
+  ): void | boolean {
     let output = "";
+
+    const CONSOLE_METHODS = {
+      trace: "log",
+      debug: "debug",
+      info: "info",
+      warn: "warn",
+      error: "error",
+      silent: "log",
+    } as const;
+
+    const consoleMethod = CONSOLE_METHODS[event.level] || "log";
+
     switch (format) {
-      case "pretty":
-        output = LogOutput.renderForPretty(event, group);
-        break;
+      // case "pretty":
+      //   output = LogOutput.renderForPretty(event, group);
+      //   return console[consoleMethod](output);
       case "terminal":
         output = LogOutput.renderForTerminal(event, group);
-        break;
+        return console[consoleMethod](output);
+      case "reporter":
+        return process.stdout.write(`${event.message}\n`);
       default:
         throw new Error(`Unsupported log format: ${format}`);
     }
-    console.log(output);
-    // switch (event.level) {
-    //   case "error":
-    //     console.error(output);
-    //     break;
-    //   case "warn":
-    //     console.warn(output);
-    //     break;
-    //   case "info":
-    //     console.log(output);
-    //     break;
-    //   case "debug":
-    //     console.debug(output);
-    //     break;
-    //   case "trace":
-    //     console.log(output);
-    //     break;
-    //   default:
-    //     console.log(output);
-    // }
   }
 
   private static parseAndFilterMetadata(
@@ -71,50 +69,50 @@ export class LogOutput {
     );
   }
 
-  private static renderForPretty(event: LogEvent, group?: LogGroup): string {
-    const INDENTATION_CHARACTER = " ";
+  // private static renderForPretty(event: LogEvent, group?: LogGroup): string {
+  //   const INDENTATION_CHARACTER = " ";
 
-    const { level, message, metadata } = event;
-    const groupIdentifiers = group ? group.getGroupIdentifiers() : [];
-    let colorFn = pc.white;
+  //   const { level, message, metadata } = event;
+  //   const groupIdentifiers = group ? group.getGroupIdentifiers() : [];
+  //   let colorFn = pc.white;
 
-    switch (level) {
-      case "error":
-        colorFn = pc.red;
-        break;
-      case "warn":
-        colorFn = pc.yellow;
-        break;
-      case "info":
-        colorFn = pc.cyan;
-        break;
-      case "debug":
-        colorFn = pc.green;
-        break;
-      case "trace":
-        colorFn = pc.gray;
-        break;
-    }
+  //   switch (level) {
+  //     case "error":
+  //       colorFn = pc.red;
+  //       break;
+  //     case "warn":
+  //       colorFn = pc.yellow;
+  //       break;
+  //     case "info":
+  //       colorFn = pc.cyan;
+  //       break;
+  //     case "debug":
+  //       colorFn = pc.green;
+  //       break;
+  //     case "trace":
+  //       colorFn = pc.gray;
+  //       break;
+  //   }
 
-    const metadataStr = LogOutput.getMetadataString(metadata);
+  //   const metadataStr = LogOutput.getMetadataString(metadata);
 
-    let outputParts = [];
-    if (groupIdentifiers.length > 0) {
-      outputParts.push(
-        INDENTATION_CHARACTER.repeat(groupIdentifiers.length - 1),
-      );
-    }
-    if (level == "trace") {
-      outputParts.push(colorFn(message));
-    } else {
-      outputParts.push(message);
-    }
-    if (metadataStr) {
-      outputParts.push(" ", metadataStr);
-    }
+  //   let outputParts = [];
+  //   if (groupIdentifiers.length > 0) {
+  //     outputParts.push(
+  //       INDENTATION_CHARACTER.repeat(groupIdentifiers.length - 1),
+  //     );
+  //   }
+  //   if (level == "trace") {
+  //     outputParts.push(colorFn(message));
+  //   } else {
+  //     outputParts.push(message);
+  //   }
+  //   if (metadataStr) {
+  //     outputParts.push(" ", metadataStr);
+  //   }
 
-    return outputParts.join("");
-  }
+  //   return outputParts.join("");
+  // }
 
   private static renderForTerminal(event: LogEvent, group?: LogGroup): string {
     const { level, message, timestamp, metadata } = event;

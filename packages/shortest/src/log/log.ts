@@ -20,7 +20,6 @@ export class Log {
   }
 
   private outputEvent(event: LogEvent): void {
-    if (!this.config.enabled) return;
     if (!this.shouldLog(event.level)) return;
     LogOutput.render(event, this.config.format, this.currentGroup);
   }
