@@ -7,10 +7,10 @@ export interface AIConfig {
   legacyOutputEnabled: boolean;
 }
 
-export interface AIResponse {
-  result: "pass" | "fail";
-  reason: string;
-}
+// export interface AIResponse {
+//   result: "pass" | "fail";
+//   reason: string;
+// }
 
 export interface AIMessage {
   role: "user" | "assistant";

@@ -70,7 +70,7 @@ export class AIClient {
         attempts++;
         if (attempts === maxRetries) throw error;
 
-        this.log.info(`Retry attempt`, { attempt: attempts, maxRetries });
+        this.log.debug(`Retry attempt`, { attempt: attempts, maxRetries });
         if (this.legacyOutputEnabled) {
           console.log(`  Retry attempt ${attempts}/${maxRetries}`);
         }

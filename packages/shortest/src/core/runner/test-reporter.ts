@@ -1,21 +1,14 @@
 import { AssertionError } from "assert";
 import pc from "picocolors";
+import { TestStatus, TestResult } from "@/core/runner/index";
 import { Log } from "@/log/log";
 import { TestFunction } from "@/types/test";
-
-export type TestStatus = "pending" | "running" | "passed" | "failed";
-
-interface TokenMetrics {
-  input: number;
-  output: number;
-}
-
-interface TestResult {
-  name: string;
-  status: TestStatus;
-  error?: Error;
-  tokenUsage?: TokenMetrics;
-}
+// interface TestResult {
+//   name: string;
+//   status: TestStatus;
+//   error?: Error;
+//   tokenUsage?: TokenMetrics;
+// }
 
 export class TestReporter {
   private currentFile: string = "";
@@ -28,99 +21,160 @@ export class TestReporter {
   private readonly COST_PER_1K_INPUT_TOKENS = 0.003;
   private readonly COST_PER_1K_OUTPUT_TOKENS = 0.015;
 
+  private filesCount: number = 0;
+  private testsCount: number = 0;
+  private passedTestsCount: number = 0;
+  private failedTestsCount: number = 0;
+  private totalInputTokens: number = 0;
+  private totalOutputTokens: number = 0;
+  private totalCost: number = 0;
+
   constructor(legacyOutputEnabled: boolean) {
     this.legacyOutputEnabled = legacyOutputEnabled;
     this.reporterLog = getReporterLog();
   }
 
-  initializeTest(test: TestFunction, legacyOutputEnabled: boolean) {
-    const testName = test.name || "Untitled";
-    const testKey = `${this.currentFile}:${testName}`;
+  onRunStart(filesCount: number) {
+    this.filesCount = filesCount;
+    this.reporterLog.info(`Found ${filesCount} test file(s)`);
+  }
 
+  onFileStart(filePath: string, testsCount: number) {
+    this.reporterLog.setGroup(filePath);
+    this.reporterLog.info(`Running ${testsCount} test(s) in ${filePath}`);
+  }
+
+  onTestStart(test: TestFunction) {
+    const testName = test.name;
     this.reporterLog.setGroup(testName);
-    this.currentTest = {
-      name: testName,
-      status: "pending",
-    };
-    this.testResults[testKey] = this.currentTest;
-    this.legacyOutputEnabled = legacyOutputEnabled;
-  }
-
-  startFile(file: string) {
-    this.currentFile = file;
-    this.reporterLog.setGroup(file);
-    this.reporterLog.info("📄 Starting", { file: this.currentFile });
-    if (this.legacyOutputEnabled) {
-      console.log("📄", pc.blue(pc.bold(this.currentFile)));
-    }
-  }
-
-  startTest(test: TestFunction) {
-    this.reporterLog.info(test.name ?? "Untitled", {
-      test: test.name,
-      status: "running",
+    this.reporterLog.info(testName, {
+      test: testName,
+      status: "started",
     });
-    if (this.legacyOutputEnabled) {
-      console.log(this.getStatusIcon("running"), test.name);
-    }
   }
 
-  endTest(
-    status: "passed" | "failed",
-    error?: Error,
-    tokenUsage?: TokenMetrics,
-  ) {
-    if (!this.currentTest) return;
-
-    const testKey = `${this.currentFile}:${this.currentTest.name}`;
-    this.testResults[testKey].status = status;
-    this.testResults[testKey].error = error;
-    this.testResults[testKey].tokenUsage = tokenUsage;
-
-    const symbol = status === "passed" ? "✓" : "✗";
-    const color = status === "passed" ? pc.green : pc.red;
-
-    this.reporterLog.info(`${color(symbol)} Test ended`, {
-      test: this.currentTest.name,
-      status,
-      error,
-      tokenUsage,
-    });
-    if (error) {
-      this.reporterLog.error(error.message, {
-        error,
-      });
-    }
-    if (tokenUsage) {
-      this.reporterLog.info("Token usage", {
-        input: tokenUsage.input,
-        output: tokenUsage.output,
-        costAmount: this.calculateCost(tokenUsage.input, tokenUsage.output),
-        costCurrency: "USD",
-      });
-    }
+  onTestEnd(testResult: TestResult) {
     this.reporterLog.resetGroup();
-
-    if (this.legacyOutputEnabled) {
-      console.log(`  ${color(`${symbol} ${status}`)}`);
-
-      if (tokenUsage) {
-        const totalTokens = tokenUsage.input + tokenUsage.output;
-        const cost = this.calculateCost(tokenUsage.input, tokenUsage.output);
-        console.log(
-          pc.dim(
-            `    ↳ ${totalTokens.toLocaleString()} tokens ` +
-              `(≈ $${cost.toFixed(2)})`,
-          ),
-        );
-      }
-
-      if (error) {
-        this.reportError("Test Execution", error.message);
-      }
+    switch (testResult.status) {
+      case "passed":
+        this.passedTestsCount++;
+        break;
+      case "failed":
+        this.failedTestsCount++;
+        break;
     }
-    this.currentTest = null;
+    let testCost = 0;
+    if (testResult.tokenUsage) {
+      this.totalInputTokens += testResult.tokenUsage.input;
+      this.totalOutputTokens += testResult.tokenUsage.output;
+      testCost = this.calculateCost(
+        testResult.tokenUsage.input,
+        testResult.tokenUsage.output,
+      );
+      this.totalCost += testCost;
+    }
+    this.reporterLog.info(
+      `${testResult.status} (${testResult.reason}) - ${testCost.toFixed(4)} USD`,
+    );
+    this.reporterLog.resetGroup();
   }
+
+  onFileEnd() {
+    this.reporterLog.resetGroup();
+  }
+
+  onRunEnd() {
+    this.summary();
+  }
+
+  // initializeTest(test: TestFunction, legacyOutputEnabled: boolean) {
+  //   const testName = test.name || "Untitled";
+  //   const testKey = `${this.currentFile}:${testName}`;
+
+  //   this.reporterLog.setGroup(testName);
+  //   this.currentTest = {
+  //     name: testName,
+  //     status: "pending",
+  //   };
+  //   this.testResults[testKey] = this.currentTest;
+  //   this.legacyOutputEnabled = legacyOutputEnabled;
+  // }
+
+  // startFile(file: string) {
+  //   this.currentFile = file;
+  //   this.reporterLog.setGroup(file);
+  //   this.reporterLog.info("📄 Starting", { file: this.currentFile });
+  //   if (this.legacyOutputEnabled) {
+  //     console.log("📄", pc.blue(pc.bold(this.currentFile)));
+  //   }
+  // }
+
+  // startTest(test: TestFunction) {
+  //   this.reporterLog.info(test.name ?? "Untitled", {
+  //     test: test.name,
+  //     status: "running",
+  //   });
+  //   if (this.legacyOutputEnabled) {
+  //     console.log(this.getStatusIcon("running"), test.name);
+  //   }
+  // }
+
+  // endTest(
+  //   status: "passed" | "failed",
+  //   reason: string,
+  //   tokenUsage?: TokenMetrics,
+  // ) {
+  //   if (!this.currentTest) return;
+
+  //   const testKey = `${this.currentFile}:${this.currentTest.name}`;
+  //   this.testResults[testKey].status = status;
+  //   this.testResults[testKey].error = error;
+  //   this.testResults[testKey].tokenUsage = tokenUsage;
+
+  //   const symbol = status === "passed" ? "✓" : "✗";
+  //   const color = status === "passed" ? pc.green : pc.red;
+
+  //   this.reporterLog.info(`${color(symbol)} Test ended`, {
+  //     test: this.currentTest.name,
+  //     status,
+  //     error,
+  //     tokenUsage,
+  //   });
+  //   if (error) {
+  //     this.reporterLog.error(error.message, {
+  //       error,
+  //     });
+  //   }
+  //   if (tokenUsage) {
+  //     this.reporterLog.info("Token usage", {
+  //       input: tokenUsage.input,
+  //       output: tokenUsage.output,
+  //       costAmount: this.calculateCost(tokenUsage.input, tokenUsage.output),
+  //       costCurrency: "USD",
+  //     });
+  //   }
+  //   this.reporterLog.resetGroup();
+
+  //   if (this.legacyOutputEnabled) {
+  //     console.log(`  ${color(`${symbol} ${status}`)}`);
+
+  //     if (tokenUsage) {
+  //       const totalTokens = tokenUsage.input + tokenUsage.output;
+  //       const cost = this.calculateCost(tokenUsage.input, tokenUsage.output);
+  //       console.log(
+  //         pc.dim(
+  //           `    ↳ ${totalTokens.toLocaleString()} tokens ` +
+  //             `(≈ $${cost.toFixed(2)})`,
+  //         ),
+  //       );
+  //     }
+
+  //     if (error) {
+  //       this.reportError("Test Execution", error.message);
+  //     }
+  //   }
+  //   this.currentTest = null;
+  // }
 
   private calculateCost(inputTokens: number, outputTokens: number): number {
     const inputCost = (inputTokens / 1000) * this.COST_PER_1K_INPUT_TOKENS;
@@ -165,7 +219,7 @@ export class TestReporter {
     }
   }
 
-  summary() {
+  private summary() {
     const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
     const totalTests = Object.keys(this.testResults).length;
     const failedTests = Object.values(this.testResults).filter(
@@ -236,18 +290,23 @@ export class TestReporter {
     }
   }
 
+  // allTestsPassed(): boolean {
+  //   return !Object.values(this.testResults).some(
+  //     (test) => test.status === "failed",
+  //   );
+  // }
+
   allTestsPassed(): boolean {
-    return !Object.values(this.testResults).some(
-      (test) => test.status === "failed",
-    );
+    return this.failedTestsCount === 0;
   }
 
-  reportStatus(message: string) {
-    this.reporterLog.info("Status", { message });
-    if (this.legacyOutputEnabled) {
-      console.log(pc.dim(message));
-    }
-  }
+  // TODO: unused?
+  // reportStatus(message: string) {
+  //   this.reporterLog.info("Status", { message });
+  //   if (this.legacyOutputEnabled) {
+  //     console.log(pc.dim(message));
+  //   }
+  // }
 
   error(context: string, message: string) {
     this.reporterLog.error(message, { context });
