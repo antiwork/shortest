@@ -13,9 +13,11 @@ export class AIClient {
   private client: Anthropic;
   private model: string;
   private maxMessages: number;
-  private debugMode: boolean;
+  private debug: boolean;
+  private legacyOutputEnabled: boolean;
 
-  constructor(config: AIConfig, debugMode: boolean = false) {
+  constructor(config: AIConfig) {
+    this.legacyOutputEnabled = config.legacyOutputEnabled;
     if (!config.apiKey) {
       throw new Error(
         `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
@@ -27,7 +29,7 @@ export class AIClient {
     });
     this.model = "claude-3-5-sonnet-20241022";
     this.maxMessages = 10;
-    this.debugMode = debugMode;
+    this.debug = config.debug;
   }
 
   async processAction(
@@ -61,7 +63,9 @@ export class AIClient {
         attempts++;
         if (attempts === maxRetries) throw error;
 
-        console.log(`  Retry attempt ${attempts}/${maxRetries}`);
+        if (this.legacyOutputEnabled) {
+          console.log(`  Retry attempt ${attempts}/${maxRetries}`);
+        }
         await new Promise((r) => setTimeout(r, 5000 * attempts));
       }
     }
@@ -89,7 +93,7 @@ export class AIClient {
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
-    if (this.debugMode) {
+    if (this.debug && this.legacyOutputEnabled) {
       console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
     }
 
@@ -119,18 +123,22 @@ export class AIClient {
           output: totalOutputTokens,
         };
 
-        if (this.debugMode) {
+        if (this.debug && this.legacyOutputEnabled) {
           response.content.forEach((block) => {
             if (block.type === "text") {
-              console.log(pc.green("\n🤖 AI:"), pc.dim((block as any).text));
+              if (this.legacyOutputEnabled) {
+                console.log(pc.green("\n🤖 AI:"), pc.dim((block as any).text));
+              }
             } else if (block.type === "tool_use") {
               const toolBlock =
                 block as Anthropic.Beta.Messages.BetaToolUseBlock;
 
-              console.log(pc.yellow("\n🔧 Tool Request:"), {
-                tool: toolBlock.name,
-                input: toolBlock.input,
-              });
+              if (this.legacyOutputEnabled) {
+                console.log(pc.yellow("\n🔧 Tool Request:"), {
+                  tool: toolBlock.name,
+                  input: toolBlock.input,
+                });
+              }
             }
           });
         }
@@ -152,12 +160,14 @@ export class AIClient {
               switch (toolRequest.name) {
                 case "bash":
                   try {
-                    const toolResult = await new BashTool().execute(
-                      (toolRequest as RequestBash).input.command,
-                    );
+                    const toolResult = await new BashTool(
+                      this.legacyOutputEnabled,
+                    ).execute((toolRequest as RequestBash).input.command);
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    console.error("Error executing bash command:", error);
+                    if (this.legacyOutputEnabled) {
+                      console.error("Error executing bash command:", error);
+                    }
                     throw error;
                   }
                 default:
@@ -192,7 +202,9 @@ export class AIClient {
 
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    console.error("Error executing browser tool:", error);
+                    if (this.legacyOutputEnabled) {
+                      console.error("Error executing browser tool:", error);
+                    }
                     throw error;
                   }
               }
@@ -262,7 +274,9 @@ export class AIClient {
         }
       } catch (error: any) {
         if (error.message?.includes("rate_limit")) {
-          console.log("⏳ Rate limited, waiting 60s...");
+          if (this.legacyOutputEnabled) {
+            console.log("⏳ Rate limited, waiting 60s...");
+          }
           await new Promise((resolve) => setTimeout(resolve, 60000));
           continue;
         }

@@ -111,6 +111,8 @@ function isValidArg(arg: string): boolean {
 async function main() {
   const args = process.argv.slice(2);
 
+  const legacyOutputEnabled = !args.includes("--no-legacy-output");
+
   if (args[0] === "init") {
     await require("./init").default();
     process.exit(0);
@@ -130,7 +132,9 @@ async function main() {
     .filter((arg) => !isValidArg(arg));
 
   if (invalidFlags.length > 0) {
-    console.error(`Error: Invalid argument(s): ${invalidFlags.join(", ")}`);
+    if (legacyOutputEnabled) {
+      console.error(`Error: Invalid argument(s): ${invalidFlags.join(", ")}`);
+    }
     process.exit(1);
   }
 
@@ -150,13 +154,16 @@ async function main() {
       targetUrl,
       debugAI,
       noCache,
+      legacyOutputEnabled,
     );
     await runner.initialize();
     const config = getConfig();
     const testPattern = cliTestPattern || config.testPattern;
     await runner.runTests(testPattern);
   } catch (error: any) {
-    console.error(pc.red(`\n${error.name}:`), error.message);
+    if (legacyOutputEnabled) {
+      console.error(pc.red(`\n${error.name}:`), error.message);
+    }
     process.exit(1);
   }
 }

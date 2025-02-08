@@ -1,112 +1,126 @@
 import pc from "picocolors";
-import { AssertionError, TestFunction } from "../../types";
-
-export type TestStatus = "pending" | "running" | "passed" | "failed";
-
-interface TokenMetrics {
-  input: number;
-  output: number;
-}
-
-interface TestResult {
-  name: string;
-  status: TestStatus;
-  error?: Error;
-  tokenUsage?: TokenMetrics;
-}
+import { FileResult, TestResult, TestStatus } from "@/core/runner/index";
+import { AssertionError, TestFunction } from "@/types/test";
 
 export class TestReporter {
   private currentFile: string = "";
   private testResults: Record<string, TestResult> = {};
   private startTime: number = Date.now();
   private currentTest: TestResult | null = null;
+  private legacyOutputEnabled: boolean;
+  // private reporterLog: Log;
 
   // token pricing (Claude 3.5 Sonnet)
   private readonly COST_PER_1K_INPUT_TOKENS = 0.003;
   private readonly COST_PER_1K_OUTPUT_TOKENS = 0.015;
 
-  initializeTest(test: TestFunction) {
-    const testKey = test.name || "Unnamed Test";
-    this.currentTest = {
-      name: testKey,
-      status: "pending",
-    };
-    this.testResults[testKey] = this.currentTest;
+  private filesCount: number = 0;
+  private testsCount: number = 0;
+  private passedTestsCount: number = 0;
+  private failedTestsCount: number = 0;
+  private totalTestsCount: number = 0;
+  private totalInputTokens: number = 0;
+  private totalOutputTokens: number = 0;
+  private totalCost: number = 0;
+
+  constructor(legacyOutputEnabled: boolean) {
+    this.legacyOutputEnabled = legacyOutputEnabled;
+    // this.reporterLog = getReporterLog();
   }
 
-  startFile(file: string) {
-    this.currentFile = file;
-    console.log("📄", pc.blue(pc.bold(this.currentFile)));
-  }
-
-  startTest(test: TestFunction) {
-    console.log(this.getStatusIcon("running"), test.name);
-  }
-
-  endTest(
-    status: "passed" | "failed",
-    error?: Error,
-    tokenUsage?: TokenMetrics,
-  ) {
-    if (!this.currentTest) {
-      throw new Error("Current test not initialized");
+  onRunStart(filesCount: number) {
+    this.filesCount = filesCount;
+    // this.reporterLog.info(`Found ${filesCount} test file(s)`);
+    if (this.legacyOutputEnabled) {
+      console.log(`Found ${filesCount} test file(s)`);
     }
+  }
 
-    this.testResults[this.currentTest.name].status = status;
-    this.testResults[this.currentTest.name].error = error;
-    this.testResults[this.currentTest.name].tokenUsage = tokenUsage;
+  onFileStart(filePath: string, testsCount: number) {
+    // this.reporterLog.setGroup(filePath);
+    // this.reporterLog.info(`Running ${testsCount} test(s) in ${filePath}`);
+    if (this.legacyOutputEnabled) {
+      console.log("📄", pc.blue(pc.bold(filePath)), testsCount, "test(s)");
+    }
+  }
 
-    const symbol = status === "passed" ? "✓" : "✗";
-    const color = status === "passed" ? pc.green : pc.red;
+  onTestStart(test: TestFunction) {
+    this.totalTestsCount++;
+    // this.reporterLog.setGroup(testName);
+    // this.reporterLog.info(testName, {
+    //   test: testName,
+    //   status: "started",
+    // });
+    if (this.legacyOutputEnabled) {
+      console.log(this.getStatusIcon("running"), test.name);
+    }
+  }
 
-    console.log(`  ${color(`${symbol} ${status}`)}`);
-
-    if (tokenUsage) {
-      const totalTokens = tokenUsage.input + tokenUsage.output;
-      const cost = this.calculateCost(tokenUsage.input, tokenUsage.output);
-      console.log(
-        pc.dim(
-          `    ↳ ${totalTokens.toLocaleString()} tokens ` +
-            `(≈ $${cost.toFixed(2)})`,
-        ),
+  onTestEnd(testResult: TestResult) {
+    switch (testResult.status) {
+      case "passed":
+        this.passedTestsCount++;
+        break;
+      case "failed":
+        this.failedTestsCount++;
+        break;
+    }
+    let testCost = 0;
+    if (testResult.tokenUsage) {
+      this.totalInputTokens += testResult.tokenUsage.input;
+      this.totalOutputTokens += testResult.tokenUsage.output;
+      testCost = this.calculateCost(
+        testResult.tokenUsage.input,
+        testResult.tokenUsage.output,
       );
+      this.totalCost += testCost;
     }
+    // this.reporterLog.info(
+    //   `${testResult.status} (${testResult.reason}) - ${testCost.toFixed(4)} USD`,
+    // );
+    // this.reporterLog.resetGroup();
 
-    if (error) {
-      this.reportError("Test Execution", error.message);
+    if (this.legacyOutputEnabled) {
+      const symbol = testResult.status === "passed" ? "✓" : "✗";
+      const color = testResult.status === "passed" ? pc.green : pc.red;
+      console.log(`  ${color(`${symbol} ${testResult.status}`)}`);
+
+      if (testResult.tokenUsage.input > 0 || testResult.tokenUsage.output > 0) {
+        const totalTokens =
+          testResult.tokenUsage.input + testResult.tokenUsage.output;
+        const cost = this.calculateCost(
+          testResult.tokenUsage.input,
+          testResult.tokenUsage.output,
+        );
+        console.log(
+          pc.dim(
+            `    ↳ ${totalTokens.toLocaleString()} tokens ` +
+              `(≈ $${cost.toFixed(2)})`,
+          ),
+        );
+      }
+
+      if (testResult.status === "failed") {
+        this.reportError("Test Execution", testResult.reason);
+      }
     }
+  }
 
-    this.currentTest = null;
+  onFileEnd(fileResult: FileResult) {
+    if (fileResult.status === "failed") {
+      console.error("Error processing file", fileResult.reason);
+    }
+    // this.reporterLog.resetGroup();
+  }
+
+  onRunEnd() {
+    this.summary();
   }
 
   private calculateCost(inputTokens: number, outputTokens: number): number {
     const inputCost = (inputTokens / 1000) * this.COST_PER_1K_INPUT_TOKENS;
     const outputCost = (outputTokens / 1000) * this.COST_PER_1K_OUTPUT_TOKENS;
-    return Number((inputCost + outputCost).toFixed(3));
-  }
-
-  private calculateTotalTokenUsage(): {
-    totalInputTokens: number;
-    totalOutputTokens: number;
-    totalCost: number;
-  } {
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
-
-    Object.values(this.testResults).forEach((result) => {
-      if (result.tokenUsage) {
-        totalInputTokens += result.tokenUsage.input;
-        totalOutputTokens += result.tokenUsage.output;
-      }
-    });
-
-    const totalCost = this.calculateCost(totalInputTokens, totalOutputTokens);
-
-    return {
-      totalInputTokens,
-      totalOutputTokens,
-      totalCost,
-    };
+    return Math.round((inputCost + outputCost) * 1000) / 1000;
   }
 
   private getStatusIcon(status: TestStatus): string {
@@ -122,63 +136,90 @@ export class TestReporter {
     }
   }
 
-  summary() {
+  private summary() {
     const duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
-    const totalTests = Object.keys(this.testResults).length;
-    const failedTests = Object.values(this.testResults).filter(
-      (t) => t.status === "failed",
-    ).length;
-    const passedTests = totalTests - failedTests;
-
-    const { totalInputTokens, totalOutputTokens, totalCost } =
-      this.calculateTotalTokenUsage();
-    const totalTokens = totalInputTokens + totalOutputTokens;
-
-    console.log(pc.dim("⎯".repeat(50)), "\n");
-
-    const LABEL_WIDTH = 15;
-    console.log(
-      pc.bold(" Tests".padEnd(LABEL_WIDTH)),
-      failedTests
-        ? `${pc.red(`${failedTests} failed`)} | ${pc.green(`${passedTests} passed`)}`
-        : pc.green(`${passedTests} passed`),
-      pc.dim(`(${totalTests})`),
+    const totalTokens = this.totalInputTokens + this.totalOutputTokens;
+    const totalCost = this.calculateCost(
+      this.totalInputTokens,
+      this.totalOutputTokens,
     );
 
-    console.log(
-      pc.bold(" Duration".padEnd(LABEL_WIDTH)),
-      pc.dim(`${duration}s`),
-    );
-    console.log(
-      pc.bold(" Started at".padEnd(LABEL_WIDTH)),
-      pc.dim(new Date(this.startTime).toLocaleTimeString()),
-    );
-    console.log(
-      pc.bold(" Tokens".padEnd(LABEL_WIDTH)),
-      pc.dim(
-        `${totalTokens.toLocaleString()} tokens ` +
-          `(≈ $${totalCost.toFixed(2)})`,
-      ),
-    );
-    console.log("\n", pc.dim("⎯".repeat(50)));
+    // this.reporterLog.setGroup("Summary");
+    // this.reporterLog.info("Total tests", { count: totalTests });
+    // this.reporterLog.info("Passed tests", { count: passedTests });
+    // this.reporterLog.info("Failed tests", { count: failedTests });
+    // this.reporterLog.info("Started at", { timestamp: this.startTime });
+    // this.reporterLog.info("Duration", { seconds: duration });
+
+    // if (totalInputTokens > 0 || totalOutputTokens > 0) {
+    //   this.reporterLog.info("Token usage", {
+    //     input: totalInputTokens,
+    //     output: totalOutputTokens,
+    //     costAmount: totalCost.toFixed(4),
+    //     costCurrency: "USD",
+    //   });
+    // }
+
+    // if (this.failedTestsCount > 0) {
+    //   // this.reporterLog.info("Failed tests");
+    //   Object.entries(this.testResults)
+    //     .filter(([, test]) => test.status === "failed")
+    //     .forEach(([key, test]) => {
+    //       this.reporterLog.info(pc.red(`  ${key}`));
+    //       if (test.error) {
+    //         this.reporterLog.error(test.error.message);
+    //       }
+    //     });
+    // }
+    // this.reporterLog.resetGroup();
+
+    if (this.legacyOutputEnabled) {
+      console.log(pc.dim("⎯".repeat(50)), "\n");
+
+      const LABEL_WIDTH = 15;
+      console.log(
+        pc.bold(" Tests".padEnd(LABEL_WIDTH)),
+        this.failedTestsCount
+          ? `${pc.red(`${this.failedTestsCount} failed`)} | ${pc.green(`${this.passedTestsCount} passed`)}`
+          : pc.green(`${this.passedTestsCount} passed`),
+        pc.dim(`(${this.totalTestsCount})`),
+      );
+
+      console.log(
+        pc.bold(" Duration".padEnd(LABEL_WIDTH)),
+        pc.dim(`${duration}s`),
+      );
+      console.log(
+        pc.bold(" Started at".padEnd(LABEL_WIDTH)),
+        pc.dim(new Date(this.startTime).toLocaleTimeString()),
+      );
+      console.log(
+        pc.bold(" Tokens".padEnd(LABEL_WIDTH)),
+        pc.dim(
+          `${totalTokens.toLocaleString()} tokens ` +
+            `(≈ $${totalCost.toFixed(2)})`,
+        ),
+      );
+      console.log("\n", pc.dim("⎯".repeat(50)));
+    }
   }
 
   allTestsPassed(): boolean {
-    return !Object.values(this.testResults).some(
-      (test) => test.status === "failed",
-    );
-  }
-
-  reportStatus(message: string) {
-    console.log(pc.blue(`\n${message}`));
+    return this.totalTestsCount === this.passedTestsCount;
   }
 
   error(context: string, message: string) {
-    console.error(pc.red(`\n${context} Error: ${message}`));
+    // this.reporterLog.error(message, { context });
+    if (this.legacyOutputEnabled) {
+      console.error(pc.red(`${context}: ${message}`));
+    }
   }
 
   reportError(context: string, message: string) {
-    console.error(pc.red(`\n${context} Error: ${message}`));
+    // this.reporterLog.error(message, { context });
+    if (this.legacyOutputEnabled) {
+      console.error(pc.red(`${context}: ${message}`));
+    }
   }
 
   reportAssertion(
@@ -186,15 +227,15 @@ export class TestReporter {
     status: "passed" | "failed",
     error?: AssertionError,
   ): void {
-    const icon = status === "passed" ? "✓" : "✗";
-    const color = status === "passed" ? "green" : "red";
-
-    console.log(pc[color](`${icon} ${step}`));
-
-    if (error && status === "failed") {
-      console.log(pc.red(`  Expected: ${error.matcherResult?.expected}`));
-      console.log(pc.red(`  Received: ${error.matcherResult?.actual}`));
-      console.log(pc.red(`  Message: ${error.message}`));
+    if (this.legacyOutputEnabled) {
+      if (status === "passed") {
+        console.log(pc.green(`✓ ${step}`));
+      } else {
+        console.log(pc.red(`✗ ${step}`));
+        if (error) {
+          console.log(pc.dim(error.message));
+        }
+      }
     }
   }
 }

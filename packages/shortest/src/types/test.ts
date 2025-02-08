@@ -45,7 +45,8 @@ export type TestContext = {
 export type TestHookFunction = (context: TestContext) => Promise<void>;
 
 export interface TestFunction {
-  name?: string;
+  name: string | "Untitled";
+  filePath: string;
   payload?: any;
   fn?: (context: TestContext) => Promise<void>;
   expectations?: {
