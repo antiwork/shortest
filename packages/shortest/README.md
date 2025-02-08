@@ -3,6 +3,7 @@
 AI-powered natural language end-to-end testing framework.
 
 ## Features
+
 - Natural language test writing
 - AI-powered test execution using Claude computer use API
 - Built on Playwright
@@ -19,6 +20,7 @@ npx @antiwork/shortest init
 ```
 
 This will:
+
 - Automatically install the `@antiwork/shortest` package as a dev dependency if it is not already installed
 - Create a default `shortest.config.ts` file with boilerplate configuration
 - Generate a `.env.local` file (unless present) with placeholders for required environment variables, such as `ANTHROPIC_API_KEY`
@@ -35,7 +37,10 @@ export default {
   headless: false,
   baseUrl: "http://localhost:3000",
   testPattern: "**/*.test.ts",
-  anthropicKey: process.env.ANTHROPIC_API_KEY,
+  ai: {
+    provider: "anthropic",
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  },
 } satisfies ShortestConfig;
 ```
 
@@ -217,13 +222,15 @@ GITHUB_TOTP_SECRET=your_secret  # Only for GitHub auth tests
 You can run Shortest in your CI/CD pipeline by running tests in headless mode. Make sure to add your Anthropic API key to your CI/CD pipeline secrets.
 
 ## Documentation
+
 Visit [GitHub](https://github.com/anti-work/shortest) for detailed docs
 
 ### Prerequisites
+
 - React >=19.0.0 (if using with Next.js 14+ or Server Actions)
 - Next.js >=14.0.0 (if using Server Components/Actions)
 
 ⚠️ **Known Issues**
+
 - Using this package with React 18 in Next.js 14+ projects may cause type conflicts with Server Actions and `useFormStatus`
 - If you encounter type errors with form actions or React hooks, ensure you're using React 19
-
