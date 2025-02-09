@@ -5,8 +5,7 @@ import { BrowserManager } from "@/browser/manager";
 import { getConfig, initializeConfig } from "@/index";
 
 export async function main() {
-  const legacyOutputEnabled = true;
-  const browserManager = new BrowserManager(getConfig(), legacyOutputEnabled);
+  const browserManager = new BrowserManager(getConfig());
   const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -24,17 +23,11 @@ export async function main() {
     console.log("🚀 Launching browser...");
     const context = await browserManager.launch();
     const page = context.pages()[0];
-    const legacyOutputEnabled = true;
 
-    const browserTool = new BrowserTool(
-      page,
-      browserManager,
-      legacyOutputEnabled,
-      {
-        width: 1920,
-        height: 940,
-      },
-    );
+    const browserTool = new BrowserTool(page, browserManager, {
+      width: 1920,
+      height: 940,
+    });
 
     // Simple test prompt
     const testPrompt = `Validate the sign in functionality of the website you see`;

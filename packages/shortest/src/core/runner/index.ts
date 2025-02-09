@@ -56,11 +56,9 @@ export class TestRunner {
   private compiler: TestCompiler;
   private browserManager!: BrowserManager;
   private reporter: TestReporter;
-  private debugAI: boolean;
   private noCache: boolean;
   private testContext: TestContext | null = null;
   private cache: BaseCache<CacheEntry>;
-  private legacyOutputEnabled: boolean;
   private log: Log;
 
   constructor(
@@ -68,21 +66,17 @@ export class TestRunner {
     exitOnSuccess = true,
     forceHeadless = false,
     targetUrl?: string,
-    debugAI = false,
     noCache = false,
-    legacyOutputEnabled = false,
   ) {
     this.cwd = cwd;
     this.exitOnSuccess = exitOnSuccess;
     this.forceHeadless = forceHeadless;
     this.targetUrl = targetUrl;
-    this.debugAI = debugAI;
     this.noCache = noCache;
     this.compiler = new TestCompiler();
-    this.legacyOutputEnabled = legacyOutputEnabled;
-    this.reporter = new TestReporter(legacyOutputEnabled);
+    this.reporter = new TestReporter();
     this.log = getLogger();
-    this.cache = new BaseCache(legacyOutputEnabled);
+    this.cache = new BaseCache();
   }
 
   async initialize() {
@@ -104,10 +98,7 @@ export class TestRunner {
       };
     }
 
-    this.browserManager = new BrowserManager(
-      this.config,
-      this.legacyOutputEnabled,
-    );
+    this.browserManager = new BrowserManager(this.config);
   }
 
   private async findTestFiles(pattern?: string): Promise<string[]> {
@@ -198,20 +189,15 @@ export class TestRunner {
 
     // Use the shared context
     const testContext = await this.createTestContext(context);
-    const browserTool = new BrowserTool(
-      testContext.page,
-      this.browserManager,
-      this.legacyOutputEnabled,
-      {
-        width: 1920,
-        height: 1080,
-        testContext: {
-          ...testContext,
-          currentTest: test,
-          currentStepIndex: 0,
-        },
+    const browserTool = new BrowserTool(testContext.page, this.browserManager, {
+      width: 1920,
+      height: 1080,
+      testContext: {
+        ...testContext,
+        currentTest: test,
+        currentStepIndex: 0,
       },
-    );
+    });
 
     // this may never happen as the config is initialized before this code is executed
     if (!this.config.anthropicKey) {
@@ -227,8 +213,6 @@ export class TestRunner {
       apiKey: this.config.anthropicKey,
       model: "claude-3-5-sonnet-20241022",
       maxMessages: 10,
-      debug: this.debugAI,
-      legacyOutputEnabled: this.legacyOutputEnabled,
     });
 
     // First get page state
@@ -392,16 +376,9 @@ export class TestRunner {
         this.log.trace("Launching browser");
         context = await this.browserManager.launch();
       } catch (error) {
-        this.log.error("Browser initialization failed", {
+        this.log.error(pc.red("Browser initialization failed"), {
           error: error instanceof Error ? error.message : String(error),
         });
-        if (this.legacyOutputEnabled) {
-          console.error(
-            `Browser initialization failed: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
-        }
         return;
       }
       this.log.trace("Creating test context");
@@ -503,10 +480,7 @@ export class TestRunner {
     this.log.debug("Running cached test", {
       hash: hashData(test),
     });
-    this.log.debug("Executing cached test", { hash: hashData(test) });
-    if (this.debugAI && this.legacyOutputEnabled) {
-      console.log(pc.green(`  Executing cached test ${hashData(test)}`));
-    }
+    this.log.debug("💾", "Executing cached test", { hash: hashData(test) });
 
     const steps = cachedTest?.data.steps
       // do not take screenshots in cached mode
@@ -550,16 +524,10 @@ export class TestRunner {
         try {
           await browserTool.execute(step.action.input);
         } catch (error) {
-          this.log.error("Failed to execute step", {
+          this.log.error(pc.red("Failed to execute step"), {
             input: step.action.input,
             error,
           });
-          if (this.legacyOutputEnabled) {
-            console.error(
-              `Failed to execute step with input ${step.action.input}`,
-              error,
-            );
-          }
         }
       }
     }

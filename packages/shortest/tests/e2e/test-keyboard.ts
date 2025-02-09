@@ -4,8 +4,7 @@ import { BrowserManager } from "@/browser/manager";
 import { getConfig, initializeConfig } from "@/index";
 
 export async function main() {
-  const legacyOutputEnabled = true;
-  const browserManager = new BrowserManager(getConfig(), legacyOutputEnabled);
+  const browserManager = new BrowserManager(getConfig());
 
   try {
     await initializeConfig();
@@ -13,15 +12,10 @@ export async function main() {
     const context = await browserManager.launch();
     const page = context.pages()[0];
 
-    const browserTool = new BrowserTool(
-      page,
-      browserManager,
-      legacyOutputEnabled,
-      {
-        width: 1920,
-        height: 1080,
-      },
-    );
+    const browserTool = new BrowserTool(page, browserManager, {
+      width: 1920,
+      height: 1080,
+    });
 
     // Test 1: Test Page_Down key (exactly as AI sends it)
     console.log(pc.cyan("\nTest 1: Testing Page_Down key"));

@@ -14,13 +14,11 @@ export class AIClient {
   private client: Anthropic;
   private model: string;
   private maxMessages: number;
-  private debug: boolean;
   private log: Log;
-  private legacyOutputEnabled: boolean;
 
   constructor(config: AIConfig) {
-    this.legacyOutputEnabled = config.legacyOutputEnabled;
     this.log = getLogger();
+    this.log.setGroup("🤖");
     this.log.trace("Initializing AIClient", { config });
     if (!config.apiKey) {
       this.log.error(
@@ -36,7 +34,6 @@ export class AIClient {
     });
     this.model = "claude-3-5-sonnet-20241022";
     this.maxMessages = 10;
-    this.debug = config.debug;
   }
 
   async processAction(
@@ -70,13 +67,11 @@ export class AIClient {
         attempts++;
         if (attempts === maxRetries) throw error;
 
-        this.log.debug(`Retry attempt`, { attempt: attempts, maxRetries });
-        if (this.legacyOutputEnabled) {
-          console.log(`  Retry attempt ${attempts}/${maxRetries}`);
-        }
+        this.log.debug("Retry attempt", { attempt: attempts, maxRetries });
         await new Promise((r) => setTimeout(r, 5000 * attempts));
       }
     }
+    this.log.resetGroup();
     return {
       finalResponse: null,
       tokenUsage: { input: 0, output: 0 },
@@ -100,12 +95,8 @@ export class AIClient {
     const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
 
-    this.log.debug("Making AI request", { prompt });
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
-    if (this.debug && this.legacyOutputEnabled) {
-      console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
-    }
     messages.push({
       role: "user",
       content: prompt,
@@ -114,7 +105,7 @@ export class AIClient {
     while (true) {
       try {
         await new Promise((resolve) => setTimeout(resolve, 1000));
-
+        this.log.trace("Making request", { prompt });
         const response = await this.client.beta.messages.create({
           model: this.model,
           max_tokens: 1024,
@@ -133,37 +124,17 @@ export class AIClient {
 
         response.content.forEach((block) => {
           if (block.type === "text") {
-            this.log.debug("🤖 Received AI response", {
+            this.log.debug("Response", {
               response: (block as any).text,
             });
           } else if (block.type === "tool_use") {
             const toolBlock = block as Anthropic.Beta.Messages.BetaToolUseBlock;
-            this.log.debug("🔧 Tool request", {
+            this.log.debug("Tool request", {
               tool: toolBlock.name,
               input: toolBlock.input,
             });
           }
         });
-
-        if (this.debug && this.legacyOutputEnabled) {
-          response.content.forEach((block) => {
-            if (block.type === "text") {
-              if (this.legacyOutputEnabled) {
-                console.log(pc.green("\n🤖 AI:"), pc.dim((block as any).text));
-              }
-            } else if (block.type === "tool_use") {
-              const toolBlock =
-                block as Anthropic.Beta.Messages.BetaToolUseBlock;
-
-              if (this.legacyOutputEnabled) {
-                console.log(pc.yellow("\n🔧 Tool Request:"), {
-                  tool: toolBlock.name,
-                  input: toolBlock.input,
-                });
-              }
-            }
-          });
-        }
 
         // Add assistant's response to history
         messages.push({
@@ -182,15 +153,12 @@ export class AIClient {
               switch (toolRequest.name) {
                 case "bash":
                   try {
-                    const toolResult = await new BashTool(
-                      this.legacyOutputEnabled,
-                    ).execute((toolRequest as RequestBash).input.command);
+                    const toolResult = await new BashTool().execute(
+                      (toolRequest as RequestBash).input.command,
+                    );
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    this.log.error("Error executing bash command:", { error });
-                    if (this.legacyOutputEnabled) {
-                      console.error("Error executing bash command:", error);
-                    }
+                    this.log.error("Error executing bash command", { error });
                     throw error;
                   }
                 default:
@@ -225,10 +193,7 @@ export class AIClient {
 
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    this.log.error("Error executing browser tool:", { error });
-                    if (this.legacyOutputEnabled) {
-                      console.error("Error executing browser tool:", error);
-                    }
+                    this.log.error("Error executing browser tool", { error });
                     throw error;
                   }
               }
@@ -298,17 +263,11 @@ export class AIClient {
         }
       } catch (error: any) {
         if (error.message?.includes("rate_limit")) {
-          this.log.debug("⏳ Rate limited, waiting 60s...");
-          if (this.legacyOutputEnabled) {
-            console.log("⏳ Rate limited, waiting 60s...");
-          }
+          this.log.debug("⏳", "Rate limited, waiting 60s...");
           await new Promise((resolve) => setTimeout(resolve, 60000));
           continue;
         }
         this.log.error("AI request failed", { error });
-        if (this.legacyOutputEnabled) {
-          console.log("Error:", error);
-        }
         throw error;
       }
     }

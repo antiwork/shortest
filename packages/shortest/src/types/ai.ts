@@ -3,8 +3,6 @@ export interface AIConfig {
   apiKey: string;
   model?: string;
   maxMessages?: number;
-  debug: boolean;
-  legacyOutputEnabled: boolean;
 }
 
 export interface AIResponse {

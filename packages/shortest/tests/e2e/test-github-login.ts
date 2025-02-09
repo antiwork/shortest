@@ -5,8 +5,7 @@ import { BrowserManager } from "@/browser/manager";
 import { getConfig, initializeConfig } from "@/index";
 
 export async function main() {
-  const legacyOutputEnabled = true;
-  const browserManager = new BrowserManager(getConfig(), legacyOutputEnabled);
+  const browserManager = new BrowserManager(getConfig());
   const githubTool = new GitHubTool();
 
   try {
@@ -14,16 +13,10 @@ export async function main() {
     console.log(pc.cyan("\n🚀 First browser launch..."));
     let context = await browserManager.launch();
     let page = context.pages()[0];
-    const legacyOutputEnabled = true;
-    let browserTool = new BrowserTool(
-      page,
-      browserManager,
-      legacyOutputEnabled,
-      {
-        width: 1920,
-        height: 1080,
-      },
-    );
+    let browserTool = new BrowserTool(page, browserManager, {
+      width: 1920,
+      height: 1080,
+    });
 
     console.log(pc.cyan("\n🧹 Clearing initial session..."));
     const result = await browserTool.execute({ action: "clear_session" });
@@ -35,7 +28,7 @@ export async function main() {
     page = context.pages()[0];
 
     // Update browserTool with new page
-    browserTool = new BrowserTool(page, browserManager, legacyOutputEnabled, {
+    browserTool = new BrowserTool(page, browserManager, {
       width: 1920,
       height: 1080,
     });
@@ -69,15 +62,10 @@ export async function main() {
     const newPage = newContext.pages()[0];
 
     // Create new browser tool instance
-    browserTool = new BrowserTool(
-      newPage,
-      browserManager,
-      legacyOutputEnabled,
-      {
-        width: 1920,
-        height: 1080,
-      },
-    );
+    browserTool = new BrowserTool(newPage, browserManager, {
+      width: 1920,
+      height: 1080,
+    });
 
     console.log(pc.cyan("\n🔍 Checking login state..."));
     await newPage.goto("http://localhost:3000");

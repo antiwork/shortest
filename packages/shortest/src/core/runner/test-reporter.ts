@@ -3,13 +3,10 @@ import { FileResult, TestResult, TestStatus } from "@/core/runner/index";
 import { getLogger, Log } from "@/log/index";
 import { AssertionError, TestFunction } from "@/types/test";
 export class TestReporter {
-  private currentFile: string = "";
-  private testResults: Record<string, TestResult> = {};
   private startTime: number = Date.now();
-  private currentTest: TestResult | null = null;
-  private legacyOutputEnabled: boolean;
   private reporterLog: Log;
   private log: Log;
+
   // token pricing (Claude 3.5 Sonnet)
   private readonly COST_PER_1K_INPUT_TOKENS = 0.003;
   private readonly COST_PER_1K_OUTPUT_TOKENS = 0.015;
@@ -22,8 +19,7 @@ export class TestReporter {
   private totalOutputTokens: number = 0;
   private aiCost: number = 0;
 
-  constructor(legacyOutputEnabled: boolean) {
-    this.legacyOutputEnabled = legacyOutputEnabled;
+  constructor() {
     this.reporterLog = getReporterLog();
     this.log = getLogger();
   }
@@ -44,19 +40,12 @@ export class TestReporter {
       testsCount,
       "test(s)",
     );
-    if (this.legacyOutputEnabled) {
-      console.log("📄", pc.blue(pc.bold(filePath)), testsCount, "test(s)");
-    }
   }
 
   onTestStart(test: TestFunction) {
     this.log.setGroup(test.name);
     this.reporterLog.setGroup(test.name);
-
     this.reporterLog.info(this.getStatusIcon("running"), test.name);
-    if (this.legacyOutputEnabled) {
-      console.log(this.getStatusIcon("running"), test.name);
-    }
   }
 
   onTestEnd(testResult: TestResult) {
@@ -97,35 +86,17 @@ export class TestReporter {
       );
     }
 
-    if (this.legacyOutputEnabled) {
-      console.log(`  ${color(`${symbol} ${testResult.status}`)}`);
-
-      if (testResult.tokenUsage.input > 0 || testResult.tokenUsage.output > 0) {
-        const totalTokens =
-          testResult.tokenUsage.input + testResult.tokenUsage.output;
-        const cost = this.calculateCost(
-          testResult.tokenUsage.input,
-          testResult.tokenUsage.output,
-        );
-        console.log(
-          pc.dim(
-            `    ↳ ${totalTokens.toLocaleString()} tokens ` +
-              `(≈ $${cost.toFixed(2)})`,
-          ),
-        );
-      }
-
-      if (testResult.status === "failed") {
-        this.reportError("Test Execution", testResult.reason);
-      }
+    if (testResult.status === "failed") {
+      this.error("Test Execution", testResult.reason);
     }
+
     this.reporterLog.resetGroup();
     this.log.resetGroup();
   }
 
   onFileEnd(fileResult: FileResult) {
     if (fileResult.status === "failed") {
-      this.reporterLog.error("Error processing file", fileResult.reason);
+      this.error("Error processing file", fileResult.reason);
     }
     this.reporterLog.resetGroup();
     this.log.resetGroup();
@@ -190,36 +161,6 @@ export class TestReporter {
     );
     this.reporterLog.info("\n", pc.dim("⎯".repeat(50)));
     this.reporterLog.resetGroup();
-
-    if (this.legacyOutputEnabled) {
-      console.log(pc.dim("⎯".repeat(50)), "\n");
-
-      const LABEL_WIDTH = 15;
-      console.log(
-        pc.bold(" Tests".padEnd(LABEL_WIDTH)),
-        this.failedTestsCount
-          ? `${pc.red(`${this.failedTestsCount} failed`)} | ${pc.green(`${this.passedTestsCount} passed`)}`
-          : pc.green(`${this.passedTestsCount} passed`),
-        pc.dim(`(${this.testsCount})`),
-      );
-
-      console.log(
-        pc.bold(" Duration".padEnd(LABEL_WIDTH)),
-        pc.dim(`${duration}s`),
-      );
-      console.log(
-        pc.bold(" Started at".padEnd(LABEL_WIDTH)),
-        pc.dim(new Date(this.startTime).toLocaleTimeString()),
-      );
-      console.log(
-        pc.bold(" Tokens".padEnd(LABEL_WIDTH)),
-        pc.dim(
-          `${totalTokens.toLocaleString()} tokens ` +
-            `(≈ $${aiCost.toFixed(2)})`,
-        ),
-      );
-      console.log("\n", pc.dim("⎯".repeat(50)));
-    }
   }
 
   allTestsPassed(): boolean {
@@ -228,16 +169,6 @@ export class TestReporter {
 
   error(context: string, message: string) {
     this.reporterLog.error(pc.red(`${context}: ${message}`));
-    if (this.legacyOutputEnabled) {
-      console.error(pc.red(`${context}: ${message}`));
-    }
-  }
-
-  reportError(context: string, message: string) {
-    this.reporterLog.error(pc.red(`${context}: ${message}`));
-    if (this.legacyOutputEnabled) {
-      console.error(pc.red(`${context}: ${message}`));
-    }
   }
 
   reportAssertion(

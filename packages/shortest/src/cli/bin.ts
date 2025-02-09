@@ -137,8 +137,6 @@ async function main() {
   log.trace("Starting Shortest CLI", { args: process.argv });
   log.trace("Log config", { ...log.config });
 
-  const legacyOutputEnabled = !args.includes("--no-legacy-output");
-
   if (args[0] === "init") {
     await require("./init").default();
     process.exit(0);
@@ -160,9 +158,6 @@ async function main() {
 
   if (invalidFlags.length > 0) {
     log.error("Invalid argument(s)", { invalidFlags });
-    if (legacyOutputEnabled) {
-      console.error(`Error: Invalid argument(s): ${invalidFlags.join(", ")}`);
-    }
     process.exit(1);
   }
 
@@ -180,19 +175,14 @@ async function main() {
       true,
       headless,
       targetUrl,
-      debugAI,
       noCache,
-      legacyOutputEnabled,
     );
     await runner.initialize();
     const config = getConfig();
     const testPattern = cliTestPattern || config.testPattern;
     await runner.runTests(testPattern);
   } catch (error: any) {
-    log.error("Error", { error });
-    if (legacyOutputEnabled) {
-      console.error(pc.red(`\n${error.name}:`), error.message);
-    }
+    log.error(pc.red(error.name), { message: error.message });
     process.exit(1);
   }
 }

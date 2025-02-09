@@ -1,12 +1,13 @@
 import { spawn } from "child_process";
+import { getLogger, Log } from "@/log";
 
 type BashToolError = "timeout" | "network" | "unknown" | "unauthorized";
 
 export class BashTool {
-  private legacyOutputEnabled: boolean;
+  private log: Log;
 
-  constructor(legacyOutputEnabled: boolean) {
-    this.legacyOutputEnabled = legacyOutputEnabled;
+  constructor() {
+    this.log = getLogger();
   }
 
   public async execute(command: string): Promise<Record<string, any> | string> {
@@ -23,9 +24,7 @@ export class BashTool {
       child.stderr.on("data", (data) => {
         errorOutput += data.toString();
         if (this.getErrorType(data.toString()) === "timeout") {
-          if (this.legacyOutputEnabled) {
-            console.log("Timeout error occurred, retrying...");
-          }
+          this.log.debug("Timeout error occurred, retrying...");
         }
       });
 

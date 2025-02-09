@@ -4,24 +4,17 @@ import { BrowserManager } from "@/browser/manager";
 import { getConfig } from "@/index";
 
 export async function main() {
-  const legacyOutputEnabled = true;
-  const browserManager = new BrowserManager(getConfig(), legacyOutputEnabled);
+  const browserManager = new BrowserManager(getConfig());
 
   try {
     console.log(pc.cyan("🚀 Launching browser..."));
     const context = await browserManager.launch();
     const page = context.pages()[0];
 
-    const legacyOutputEnabled = true;
-    const browserTool = new BrowserTool(
-      page,
-      browserManager,
-      legacyOutputEnabled,
-      {
-        width: 1920,
-        height: 1080,
-      },
-    );
+    const browserTool = new BrowserTool(page, browserManager, {
+      width: 1920,
+      height: 1080,
+    });
 
     // Navigate to a page with a sign in button
     await page.goto("http://localhost:3000");
