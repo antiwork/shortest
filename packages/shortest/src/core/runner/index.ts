@@ -10,6 +10,7 @@ import { AIClient } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
 import { BaseCache } from "@/cache/cache";
+import { TestCompiler } from "@/core/compiler";
 import { TestReporter } from "@/core/runner/test-reporter";
 import { initializeConfig, getConfig } from "@/index";
 import { getLogger, Log } from "@/log/index";
@@ -21,7 +22,6 @@ import {
 } from "@/types";
 import { CacheEntry } from "@/types/cache";
 import { hashData } from "@/utils/crypto";
-import { TestCompiler } from "@/core/compiler";
 
 export const TokenMetricsSchema = z.object({
   input: z.number().default(0),
@@ -503,6 +503,7 @@ export class TestRunner {
     this.log.debug("Running cached test", {
       hash: hashData(test),
     });
+    this.log.debug("Executing cached test", { hash: hashData(test) });
     if (this.debugAI && this.legacyOutputEnabled) {
       console.log(pc.green(`  Executing cached test ${hashData(test)}`));
     }

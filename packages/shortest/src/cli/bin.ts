@@ -121,14 +121,19 @@ function getParamValue(args: string[], paramName: string): string | undefined {
 
 async function main() {
   const args = process.argv.slice(2);
-
   const logLevel = getParamValue(args, "--log-level");
   const logFormat = getParamValue(args, "--log-format");
   const log = getLogger({
     level: logLevel as LogLevel,
     format: logFormat as LogFormat,
   });
-  console.log(log);
+
+  const debugAI = args.includes("--debug-ai");
+  if (debugAI) {
+    log.warn("--debug-ai is deprecated, use --log-level=debug instead");
+    log.config.level = "debug";
+  }
+
   log.trace("Starting Shortest CLI", { args: process.argv });
   log.trace("Log config", { ...log.config });
 
@@ -166,7 +171,6 @@ async function main() {
     .find((arg) => arg.startsWith("--target="))
     ?.split("=")[1];
   const cliTestPattern = args.find((arg) => !arg.startsWith("--"));
-  const debugAI = args.includes("--debug-ai");
   const noCache = args.includes("--no-cache");
 
   log.trace("Initializing TestRunner");

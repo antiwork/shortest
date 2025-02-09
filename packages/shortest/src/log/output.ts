@@ -34,6 +34,9 @@ export class LogOutput {
       //   return console[consoleMethod](output);
       case "terminal":
         output = LogOutput.renderForTerminal(event, group);
+        if (event.level === "warn") {
+          output = pc.yellowBright(output);
+        }
         return console[consoleMethod](output);
       case "reporter":
         return process.stdout.write(`${event.message}\n`);
@@ -61,9 +64,17 @@ export class LogOutput {
                 return [k2, v2];
               }),
             ),
+            null,
+            2,
           );
           return [k, stringified];
         }
+
+        // Format string values with newlines
+        if (typeof v === "string" && v.includes("\n")) {
+          return [k, "\n  " + v.split("\n").join("\n  ")];
+        }
+
         return [k, JSON.stringify(v)];
       }),
     );

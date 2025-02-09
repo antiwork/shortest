@@ -24,9 +24,11 @@ export class Log {
     LogOutput.render(event, this.config.format, this.currentGroup);
   }
 
-  log(level: LogLevel, message: string, metadata?: Record<string, any>) {
+  log(level: LogLevel, ...args: any[]) {
+    const metadata =
+      args[args.length - 1]?.constructor === Object ? args.pop() : undefined;
+    const message = args.join(" ");
     const event = new LogEvent(level, message, metadata);
-    // this.events.push(event);
     this.outputEvent(event);
   }
 
@@ -45,23 +47,23 @@ export class Log {
     this.currentGroup = undefined;
   }
 
-  trace(message: string, metadata?: Record<string, any>) {
-    this.log("trace", message, metadata);
+  trace(...args: any[]) {
+    this.log("trace", ...args);
   }
 
-  debug(message: string, metadata?: Record<string, any>) {
-    this.log("debug", message, metadata);
+  debug(...args: any[]) {
+    this.log("debug", ...args);
   }
 
-  info(message: string, metadata?: Record<string, any>) {
-    this.log("info", message, metadata);
+  info(...args: any[]) {
+    this.log("info", ...args);
   }
 
-  warn(message: string, metadata?: Record<string, any>) {
-    this.log("warn", message, metadata);
+  warn(...args: any[]) {
+    this.log("warn", ...args);
   }
 
-  error(message: string, metadata?: Record<string, any>) {
-    this.log("error", message, metadata);
+  error(...args: any[]) {
+    this.log("error", ...args);
   }
 }
