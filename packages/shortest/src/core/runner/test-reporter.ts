@@ -1,7 +1,7 @@
 import pc from "picocolors";
 import { FileResult, TestResult, TestStatus } from "@/core/runner/index";
 import { getLogger, Log } from "@/log/index";
-import { TestFunction } from "@/types/test";
+import { AssertionError, TestFunction } from "@/types/test";
 export class TestReporter {
   private currentFile: string = "";
   private testResults: Record<string, TestResult> = {};
@@ -227,16 +227,31 @@ export class TestReporter {
   }
 
   error(context: string, message: string) {
-    this.reporterLog.error(`${context}: ${message}`);
+    this.reporterLog.error(pc.red(`${context}: ${message}`));
     if (this.legacyOutputEnabled) {
       console.error(pc.red(`${context}: ${message}`));
     }
   }
 
   reportError(context: string, message: string) {
-    this.reporterLog.error(`${context}: ${message}`);
+    this.reporterLog.error(pc.red(`${context}: ${message}`));
     if (this.legacyOutputEnabled) {
       console.error(pc.red(`${context}: ${message}`));
+    }
+  }
+
+  reportAssertion(
+    step: string,
+    status: "passed" | "failed",
+    error?: AssertionError,
+  ): void {
+    if (status === "passed") {
+      this.reporterLog.error(pc.green(`✓ ${step}`));
+    } else {
+      this.reporterLog.error(pc.red(`✗ ${step}`));
+      if (error) {
+        this.reporterLog.error(pc.dim(error.message));
+      }
     }
   }
 }
