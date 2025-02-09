@@ -1,5 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import pc from "picocolors";
 import { BashTool } from "../browser/core/bash-tool";
 import { BrowserTool } from "../browser/core/browser-tool";
 import { CONFIG_FILENAME } from "../constants";

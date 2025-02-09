@@ -10,7 +10,6 @@ export async function main() {
   console.log(pc.cyan("\n🧪 Testing AI Integration"));
   console.log(pc.cyan("======================="));
 
-  const legacyOutputEnabled = true;
   const browserManager = new BrowserManager(getConfig());
 
   try {
