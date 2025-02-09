@@ -8,9 +8,7 @@ import { Log } from "./log";
  * @example
  * ```typescript
  * const log = getLogger();
- * const group = new LogGroup(log, "Database");
- *
- * group
+ * const log.setGroup("Database")
  *   .info("Connecting...")
  *   .debug("Connection established")
  *   .info("Ready");
@@ -19,10 +17,6 @@ import { Log } from "./log";
  * @param {Log} log - Logger instance to send messages to
  * @param {string} name - Name of the group
  * @param {LogGroup} [parent] - Optional parent group for nesting
- *
- * Used by:
- * - LogOutput for indentation and grouping in output
- * - Log.setGroup() for managing log hierarchy
  *
  * @see {@link LogOutput.render} for group rendering
  * @see {@link Log.setGroup} for group management

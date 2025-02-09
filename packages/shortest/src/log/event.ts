@@ -13,11 +13,6 @@ import { LogLevel } from "./config";
  * @param {string} message - Main log message
  * @param {Record<string, any>} [metadata] - Optional key-value pairs for additional context
  *
- * Consumed by:
- * - LogOutput.render() for formatting and displaying logs
- * - LogGroup for creating trace events
- * - Log.outputEvent() for processing and filtering logs
- *
  * @see {@link LogOutput.render} for rendering implementation
  * @see {@link LogGroup} for grouping functionality
  * @see {@link Log.outputEvent} for event processing
