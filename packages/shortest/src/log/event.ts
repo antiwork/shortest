@@ -1,6 +1,27 @@
-// import crypto from "crypto";
 import { LogLevel } from "./config";
 
+/**
+ * Represents a log event in the logging system.
+ *
+ * @class
+ * @example
+ * ```typescript
+ * const event = new LogEvent("info", "User logged in", { userId: 123 });
+ * ```
+ *
+ * @param {LogLevel} level - Log severity level (trace|debug|info|warn|error|silent)
+ * @param {string} message - Main log message
+ * @param {Record<string, any>} [metadata] - Optional key-value pairs for additional context
+ *
+ * Consumed by:
+ * - LogOutput.render() for formatting and displaying logs
+ * - LogGroup for creating trace events
+ * - Log.outputEvent() for processing and filtering logs
+ *
+ * @see {@link LogOutput.render} for rendering implementation
+ * @see {@link LogGroup} for grouping functionality
+ * @see {@link Log.outputEvent} for event processing
+ */
 export class LogEvent {
   timestamp: string;
   level: LogLevel;
@@ -16,14 +37,5 @@ export class LogEvent {
     this.level = level;
     this.message = message;
     this.metadata = metadata ?? {};
-  }
-
-  toJSON(): Record<string, any> {
-    return {
-      timestamp: this.timestamp,
-      level: this.level,
-      message: this.message,
-      metadata: this.metadata,
-    };
   }
 }

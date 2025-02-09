@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+/**
+ * Log configuration types and schema.
+ *
+ * @example
+ * ```typescript
+ * const config: LogConfig = {
+ *   level: "debug",
+ *   format: "terminal"
+ * };
+ * ```
+ *
+ * @see {@link Log} for usage
+ */
 export const LOG_LEVELS = [
   "trace",
   "debug",

@@ -3,6 +3,22 @@ import { LOG_LEVELS, LogFormat } from "./config";
 import { LogEvent } from "./event";
 import { LogGroup } from "./group";
 
+/**
+ * Internal class for log output formatting and rendering.
+ *
+ * @class
+ * @example
+ * ```typescript
+ * const event = new LogEvent("info", "Server started", { port: 3000 });
+ * LogOutput.render(event, "terminal");
+ * // info | 2024-03-20T10:30:00.000Z | Server started | port=3000
+ * ```
+ *
+ * @internal Used by {@link Log.outputEvent}
+ * @see {@link LogEvent} for event structure
+ * @see {@link LogGroup} for grouping
+ * @see {@link LogFormat} for formats
+ */
 export class LogOutput {
   private static readonly MAX_LEVEL_LENGTH = Math.max(
     ...LOG_LEVELS.map((level) => level.length),
@@ -10,6 +26,14 @@ export class LogOutput {
 
   private static readonly FILTERED_KEYS = ["apiKey"];
 
+  /**
+   * Renders a log event
+   *
+   * @param {LogEvent} event - Event to render
+   * @param {LogFormat} format - Output format
+   * @param {LogGroup} [group] - Optional group
+   * @throws {Error} If format is unsupported
+   */
   static render(
     event: LogEvent,
     format: LogFormat,
