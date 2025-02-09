@@ -28,7 +28,7 @@ const VALID_FLAGS = [
   "--no-legacy-output",
   "-h",
 ];
-const VALID_PARAMS = ["--target", "--secret", "--log-level", "--log-format"];
+const VALID_PARAMS = ["--target", "--secret", "--log-level"];
 
 function showHelp() {
   console.log(`
@@ -41,7 +41,6 @@ ${pc.bold("Usage:")}
 ${pc.bold("Options:")}
   --headless            Run tests in headless browser mode
   --log-level=<level>   Set log level (default: silent). Options: silent, error, warn, info, debug, trace
-  --log-format=<format> Set log format (default: terminal)
   --target=<url>        Set target URL for tests (default: http://localhost:3000)
   --github-code         Generate GitHub 2FA code for authentication
   --no-cache            Disable caching (storing browser actions between tests)
