@@ -39,11 +39,12 @@ ${pc.bold("Usage:")}
   shortest [options] [test-pattern]
 
 ${pc.bold("Options:")}
-  --headless          Run tests in headless browser mode
-  --debug-ai          Show AI conversation and decision process
-  --target=<url>      Set target URL for tests (default: http://localhost:3000)
-  --github-code       Generate GitHub 2FA code for authentication
-  --no-cache          Disable caching (storing browser actions between tests)
+  --headless            Run tests in headless browser mode
+  --log-level=<level>   Set log level (default: silent). Options: silent, error, warn, info, debug, trace
+  --log-format=<format> Set log format (default: terminal)
+  --target=<url>        Set target URL for tests (default: http://localhost:3000)
+  --github-code         Generate GitHub 2FA code for authentication
+  --no-cache            Disable caching (storing browser actions between tests)
 
 ${pc.bold("Authentication:")}
   --secret=<key>      GitHub TOTP secret key (or use ${ENV_LOCAL_FILENAME})
@@ -130,8 +131,8 @@ async function main() {
 
   const debugAI = args.includes("--debug-ai");
   if (debugAI) {
-    log.warn("--debug-ai is deprecated, use --log-level=debug instead");
     log.config.level = "debug";
+    log.warn("--debug-ai is deprecated, use --log-level=debug instead");
   }
 
   log.trace("Starting Shortest CLI", { args: process.argv });
