@@ -31,21 +31,20 @@ export class TestReporter {
 
   onFileStart(filePath: string, testsCount: number) {
     this.log.setGroup(filePath);
-    this.reporterLog.setGroup(filePath);
-
-    this.testsCount += testsCount;
     this.reporterLog.info(
-      "📄",
+      pc.cyan(">"),
       pc.blue(pc.bold(filePath)),
       testsCount,
       "test(s)",
     );
+    this.reporterLog.setGroup(filePath);
+    this.testsCount += testsCount;
   }
 
   onTestStart(test: TestFunction) {
     this.log.setGroup(test.name);
-    this.reporterLog.setGroup(test.name);
     this.reporterLog.info(this.getStatusIcon("running"), test.name);
+    this.reporterLog.setGroup(test.name);
   }
 
   onTestEnd(testResult: TestResult) {
@@ -79,15 +78,14 @@ export class TestReporter {
         testResult.tokenUsage.output,
       );
       this.reporterLog.info(
-        pc.dim(
-          `    ↳ ${totalTokens.toLocaleString()} tokens ` +
-            `(≈ $${cost.toFixed(2)})`,
-        ),
+        pc.dim("↳"),
+        pc.dim(`${totalTokens.toLocaleString()} tokens`),
+        pc.dim(`(≈ $${cost.toFixed(2)})`),
       );
     }
 
     if (testResult.status === "failed") {
-      this.error("Test Execution", testResult.reason);
+      this.error("Reason", testResult.reason);
     }
 
     this.reporterLog.resetGroup();
@@ -117,7 +115,7 @@ export class TestReporter {
       case "pending":
         return pc.yellow("○");
       case "running":
-        return pc.blue("●");
+        return pc.cyan("●");
       case "passed":
         return pc.green("✓");
       case "failed":

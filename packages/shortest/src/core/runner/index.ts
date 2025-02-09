@@ -301,8 +301,9 @@ export class TestRunner {
     }
 
     // Execute test with enhanced prompt
+    this.log.setGroup("🤖");
     const result = await aiClient.processAction(prompt, browserTool);
-
+    this.log.resetGroup();
     if (!result) {
       throw new Error("AI processing failed: no result returned");
     }
@@ -443,7 +444,6 @@ export class TestRunner {
         this.reporter.onFileEnd(fileResult);
       }
     }
-    this.log.resetGroup();
   }
 
   async runTests(pattern?: string) {

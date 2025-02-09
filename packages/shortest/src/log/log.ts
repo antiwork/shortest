@@ -33,13 +33,19 @@ export class Log {
   }
 
   setGroup(name: string): void {
-    this.log("trace", `Setting group: ${name}`);
+    this.log("trace", "Setting group", { groupName: name });
     this.currentGroup = new LogGroup(this, name, this.currentGroup);
   }
 
   resetGroup(): void {
-    this.log("trace", "Resetting group");
-    this.currentGroup = this.currentGroup?.parent;
+    if (this.currentGroup) {
+      this.log("trace", "Resetting group", {
+        groupName: this.currentGroup.name,
+      });
+      this.currentGroup = this.currentGroup?.parent;
+    } else {
+      this.log("trace", "No group to reset");
+    }
   }
 
   resetAllGroups(): void {

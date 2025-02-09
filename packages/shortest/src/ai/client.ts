@@ -18,7 +18,6 @@ export class AIClient {
 
   constructor(config: AIConfig) {
     this.log = getLogger();
-    this.log.setGroup("🤖");
     this.log.trace("Initializing AIClient", { config });
     if (!config.apiKey) {
       this.log.error(
@@ -71,7 +70,6 @@ export class AIClient {
         await new Promise((r) => setTimeout(r, 5000 * attempts));
       }
     }
-    this.log.resetGroup();
     return {
       finalResponse: null,
       tokenUsage: { input: 0, output: 0 },
