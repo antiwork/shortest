@@ -12,6 +12,8 @@ import { z } from "zod";
  * ```
  *
  * @see {@link Log} for usage
+ *
+ * @private
  */
 export const LOG_LEVELS = [
   "trace",

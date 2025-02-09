@@ -14,6 +14,8 @@
  *
  * @see {@link Log} for main logging interface
  * @see {@link LogGroup} for log grouping functionality
+ *
+ * @private
  */
 
 import { LogConfig } from "./config";

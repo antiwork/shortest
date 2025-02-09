@@ -21,6 +21,8 @@ import { LogLevel } from "./config";
  * @see {@link LogOutput.render} for rendering implementation
  * @see {@link LogGroup} for grouping functionality
  * @see {@link Log.outputEvent} for event processing
+ *
+ * @private
  */
 export class LogEvent {
   timestamp: string;

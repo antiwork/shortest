@@ -18,6 +18,8 @@ import { LogGroup } from "./group";
  * @see {@link LogEvent} for event structure
  * @see {@link LogGroup} for grouping
  * @see {@link LogFormat} for formats
+ *
+ * @private
  */
 export class LogOutput {
   private static readonly MAX_LEVEL_LENGTH = Math.max(

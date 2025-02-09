@@ -32,10 +32,9 @@ export class TestReporter {
   onFileStart(filePath: string, testsCount: number) {
     this.log.setGroup(filePath);
     this.reporterLog.info(
-      pc.cyan(">"),
+      pc.cyan("❯"),
       pc.blue(pc.bold(filePath)),
-      testsCount,
-      "test(s)",
+      pc.dim(`(${testsCount})`),
     );
     this.reporterLog.setGroup(filePath);
     this.testsCount += testsCount;

@@ -24,6 +24,8 @@ import { LogOutput } from "./output";
  * @see {@link LogOutput} for output formatting
  * @see {@link LogGroup} for log grouping
  * @see {@link LogEvent} for event structure
+ *
+ * @private
  */
 export class Log {
   readonly config: LogConfig;

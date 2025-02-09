@@ -26,6 +26,8 @@ import { Log } from "./log";
  *
  * @see {@link LogOutput.render} for group rendering
  * @see {@link Log.setGroup} for group management
+ *
+ * @private
  */
 export class LogGroup {
   private log: Log;
