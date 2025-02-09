@@ -1,6 +1,6 @@
 import { shortest } from "@antiwork/shortest";
 
-shortest("Verify that buttons on the landing page are square");
+shortest("Verify that buttons on the landing page are rounded");
 
 shortest("Click on the GitHub link").expect(
   "It opens up the GitHub project page",
