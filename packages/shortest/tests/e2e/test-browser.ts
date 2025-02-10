@@ -15,6 +15,7 @@ export async function main() {
       width: 1920,
       height: 1080,
     });
+    await browserTool.initialize();
 
     // Navigate to a page with a sign in button
     await page.goto("http://localhost:3000");

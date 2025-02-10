@@ -18,6 +18,7 @@ export async function main() {
       width: 1920,
       height: 1080,
     });
+    await browserTool.initialize();
 
     console.log(pc.cyan("\n🧹 Clearing initial session..."));
     const result = await browserTool.execute({ action: "clear_session" });
@@ -33,6 +34,7 @@ export async function main() {
       width: 1920,
       height: 1080,
     });
+    await browserTool.initialize();
 
     // Continue with fresh page reference
     await page.waitForSelector('button:has-text("Sign in")', {
@@ -67,6 +69,7 @@ export async function main() {
       width: 1920,
       height: 1080,
     });
+    await browserTool.initialize();
 
     console.log(pc.cyan("\n🔍 Checking login state..."));
     await newPage.goto("http://localhost:3000");

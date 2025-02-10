@@ -1,8 +1,7 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { sleep } from "@anthropic-ai/sdk/core";
 import {
   CoreMessage,
   CoreTool,
+  experimental_wrapLanguageModel as wrapLanguageModel,
   generateText,
   GenerateTextResult,
   InvalidToolArgumentsError,
@@ -12,32 +11,39 @@ import {
 } from "ai";
 import pc from "picocolors";
 import { z } from "zod";
+import { BashTool } from "@/browser/core/bash-tool";
+import { TestFunction, ToolResult } from "@/types";
+import { LLMError } from "@/utils/errors";
+import { getImageFingerprint } from "@/utils/hash";
+import { TestCache } from "@/cache/test-cache";
+import { anthropic } from "@ai-sdk/anthropic";
+import { sleep } from "@anthropic-ai/sdk/core";
 import { getConfig } from "..";
 import { BrowserTool } from "../browser/core/browser-tool";
 import { IAIClient, AIClientOptions } from "../types/ai";
-import { CacheEntry, CacheStep } from "../types/cache";
 import { SYSTEM_PROMPT } from "./prompts";
 import { createAIProvider } from "./provider";
-import { llmJSONResponseSchema } from "./validation";
-import { BashTool } from "@/browser/core/bash-tool";
-import { BaseCache } from "@/cache/cache";
-import { TestFunction, ToolResult } from "@/types";
-import { LLMError } from "@/utils/errors";
-import { formatZodError } from "@/utils/zod";
+import {
+  extractJsonPayload,
+  llmJSONResponseSchema,
+  llmJSONScreenshotReasonSchema,
+} from "./utils/json";
+import { getCacheMiddleware } from "./middleware";
 
 export class AIClient implements IAIClient {
   private client: LanguageModelV1;
   private browserTool: BrowserTool;
   private conversationHistory: Array<CoreMessage> = [];
-  private pendingCache: Partial<{ steps?: CacheStep[] }> = {};
-  private cache: BaseCache<CacheEntry>;
+  private cache: TestCache;
   private isDebugMode: boolean;
+  private isNoCacheMode: boolean;
 
-  constructor({ browserTool, isDebugMode, cache }: AIClientOptions) {
+  constructor({ browserTool, cliArgs, cache }: AIClientOptions) {
     this.client = createAIProvider(getConfig().ai);
     this.browserTool = browserTool;
     // Todo remove it once we have global debug mode access
-    this.isDebugMode = isDebugMode;
+    this.isDebugMode = cliArgs.isDebugMode;
+    this.isDebugMode = cliArgs.isNoCacheMode;
     this.cache = cache;
   }
 
@@ -78,37 +84,31 @@ export class AIClient implements IAIClient {
         await sleep(1000);
         resp = await generateText({
           system: SYSTEM_PROMPT,
-          model: this.client,
+          model: wrapLanguageModel({
+            model: this.client,
+            middleware: getCacheMiddleware(test),
+          }),
           messages: this.conversationHistory,
           tools: this.tools,
           maxTokens: 1024,
           onStepFinish: async (event) => {
-            function isMouseMove(args: any) {
-              return args.action === "mouse_move" && args.coordinate.length;
-            }
-
             for (const toolResult of event.toolResults as any[]) {
               let extras: Record<string, unknown> = {};
-              if (isMouseMove(toolResult.args)) {
-                const [x, y] = (toolResult.args as any).coordinate;
-                extras.componentStr =
-                  await this.browserTool.getNormalizedComponentStringByCoords(
-                    x,
-                    y,
-                  );
-              }
+              if (toolResult.args.action === "screenshot") {
+                const base64Image = toolResult.result.base64_image;
+                const imageBuffer = Buffer.from(base64Image, "base64");
+                const screenshotFingerprint =
+                  await getImageFingerprint(imageBuffer);
 
-              this.addToPendingCache({
-                reasoning: event.text,
-                action: {
-                  name: toolResult.args.action,
-                  input: toolResult.args,
-                  type: "tool_use",
-                },
-                result: toolResult.result.output,
-                extras,
-                timestamp: Date.now(),
-              });
+                const json = extractJsonPayload(
+                  event.text,
+                  llmJSONScreenshotReasonSchema,
+                );
+                if (json.actionReason === "journey") {
+                  return;
+                }
+                extras.screenshotFingerprint = screenshotFingerprint;
+              }
             }
           },
         });
@@ -121,7 +121,7 @@ export class AIClient implements IAIClient {
         throw error;
       }
 
-      if (this.isDebugMode) {
+      if (this.isDebugMode && this.isNoCacheMode) {
         process.stdout.write(
           `\nLLM step completed with finish reason: '${resp.finishReason}'`,
         );
@@ -147,32 +147,10 @@ export class AIClient implements IAIClient {
       if (resp.finishReason === "tool-calls") continue;
       this.processErrors(resp);
 
-      // At this point, response reason is not a tool call, and it's not errored
-      const jsonMatch = resp.text.match(/{[\s\S]*}/)?.[0];
-
-      if (!jsonMatch) {
-        throw new LLMError("invalid-response", "LLM didn't return JSON.");
-      }
-
-      let parsedResponse;
-      try {
-        parsedResponse = llmJSONResponseSchema.parse(JSON.parse(jsonMatch));
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          throw new LLMError(
-            "invalid-response",
-            formatZodError(error, "Invalid LLM response."),
-          );
-        }
-        throw error;
-      }
-
-      if (parsedResponse.result === "pass") {
-        this.cache.set(test, this.pendingCache);
-      }
+      const json = extractJsonPayload(resp.text, llmJSONResponseSchema);
 
       return {
-        response: parsedResponse,
+        response: json,
         metadata: {
           usage: resp.usage,
         },
@@ -293,10 +271,6 @@ export class AIClient implements IAIClient {
       case "other":
         throw new LLMError("unknown", "An error occurred during generation.");
     }
-  }
-
-  private addToPendingCache(cacheStep: CacheStep) {
-    this.pendingCache.steps = [...(this.pendingCache.steps || []), cacheStep];
   }
 
   private isNonRetryableError(error: any) {

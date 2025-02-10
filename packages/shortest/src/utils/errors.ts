@@ -27,3 +27,19 @@ export class LLMError extends Error {
     this.type = type;
   }
 }
+
+export type CacheErrorType =
+  | "file-system"
+  | "file-lock"
+  | "crud"
+  | "stale"
+  | "unknown";
+export class CacheError extends Error {
+  type: CacheErrorType;
+
+  constructor(type: CacheErrorType, message: string) {
+    super(message);
+    this.name = "CacheError";
+    this.type = type;
+  }
+}

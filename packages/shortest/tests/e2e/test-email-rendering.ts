@@ -43,6 +43,7 @@ export async function main() {
       width: 1280,
       height: 720,
     });
+    await browserTool.initialize();
 
     // 3. Test render_email tool
     console.log("Testing email rendering...");

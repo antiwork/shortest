@@ -1,11 +1,12 @@
 import { LanguageModelUsage } from "ai";
 import { ActionInput } from "./browser";
-import { CacheEntry } from "./cache";
 import { AIConfig } from "./config";
 import { TestFunction } from "./test";
-import { LLMJSONResponse } from "@/ai/validation";
+import { LLMJSONResponse } from "@/ai/utils/json";
 import { BrowserTool } from "@/browser/core/browser-tool";
-import { BaseCache } from "@/cache/cache";
+import { TestCache } from "@/cache/test-cache";
+export { Cache } from "@/cache/cache";
+
 namespace RequestTypes {
   export interface Bash {
     command: string;
@@ -33,8 +34,11 @@ export type RequestComputer = RequestTypes.ToolRequest<RequestTypes.Computer>;
 export interface AIClientOptions {
   config: AIConfig;
   browserTool: BrowserTool;
-  isDebugMode: boolean;
-  cache: BaseCache<CacheEntry>;
+  cliArgs: {
+    isNoCacheMode: boolean;
+    isDebugMode: boolean;
+  };
+  cache: TestCache;
 }
 export interface IAIClient {
   processAction(

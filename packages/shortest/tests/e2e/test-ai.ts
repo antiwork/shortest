@@ -62,6 +62,7 @@ export async function main() {
         currentStepIndex: 0,
       },
     });
+    await browserTool.initialize();
 
     // Test first callback
     console.log("\n🔍 Testing first callback:");

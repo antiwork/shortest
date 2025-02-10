@@ -28,6 +28,7 @@ export async function main() {
       width: 1920,
       height: 940,
     });
+    await browserTool.initialize();
 
     // Simple test prompt
     const testPrompt = `Validate the sign in functionality of the website you see`;

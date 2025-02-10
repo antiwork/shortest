@@ -1,30 +1,17 @@
 import { pathToFileURL } from "url";
 import { glob } from "glob";
-import pc from "picocolors";
 import { APIRequest, BrowserContext } from "playwright";
 import * as playwright from "playwright";
 import { request, APIRequestContext } from "playwright";
 import { BrowserTool } from "../../browser/core/browser-tool";
 import { BrowserManager } from "../../browser/manager";
-import { BaseCache } from "../../cache/cache";
+import { TestCache } from "@/cache/test-cache";
 import { initializeConfig, getConfig } from "../../index";
-import {
-  TestFunction,
-  TestContext,
-  BrowserActionEnum,
-  ShortestConfig,
-} from "../../types";
-import { CacheEntry } from "../../types/cache";
-import { hashData } from "../../utils/crypto";
+import { TestFunction, TestContext, ShortestConfig } from "../../types";
 import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
 import { AIClient } from "@/ai/client";
-
-interface TestResult {
-  result: "pass" | "fail";
-  reason: string;
-  tokenUsage?: { input: number; output: number };
-}
+import { CacheStore } from "@/cache/interfaces";
 
 export class TestRunner {
   private config!: ShortestConfig;
@@ -38,7 +25,7 @@ export class TestRunner {
   private debugAI: boolean;
   private noCache: boolean;
   private testContext: TestContext | null = null;
-  private cache: BaseCache<CacheEntry>;
+  // private cache: BaseCache<CacheEntry>;
 
   constructor(
     cwd: string,
@@ -56,7 +43,6 @@ export class TestRunner {
     this.noCache = noCache;
     this.compiler = new TestCompiler();
     this.reporter = new TestReporter();
-    this.cache = new BaseCache();
   }
 
   async initialize() {
@@ -165,23 +151,38 @@ export class TestRunner {
       }
     }
 
+    const cache = new TestCache(test);
+    const tempCache: CacheStore = new Map();
+
     // Use the shared context
     const testContext = await this.createTestContext(context);
-    const browserTool = new BrowserTool(testContext.page, this.browserManager, {
-      width: 1920,
-      height: 1080,
-      testContext: {
-        ...testContext,
-        currentTest: test,
-        currentStepIndex: 0,
+    const browserTool = new BrowserTool(
+      testContext.page,
+      this.browserManager,
+      {
+        width: 1920,
+        height: 1080,
+        testContext: {
+          ...testContext,
+          currentTest: test,
+          currentStepIndex: 0,
+        },
       },
-    });
+      cache,
+      {
+        isNoCacheMode: this.noCache,
+      },
+    );
+    await browserTool.initialize();
 
     const aiClient = new AIClient({
       config: this.config.ai,
       browserTool,
-      isDebugMode: this.debugAI,
-      cache: this.cache,
+      cliArgs: {
+        isDebugMode: this.debugAI,
+        isNoCacheMode: this.noCache,
+      },
+      cache,
     });
 
     // First get page state
@@ -215,45 +216,6 @@ export class TestRunner {
       .filter(Boolean)
       .join("\n");
 
-    // check if CLI option is not specified
-    if (!this.noCache && !config.noCache) {
-      // if test hasn't changed and is already in cache, replay steps from cache
-      if (await this.cache.get(test)) {
-        try {
-          const result = await this.runCachedTest(test, browserTool);
-
-          if (test.afterFn) {
-            try {
-              await test.afterFn(testContext);
-            } catch (error) {
-              return {
-                result: "fail" as const,
-                reason:
-                  result?.result === "fail"
-                    ? `AI: ${result.reason}, After: ${
-                        error instanceof Error ? error.message : String(error)
-                      }`
-                    : error instanceof Error
-                      ? error.message
-                      : String(error),
-                tokenUsage: { input: 0, output: 0 },
-              };
-            }
-          }
-          return { ...result, tokenUsage: { input: 0, output: 0 } };
-        } catch {
-          // delete stale cached test entry
-          await this.cache.delete(test);
-          // reset window state
-          const page = browserTool.getPage();
-          await page.goto(initialState.metadata?.window_info?.url!);
-          await this.executeTest(test, context, {
-            noCache: true,
-          });
-        }
-      }
-    }
-
     // Execute before function if present
     if (test.beforeFn) {
       try {
@@ -268,6 +230,7 @@ export class TestRunner {
     }
 
     // Execute test with enhanced prompt
+
     const resp = await aiClient.processAction(prompt, test);
     const { response, metadata } = resp!;
 
@@ -400,68 +363,5 @@ export class TestRunner {
     } else {
       process.exit(1);
     }
-  }
-
-  private async runCachedTest(
-    test: TestFunction,
-    browserTool: BrowserTool,
-  ): Promise<TestResult> {
-    const cachedTest = await this.cache.get(test);
-    if (this.debugAI) {
-      console.log(pc.green(`  Executing cached test ${hashData(test)}`));
-    }
-
-    const steps = cachedTest?.data.steps
-      // do not take screenshots in cached mode
-      ?.filter(
-        (step) =>
-          step.action?.input.action !== BrowserActionEnum.Screenshot.toString(),
-      );
-
-    if (!steps) {
-      return {
-        result: "fail" as const,
-        reason: "No steps to execute, running test in normal mode",
-        tokenUsage: { input: 0, output: 0 },
-      };
-    }
-    for (const step of steps) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (
-        step.action?.input.action === BrowserActionEnum.MouseMove &&
-        // @ts-expect-error Interface and actual values differ
-        step.action.input.coordinate
-      ) {
-        // @ts-expect-error
-        const [x, y] = step.action.input.coordinate;
-
-        const componentStr =
-          await browserTool.getNormalizedComponentStringByCoords(x, y);
-
-        if (componentStr !== step.extras.componentStr) {
-          return {
-            result: "fail" as const,
-            reason:
-              "Component UI elements are different, running test in normal mode",
-            tokenUsage: { input: 0, output: 0 },
-          };
-        }
-      }
-      if (step.action?.input) {
-        try {
-          await browserTool.execute(step.action.input);
-        } catch (error) {
-          console.error(
-            `Failed to execute step with input ${step.action.input}`,
-            error,
-          );
-        }
-      }
-    }
-
-    return {
-      result: "pass",
-      reason: "All actions successfully replayed from cache",
-    };
   }
 }

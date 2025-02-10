@@ -32,10 +32,16 @@ import { GitHubTool } from "../integrations/github";
 import { MailosaurTool } from "../integrations/mailosaur";
 import { BrowserManager } from "../manager";
 import { BaseBrowserTool, ToolError } from "./index";
+import { CacheStore } from "@/cache/interfaces";
+import { generateMD5Hash } from "@/cache/utils/hash-generator";
+import { assembleCacheKey } from "@/cache/utils/assemble-cache-key";
+import { CacheError } from "@/utils/errors";
+import { TestCache } from "@/cache/test-cache";
 
 export class BrowserTool extends BaseBrowserTool {
   private page: Page;
   private browserManager: BrowserManager;
+  protected readonly namespace = "browser";
   protected readonly toolType: BetaToolType = "computer_20241022";
   protected readonly toolName: string = "computer";
   private screenshotDir: string;
@@ -48,11 +54,19 @@ export class BrowserTool extends BaseBrowserTool {
   private readonly MAX_AGE_HOURS = 5;
   private mailosaurTool?: MailosaurTool;
   private config!: ShortestConfig;
+  private cliArgs: {
+    isNoCacheMode: boolean;
+  };
+  private cache: TestCache;
 
   constructor(
     page: Page,
     browserManager: BrowserManager,
     config: BrowserToolConfig,
+    cache: TestCache,
+    cliArgs: {
+      isNoCacheMode: boolean;
+    },
   ) {
     super(config);
     this.page = page;
@@ -61,6 +75,8 @@ export class BrowserTool extends BaseBrowserTool {
     mkdirSync(this.screenshotDir, { recursive: true });
     this.viewport = { width: config.width, height: config.height };
     this.testContext = config.testContext;
+    this.cache = cache;
+    this.cliArgs = cliArgs;
 
     // Update active page reference to a newly opened tab
     this.page.context().on("page", async (newPage) => {
@@ -68,11 +84,10 @@ export class BrowserTool extends BaseBrowserTool {
       this.page = newPage;
     });
 
-    this.initialize();
     this.cleanupScreenshots();
   }
 
-  private async initialize(): Promise<void> {
+  async initialize(): Promise<void> {
     await initializeConfig();
     this.config = getConfig();
 
@@ -254,6 +269,38 @@ export class BrowserTool extends BaseBrowserTool {
           }
           await actions.mouseMove(this.page, coords[0], coords[1]);
           this.lastMousePosition = [coords[0], coords[1]];
+
+          const cacheMode =
+            !!(await this.cache.get("id")) && !this.cliArgs.isNoCacheMode;
+
+          console.log({ cacheMode });
+
+          const cacheKey = assembleCacheKey(
+            this.namespace,
+            generateMD5Hash(input),
+          );
+
+          const componentStr = await this.getNormalizedComponentStringByCoords(
+            coords[0],
+            coords[1],
+          );
+
+          if (cacheMode) {
+            const cachedComponentStr = (await this.cache.get(
+              cacheKey,
+            )) as string;
+
+            console.log({ componentStr, cachedComponentStr });
+
+            console.log("Browser tool");
+
+            if (componentStr !== cachedComponentStr) {
+              // throw new CacheError("stale", "UI change detected");
+            }
+
+            // TODO Step back
+          }
+
           output = `Mouse moved to (${coords[0]}, ${coords[1]})`;
           break;
 
@@ -675,12 +722,14 @@ export class BrowserTool extends BaseBrowserTool {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filePath = join(this.screenshotDir, `screenshot-${timestamp}.png`);
 
+    await this.hideCursor();
     const buffer = await this.page.screenshot({
       type: "jpeg",
       quality: 50,
       scale: "device",
       fullPage: false,
     });
+    await this.showCursor();
 
     writeFileSync(filePath, buffer);
     console.log(`  Screenshot saved to: ${filePath}`);

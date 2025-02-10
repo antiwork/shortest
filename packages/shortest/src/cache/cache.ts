@@ -1,228 +1,190 @@
-import * as fs from "fs";
-import path from "path";
-import { TestReporter } from "../core/runner/test-reporter";
-import { CacheEntry, CacheStore } from "../types/cache";
-import { hashData } from "../utils/crypto";
-import * as objects from "../utils/objects";
+import * as fs from "node:fs";
+import path from "node:path";
 
-export class BaseCache<T extends CacheEntry> {
-  private readonly CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
-  private readonly CLEANUP_PROBABILITY = 0.03; // 3% chance
+import { DateUtil } from "@/utils/date";
+import { CacheError } from "@/utils/errors";
+import { CACHE_DIR, CACHE_LOCK_TIMEOUT_MS, CACHE_TTL } from "./constants";
+import { FileLock } from "./file-lock";
+import {
+  CacheEntryIdentifier,
+  CacheStore,
+  ParsedCacheStore,
+} from "./interfaces";
 
-  private testReporter: TestReporter;
-
+export class Cache {
   private cacheFile: string;
+  private fileLock: FileLock;
 
-  // Locking (ensures that only one process or thread can access or modify cache)
-  private lockFile: string;
-  private readonly LOCK_TIMEOUT_MS = 1_000;
-  protected lockAcquired = false;
-  protected lockAcquireFailures = 0;
-
-  constructor() {
-    this.testReporter = new TestReporter();
-    this.cacheFile = path.join(process.cwd(), ".shortest", "cache.json");
-    this.lockFile = path.join(process.cwd(), ".shortest", "cache.lock");
+  constructor(private id: CacheEntryIdentifier) {
     this.ensureDirectory();
+    this.cleanupExpiredCache();
     this.setupProcessHandlers();
+
+    const cacheFile = this.initCacheFile();
+    this.cacheFile = path.join(CACHE_DIR, `${cacheFile}.json`);
+
+    const lockFile = path.join(CACHE_DIR, `${cacheFile}.lock`);
+    this.fileLock = new FileLock(lockFile, CACHE_LOCK_TIMEOUT_MS);
   }
 
-  private ensureDirectory(): void {
-    if (!fs.existsSync(path.dirname(this.cacheFile))) {
-      fs.mkdirSync(path.dirname(this.cacheFile), { recursive: true });
-    }
+  public async get(key: string): Promise<any | undefined> {
+    return await this.withLock(() => {
+      const map = this.loadCache();
+      return map.get(key);
+    });
   }
 
-  private read(): CacheStore {
-    if (fs.existsSync(this.cacheFile)) {
-      try {
-        return JSON.parse(
-          fs.readFileSync(this.cacheFile, "utf-8"),
-        ) as CacheStore;
-      } catch {
-        return {};
+  public async set(key: string, value: any): Promise<void> {
+    await this.withLock(() => {
+      const map = this.loadCache();
+      map.set(key, value);
+      this.saveCache(map);
+    });
+  }
+
+  public async delete(key: string): Promise<boolean> {
+    return await this.withLock(() => {
+      const map = this.loadCache();
+      const existed = map.delete(key);
+      if (existed) {
+        this.saveCache(map);
       }
-    } else {
-      return {};
-    }
+      return existed;
+    });
   }
 
-  public async get(key: Record<any, any>): Promise<T | null> {
-    if (!(await this.acquireLock())) {
-      this.testReporter.error(
-        "Cache",
-        "Failed to acquire lock for set operation",
-      );
-      return null;
+  public async clear(): Promise<void> {
+    await this.withLock(() => {
+      this.saveCache(new Map());
+    });
+  }
+
+  public async getAll(): Promise<CacheStore> {
+    return await this.withLock(() => {
+      return new Map(this.loadCache());
+    });
+  }
+
+  private async withLock<T>(callback: () => T): Promise<T> {
+    if (!(await this.fileLock.acquire())) {
+      throw new CacheError("file-lock", "Failed to acquire lock");
     }
     try {
-      const hashedKey = hashData(key);
-      const cache = this.read();
-      return (cache[hashedKey] as T | undefined) ?? null;
-    } catch {
-      this.testReporter.error("Cache", "Failed to get");
-      return null;
+      return callback();
     } finally {
-      this.releaseLock();
+      this.fileLock.release();
     }
   }
 
-  public async set(
-    key: Record<string, any>,
-    value: Partial<T["data"]>,
-  ): Promise<void> {
-    if (!(await this.acquireLock())) {
-      this.testReporter.error(
-        "Cache",
-        "Failed to acquire lock for set operation",
-      );
-      return;
-    }
+  private loadCache(): CacheStore {
     try {
-      const hashedKey = hashData(key);
-      const cache = this.read();
-
-      if (!cache[hashedKey]) {
-        cache[hashedKey] = { data: {} } as T;
-      }
-
-      cache[hashedKey].data = objects.mergeDeep(cache[hashedKey].data, {
-        ...value,
-        timestamp: Date.now(),
-      }) as T["data"];
-
-      this.write(cache);
-    } catch {
-      this.testReporter.error("Cache", "Failed to set");
-      this.reset();
-    } finally {
-      this.releaseLock();
-      if (Math.random() < this.CLEANUP_PROBABILITY) {
-        this.cleanup();
-      }
+      const data = fs.readFileSync(this.cacheFile, "utf-8");
+      const parsed: ParsedCacheStore = JSON.parse(data);
+      return new Map(Object.entries(parsed));
+    } catch (error) {
+      throw new CacheError("crud", `Failed to load cache: ${error}`);
     }
   }
 
-  private reset(): void {
+  private saveCache(map: CacheStore): void {
     try {
-      fs.writeFileSync(this.cacheFile, "{}");
-    } catch {
-      this.testReporter.error("Cache", "Failed to reset");
-    } finally {
-      this.releaseLock();
+      const obj = Object.fromEntries(map);
+      fs.writeFileSync(this.cacheFile, JSON.stringify(obj, null, 2));
+    } catch (error) {
+      throw new CacheError("crud", `Failed to save cache: ${error}`);
     }
   }
 
-  private write(cache: CacheStore): void {
-    try {
-      fs.writeFileSync(this.cacheFile, JSON.stringify(cache, null, 2));
-    } catch {
-      this.testReporter.error("Cache", "Failed to write");
-    }
-  }
+  private initCacheFile(): string {
+    const cacheFiles = fs
+      .readdirSync(CACHE_DIR)
+      .filter((file) => file.endsWith(`-${this.id}.json`));
 
-  public async delete(key: Record<string, any>): Promise<void> {
-    if (!(await this.acquireLock())) {
-      this.testReporter.error(
-        "Cache",
-        "Failed to acquire lock for delete operation",
-      );
-      return;
-    }
-
-    try {
-      const hashedKey = hashData(key);
-      const cache = this.read();
-
-      if (cache[hashedKey]) {
-        delete cache[hashedKey];
-        this.write(cache);
-      } else {
-        this.testReporter.error("Cache", "Failed to delete: entry not found");
-      }
-    } catch {
-      this.testReporter.error("Cache", "Failed to delete");
-    }
-  }
-
-  private cleanup() {
-    try {
-      const cache = this.read();
-      let cacheModified = false;
-      for (const [key, value] of Object.entries(cache)) {
-        if (value) {
-          if (Date.now() - value.timestamp > this.CACHE_TTL) {
-            delete cache[key];
-            cacheModified = true;
-          }
+    // If one cache file found, return it
+    if (cacheFiles.length === 1) {
+      return path.parse(cacheFiles[0]).name;
+    } else if (cacheFiles.length > 1) {
+      // If more than one file found, delete them
+      for (const file of cacheFiles) {
+        try {
+          fs.unlinkSync(path.join(CACHE_DIR, file));
+        } catch (error) {
+          throw new CacheError(
+            "file-system",
+            `Failed to delete duplicate cache file ${file}: ${error}`,
+          );
         }
       }
-
-      if (cacheModified) {
-        this.write(cache);
-      }
-    } catch {
-      this.testReporter.error("Cache", "Failed to cleanup");
     }
-  }
 
-  public async acquireLock(): Promise<boolean> {
-    const startTime = Date.now();
-    while (Date.now() - startTime < this.LOCK_TIMEOUT_MS) {
-      try {
-        if (fs.existsSync(this.lockFile)) {
-          const lockAge = Date.now() - fs.statSync(this.lockFile).mtimeMs;
-          if (lockAge > this.LOCK_TIMEOUT_MS) {
-            fs.unlinkSync(this.lockFile);
-          }
-        }
-
-        fs.writeFileSync(this.lockFile, process.pid.toString(), { flag: "wx" });
-        this.lockAcquireFailures = 0;
-        this.lockAcquired = true;
-        return true;
-      } catch {
-        this.testReporter.error("Cache", "Failed to acquire lock");
-        await new Promise((resolve) => setTimeout(resolve, 5));
-      }
-    }
-    this.testReporter.error("Cache", "Failed to acquire lock after timeout");
-    this.lockAcquireFailures++;
-    if (this.lockAcquireFailures >= 3) {
-      this.testReporter.error(
-        "Cache",
-        "Failed to acquire lock 3 times in a row. Releasing lock manually.",
-      );
-      this.releaseLock();
-    }
-    return false;
-  }
-
-  public releaseLock(): void {
+    // If no cache files found, create new
+    const baseFileName = `${DateUtil.getISODate(new Date())}-${this.id}`;
+    const newFilePath = path.join(CACHE_DIR, `${baseFileName}.json`);
     try {
-      if (fs.existsSync(this.lockFile)) {
-        fs.unlinkSync(this.lockFile);
-      }
-      this.lockAcquired = false;
-    } catch {
-      this.testReporter.error("Cache", "Failed to release lock");
+      fs.writeFileSync(newFilePath, "{}");
+      console.log(`Created new cache file: ${newFilePath}`);
+    } catch (error) {
+      throw new CacheError("file-system", "Failed to create cache file.");
     }
+    return baseFileName;
+  }
+
+  private cleanupExpiredCache(): void {
+    let files = fs.readdirSync(CACHE_DIR);
+    const now = Date.now();
+
+    for (const file of files) {
+      const parsed = this.parseFileName(file);
+      if (!parsed) {
+        console.warn(`Skipping unrecognized file: ${file}`);
+        continue;
+      }
+      if (now - DateUtil.parseISODate(parsed.timestamp).getTime() > CACHE_TTL) {
+        try {
+          fs.unlinkSync(path.join(CACHE_DIR, file));
+          console.log(`Deleted expired cache file: ${file}`);
+        } catch (error) {
+          throw new CacheError(
+            "file-system",
+            `Failed to delete expired cache file ${file}`,
+          );
+        }
+      }
+    }
+  }
+
+  private parseFileName(fileName: string) {
+    const baseName = path.parse(fileName).name;
+    const separatorIndex = baseName.lastIndexOf("-");
+
+    const timestamp = baseName.substring(0, separatorIndex);
+    const id = baseName.substring(separatorIndex + 1);
+
+    if (!timestamp || !id) return null;
+    return { timestamp, id };
   }
 
   private setupProcessHandlers(): void {
-    const releaseLockAndExit = () => {
-      this.releaseLock();
+    const cleanup = () => this.fileLock.release();
+    process.on("exit", cleanup);
+    process.on("SIGINT", () => {
+      cleanup();
       process.exit();
-    };
-
-    process.on("exit", releaseLockAndExit);
-    process.on("SIGINT", releaseLockAndExit);
-    process.on("SIGTERM", releaseLockAndExit);
-    process.on("uncaughtException", (err) => {
-      this.testReporter.error("Cache", err.message);
-      if (this.lockAcquired) {
-        releaseLockAndExit();
-      }
     });
+    process.on("SIGTERM", () => {
+      cleanup();
+      process.exit();
+    });
+    process.on("uncaughtException", (err) => {
+      console.error(err);
+      cleanup();
+      process.exit(1);
+    });
+  }
+
+  private ensureDirectory(): void {
+    if (!fs.existsSync(CACHE_DIR)) {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+    }
   }
 }

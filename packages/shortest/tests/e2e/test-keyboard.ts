@@ -16,6 +16,7 @@ export async function main() {
       width: 1920,
       height: 1080,
     });
+    await browserTool.initialize();
 
     // Test 1: Test Page_Down key (exactly as AI sends it)
     console.log(pc.cyan("\nTest 1: Testing Page_Down key"));
