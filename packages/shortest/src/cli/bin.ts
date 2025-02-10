@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import pc from "picocolors";
-import { getConfig } from "../..";
+import { getConfig } from "..";
 import { GitHubTool } from "@/browser/integrations/github";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
