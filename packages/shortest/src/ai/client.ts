@@ -1,4 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { SYSTEM_PROMPT } from "@/ai/prompts";
+import { AITools } from "@/ai/tools";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { CONFIG_FILENAME } from "@/constants";
@@ -6,8 +8,6 @@ import { getLogger, Log } from "@/log/index";
 import { ToolResult } from "@/types";
 import { AIConfig, RequestBash, RequestComputer } from "@/types/ai";
 import { CacheAction, CacheStep } from "@/types/cache";
-import { SYSTEM_PROMPT } from "@/ai/prompts";
-import { AITools } from "@/ai/tools";
 
 export class AIClient {
   private client: Anthropic;
