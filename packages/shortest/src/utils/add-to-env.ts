@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import os from "os";
 import { join } from "path";
-import { ENV_LOCAL_FILENAME } from "../constants";
+import { ENV_LOCAL_FILENAME } from "@/constants";
 
 type EnvResult = {
   added: string[];

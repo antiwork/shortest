@@ -1,5 +1,5 @@
 import type { Expect } from "expect";
-import type { TestFunction, TestHookFunction } from "./test";
+import type { TestFunction, TestHookFunction } from "@/types/test";
 
 export interface ShortestGlobals {
   expect: Expect;
