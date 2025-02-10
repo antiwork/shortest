@@ -32,15 +32,26 @@ git checkout -b feature/your-feature
 
 2. Run the test suite
 ```bash
-pnpm test:ai
-pnpm test:browser
-pnpm test:github
-pnpm test:assertion
+pnpm test:unit
 ```
 
 3. Build the CLI package
 ```bash
-pnpm cli:build
+pnpm build
+```
+
+4. Test your changes
+```bash
+pnpm shortest --help
+```
+
+5. To test in another project:
+```bash
+pnpm pack
+
+# In your test project
+npm install /path/to/antiwork-shortest-{version}.tgz
+npx shortest -h
 ```
 
 ## Pull requests
