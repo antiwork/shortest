@@ -226,7 +226,7 @@ GITHUB_TOTP_SECRET=your_secret  # Only for GitHub auth tests
 
 ## Shortest CLI development
 
-The NPM package is located in [`packages/shortest/`](./packages/shortest). See [CONTRIBUTING](./packages/shortest/CONTRIBUTING.md) guide.
+The [NPM package](https://www.npmjs.com/package/@antiwork/shortest) is located in [`packages/shortest/`](./packages/shortest). See [CONTRIBUTING](./packages/shortest/CONTRIBUTING.md) guide.
 
 ## Web app development
 
