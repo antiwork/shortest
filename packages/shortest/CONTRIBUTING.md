@@ -98,6 +98,6 @@ feat(cli): Add mobile testing support
 
 ## Help
 
-- Check existing discussions/issues/PRs before creating new ones
+- Check existing [discussions](https://github.com/anti-work/shortest/discussions)/[issues](https://github.com/anti-work/shortest/issues)/[PRs](https://github.com/anti-work/shortest/pulls) before creating new ones
 - Start a discussion for questions or ideas
-- Open an issue for bugs or problems
+- [Open an issue](https://github.com/anti-work/shortest/issues/new/choose) for bugs or problems
