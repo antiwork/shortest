@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { getLogger } from "@/log/index";
 import { configSchema, ShortestConfig } from "../types/config";
 import { ConfigError } from "./errors";
 import { formatZodError } from "./zod";
+import { getLogger } from "@/log/index";
 
 export const parseConfig = (config: unknown): ShortestConfig => {
   const log = getLogger();
