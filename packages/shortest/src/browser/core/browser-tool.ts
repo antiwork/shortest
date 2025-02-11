@@ -633,7 +633,10 @@ export class BrowserTool extends BaseBrowserTool {
           };
         } catch (error: unknown) {
           // Ignore cursor errors during navigation
-          if (error instanceof Error && !error.message.includes('context was destroyed')) {
+          if (
+            error instanceof Error &&
+            !error.message.includes("context was destroyed")
+          ) {
             throw error;
           }
         }
