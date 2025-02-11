@@ -4,9 +4,9 @@ import { join } from "path";
 import { fileURLToPath } from "url";
 import { detect, resolveCommand } from "package-manager-detector";
 import pc from "picocolors";
-import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "../../constants";
-import { addToEnv } from "../../utils/add-to-env";
-import { addToGitignore } from "../../utils/add-to-gitignore";
+import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
+import { addToEnv } from "@/utils/add-to-env";
+import { addToGitignore } from "@/utils/add-to-gitignore";
 
 export default async function main() {
   console.log(pc.blue("Setting up Shortest..."));

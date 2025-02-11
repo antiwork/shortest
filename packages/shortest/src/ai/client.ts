@@ -12,17 +12,17 @@ import {
 } from "ai";
 import pc from "picocolors";
 import { z } from "zod";
-import { BrowserTool } from "../browser/core/browser-tool";
-import { IAIClient, AIClientOptions } from "../types/ai";
-import { CacheEntry, CacheStep } from "../types/cache";
-import { createAIProvider } from "./provider";
-import { SYSTEM_PROMPT } from "./prompts";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { IAIClient, AIClientOptions } from "@/types/ai";
+import { CacheEntry, CacheStep } from "@/types/cache";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BaseCache } from "@/cache/cache";
 import { TestFunction, ToolResult } from "@/types";
 import { AIError } from "@/utils/errors";
 import { getLogger, Log } from "@/log";
 import { getConfig } from "..";
+import { createAIProvider } from "./provider";
+import { SYSTEM_PROMPT } from "./prompts";
 import { aiJSONResponseSchema, extractJsonPayload } from "./utils/json";
 
 export class AIClient implements IAIClient {

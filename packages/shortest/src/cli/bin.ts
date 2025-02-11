@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import pc from "picocolors";
-import { getConfig } from "..";
-import { GitHubTool } from "../browser/integrations/github";
-import { ENV_LOCAL_FILENAME } from "../constants";
-import { TestRunner } from "../core/runner";
+import { GitHubTool } from "@/browser/integrations/github";
+import { ENV_LOCAL_FILENAME } from "@/constants";
+import { TestRunner } from "@/core/runner";
+import { getConfig } from "@/index";
 import { LogLevel, LogFormat } from "@/log/config";
 import { getLogger } from "@/log/index";
 
