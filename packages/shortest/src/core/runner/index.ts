@@ -203,7 +203,7 @@ export class TestRunner {
       cache: this.cache,
     });
 
-    // First get page state
+    this.log.trace("Getting initial page state");
     const initialState = await browserTool.execute({
       action: "screenshot",
     });
@@ -288,9 +288,10 @@ export class TestRunner {
       }
     }
 
-    // Execute test with enhanced prompt
-    const resp = await aiClient.processAction(prompt, test);
-    const { response, metadata } = resp!;
+    this.log.setGroup("🤖");
+    const aiResponse = await aiClient.processAction(prompt, test);
+    this.log.resetGroup();
+    const { response, metadata } = aiResponse!;
 
     // Execute after function if present
     if (test.afterFn) {
