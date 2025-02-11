@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit --incremental",
     "test:e2e": "pnpm shortest",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "drizzle-kit": "drizzle-kit"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.50",
