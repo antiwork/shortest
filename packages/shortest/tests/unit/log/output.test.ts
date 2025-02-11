@@ -127,7 +127,11 @@ describe("LogOutput", () => {
       LogOutput.render(event, "terminal");
 
       const paddedLevel = level.padEnd(maxLevelLength);
-      const output = `${color}(${paddedLevel}) | ${mockDate} | test message`;
+      let message = "test message";
+      if (level === "error") {
+        message = `red(${message})`;
+      }
+      const output = `${color}(${paddedLevel}) | ${mockDate} | ${message}`;
       const expectedOutput =
         level === "warn" ? `yellowBright(${output})` : output;
 
