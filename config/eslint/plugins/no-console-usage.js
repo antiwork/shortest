@@ -1,31 +1,30 @@
 /**
- * @fileoverview ESLint plugin to warn against the usage of console and recommend using Logger from @shortest/logger.
+ * @fileoverview ESLint plugin that warns against using the native 'console' for logging,
+ * and recommends using 'Log' instead.
+ *
  */
 
 const plugin = {
-  meta: {
-    name: "eslint-plugin-no-console-usage",
-    type: "problem",
-    docs: {
-      description:
-        "Warns against the direct usage of console and recommends using a logger obtained from getLogger()",
-      category: "Best Practices",
-    },
-  },
-  configs: {},
   rules: {
     main: {
       meta: {
-        fixable: "code",
+        docs: {
+          description:
+            "Disallow the use of 'console'. Use 'Log' instead for logging.",
+          recommended: true,
+        },
         messages: {
-          noConsole:
-            "Do not use 'console'. Instead, call getLogger() to obtain a logger instance for logging.",
+          noConsole: "Do not use 'console'. Instead, use 'Log' for logging.",
         },
       },
       create(context) {
         return {
           MemberExpression(node) {
-            if (node.object.name === "console") {
+            if (
+              node.object &&
+              node.object.type === "Identifier" &&
+              node.object.name === "console"
+            ) {
               context.report({
                 node,
                 messageId: "noConsole",
@@ -36,6 +35,7 @@ const plugin = {
       },
     },
   },
+  configs: {},
 };
 
 Object.assign(plugin.configs, {
