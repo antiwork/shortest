@@ -13,7 +13,6 @@ export async function main() {
     console.log(pc.cyan("\n🚀 First browser launch..."));
     let context = await browserManager.launch();
     let page = context.pages()[0];
-
     let browserTool = new BrowserTool(page, browserManager, {
       width: 1920,
       height: 1080,

@@ -1,17 +1,20 @@
 import { execSync } from "child_process";
 import { URL } from "url";
 import pc from "picocolors";
-import { chromium, Browser, BrowserContext } from "playwright";
-import { ShortestConfig } from "../../types/config";
-import { getInstallationCommand } from "../../utils/platform";
+import { Browser, BrowserContext, chromium } from "playwright";
+import { getLogger, Log } from "@/log/index";
+import { ShortestConfig } from "@/types/config";
+import { getInstallationCommand } from "@/utils/platform";
 
 export class BrowserManager {
   private browser: Browser | null = null;
   private context: BrowserContext | null = null;
   private config: ShortestConfig;
+  private log: Log;
 
   constructor(config: ShortestConfig) {
     this.config = config;
+    this.log = getLogger();
   }
 
   private normalizeUrl(url: string): string {
@@ -34,14 +37,13 @@ export class BrowserManager {
         error instanceof Error &&
         error.message.includes("Executable doesn't exist")
       ) {
-        console.log(pc.yellow("Installing Playwright browser..."));
+        this.log.info("Installing Playwright browser...");
 
         const installationCommand = await getInstallationCommand();
 
         execSync(installationCommand, { stdio: "inherit" });
-        console.log(pc.green("✓ Playwright browser installed"));
+        this.log.info(pc.green("✓"), "Playwright browser installed");
 
-        // Try launching again
         this.browser = await chromium.launch({
           headless: this.config.headless ?? false,
         });

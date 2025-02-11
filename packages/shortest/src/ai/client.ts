@@ -1,22 +1,27 @@
 import Anthropic from "@anthropic-ai/sdk";
-import pc from "picocolors";
-import { BashTool } from "../browser/core/bash-tool";
-import { BrowserTool } from "../browser/core/browser-tool";
-import { CONFIG_FILENAME } from "../constants";
-import { ToolResult } from "../types";
-import { AIConfig, RequestBash, RequestComputer } from "../types/ai";
-import { CacheAction, CacheStep } from "../types/cache";
-import { SYSTEM_PROMPT } from "./prompts";
-import { AITools } from "./tools";
+import { SYSTEM_PROMPT } from "@/ai/prompts";
+import { AITools } from "@/ai/tools";
+import { BashTool } from "@/browser/core/bash-tool";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { CONFIG_FILENAME } from "@/constants";
+import { getLogger, Log } from "@/log/index";
+import { ToolResult } from "@/types";
+import { AIConfig, RequestBash, RequestComputer } from "@/types/ai";
+import { CacheAction, CacheStep } from "@/types/cache";
 
 export class AIClient {
   private client: Anthropic;
   private model: string;
   private maxMessages: number;
-  private debugMode: boolean;
+  private log: Log;
 
-  constructor(config: AIConfig, debugMode: boolean = false) {
+  constructor(config: AIConfig) {
+    this.log = getLogger();
+    this.log.trace("Initializing AIClient", { config });
     if (!config.apiKey) {
+      this.log.error(
+        `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
+      );
       throw new Error(
         `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
       );
@@ -27,7 +32,6 @@ export class AIClient {
     });
     this.model = "claude-3-5-sonnet-20241022";
     this.maxMessages = 10;
-    this.debugMode = debugMode;
   }
 
   async processAction(
@@ -61,7 +65,7 @@ export class AIClient {
         attempts++;
         if (attempts === maxRetries) throw error;
 
-        console.log(`  Retry attempt ${attempts}/${maxRetries}`);
+        this.log.debug("Retry attempt", { attempt: attempts, maxRetries });
         await new Promise((r) => setTimeout(r, 5000 * attempts));
       }
     }
@@ -87,12 +91,9 @@ export class AIClient {
   }> {
     const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
+
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
-    if (this.debugMode) {
-      console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
-    }
-
     messages.push({
       role: "user",
       content: prompt,
@@ -101,7 +102,7 @@ export class AIClient {
     while (true) {
       try {
         await new Promise((resolve) => setTimeout(resolve, 1000));
-
+        this.log.trace("Making request", { prompt });
         const response = await this.client.beta.messages.create({
           model: this.model,
           max_tokens: 1024,
@@ -110,7 +111,6 @@ export class AIClient {
           tools: [...AITools],
           betas: ["computer-use-2024-10-22"],
         });
-        // Log AI response and tool usage
 
         totalInputTokens += response.usage.input_tokens;
         totalOutputTokens += response.usage.output_tokens;
@@ -119,21 +119,19 @@ export class AIClient {
           output: totalOutputTokens,
         };
 
-        if (this.debugMode) {
-          response.content.forEach((block) => {
-            if (block.type === "text") {
-              console.log(pc.green("\n🤖 AI:"), pc.dim((block as any).text));
-            } else if (block.type === "tool_use") {
-              const toolBlock =
-                block as Anthropic.Beta.Messages.BetaToolUseBlock;
-
-              console.log(pc.yellow("\n🔧 Tool Request:"), {
-                tool: toolBlock.name,
-                input: toolBlock.input,
-              });
-            }
-          });
-        }
+        response.content.forEach((block) => {
+          if (block.type === "text") {
+            this.log.debug("Response", {
+              response: (block as any).text,
+            });
+          } else if (block.type === "tool_use") {
+            const toolBlock = block as Anthropic.Beta.Messages.BetaToolUseBlock;
+            this.log.debug("Tool request", {
+              tool: toolBlock.name,
+              input: toolBlock.input,
+            });
+          }
+        });
 
         // Add assistant's response to history
         messages.push({
@@ -157,7 +155,7 @@ export class AIClient {
                     );
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    console.error("Error executing bash command:", error);
+                    this.log.error("Error executing bash command", { error });
                     throw error;
                   }
                 default:
@@ -192,7 +190,7 @@ export class AIClient {
 
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    console.error("Error executing browser tool:", error);
+                    this.log.error("Error executing browser tool", { error });
                     throw error;
                   }
               }
@@ -262,10 +260,11 @@ export class AIClient {
         }
       } catch (error: any) {
         if (error.message?.includes("rate_limit")) {
-          console.log("⏳ Rate limited, waiting 60s...");
+          this.log.debug("⏳", "Rate limited, waiting 60s...");
           await new Promise((resolve) => setTimeout(resolve, 60000));
           continue;
         }
+        this.log.error("AI request failed", { error });
         throw error;
       }
     }

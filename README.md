@@ -224,6 +224,10 @@ ANTHROPIC_API_KEY=your_api_key
 GITHUB_TOTP_SECRET=your_secret  # Only for GitHub auth tests
 ```
 
+## Shortest CLI development
+
+The [NPM package](https://www.npmjs.com/package/@antiwork/shortest) is located in [`packages/shortest/`](./packages/shortest). See [CONTRIBUTING](./packages/shortest/CONTRIBUTING.md) guide.
+
 ## Web app development
 
 This guide will help you set up the Shortest web app for local development.
@@ -374,30 +378,3 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to see the app in action.
-
-## Shortest CLI development
-
-1. Make changes to the package source code in `packages/shortest/`
-
-2. Build the package and test the changes:
-```bash
-# One-time build
-pnpm cli:build
-
-# Watch mode (rebuilds on changes)
-pnpm cli:dev
-
-# Test changes
-pnpm shortest --help
-```
-
-3. To test in another project:
-```bash
-# In Shortest package directory
-cd packages/shortest
-pnpm pack
-
-# In your test project
-npm install /path/to/antiwork-shortest-{version}.tgz
-npx shortest -h
-```

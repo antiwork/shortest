@@ -1,18 +1,18 @@
 import { join } from "path";
 import dotenv from "dotenv";
 import { expect as jestExpect } from "expect";
-import { APIRequest } from "./browser/core/api-request";
-import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "./constants";
-import { TestCompiler } from "./core/compiler";
+import { APIRequest } from "@/browser/core/api-request";
+import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
+import { TestCompiler } from "@/core/compiler";
 import {
   TestFunction,
   TestAPI,
   TestContext,
   TestChain,
   ShortestConfig,
-} from "./types";
-import { parseConfig } from "./utils/config";
-import { ConfigError } from "./utils/errors";
+} from "@/types";
+import { parseConfig } from "@/utils/config";
+import { ConfigError } from "@/utils/errors";
 
 // to include the global expect in the generated d.ts file
 import "./globals";
@@ -121,6 +121,7 @@ function createTestChain(
     const tests = nameOrFn.map((name) => {
       const test: TestFunction = {
         name,
+        filePath: "",
         expectations: [],
       };
 
@@ -142,6 +143,7 @@ function createTestChain(
     registry.directTestCounter++;
     const test: TestFunction = {
       name: `Direct Test #${registry.directTestCounter}`,
+      filePath: "",
       directExecution: true,
       fn: nameOrFn,
     };
@@ -162,6 +164,7 @@ function createTestChain(
   // Rest of existing createTestChain implementation...
   const test: TestFunction = {
     name: nameOrFn,
+    filePath: "",
     payload: typeof payloadOrFn === "function" ? undefined : payloadOrFn,
     fn: typeof payloadOrFn === "function" ? payloadOrFn : fn,
     expectations: [],

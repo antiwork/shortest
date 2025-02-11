@@ -55,7 +55,7 @@ jobs:
         run: pnpm start -p 3000 & sleep 10
 
       - name: Run Shortest tests
-        run: pnpm nextjs:test:e2e --headless
+        run: pnpm nextjs:test:e2e --headless  --log-level=debug
 
       - name: Upload artifacts
         if: failure()

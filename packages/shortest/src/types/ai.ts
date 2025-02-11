@@ -1,14 +1,12 @@
-import { ActionInput } from "./browser";
-
+import { ActionInput } from "@/types/browser";
 export interface AIConfig {
   apiKey: string;
   model?: string;
   maxMessages?: number;
-  debug?: boolean;
 }
 
 export interface AIResponse {
-  result: "pass" | "fail";
+  result: "passed" | "failed";
   reason: string;
 }
 

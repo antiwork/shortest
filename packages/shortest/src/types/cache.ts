@@ -1,4 +1,4 @@
-import { BrowserAction, ActionInput } from "./browser";
+import { BrowserAction, ActionInput } from "@/types/browser";
 
 export interface CacheAction {
   type: "tool_use" | "text";

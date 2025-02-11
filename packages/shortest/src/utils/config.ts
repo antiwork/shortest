@@ -1,6 +1,6 @@
 import { z, ZodError } from "zod";
-import { configSchema, ShortestConfig } from "../types/config";
-import { ConfigError } from "./errors";
+import { configSchema, ShortestConfig } from "@/types/config";
+import { ConfigError } from "@/utils/errors";
 
 export const parseConfig = (config: unknown): ShortestConfig => {
   try {
