@@ -46,7 +46,7 @@ export function extractJsonPayload<T>(
 }
 
 export const aiJSONResponseSchema = z.object({
-  result: z.enum(["pass", "fail"]),
+  status: z.enum(["passed", "failed"]),
   reason: z.string(),
 });
 

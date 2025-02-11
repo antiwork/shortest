@@ -144,7 +144,7 @@ export class AIClient implements IAIClient {
       // At this point, response reason is not a tool call, and it's not errored
       const json = extractJsonPayload(resp.text, aiJSONResponseSchema);
 
-      if (json.result === "pass") {
+      if (json.status === "passed") {
         this.cache.set(test, this.pendingCache);
       }
 
