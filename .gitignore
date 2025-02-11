@@ -10,12 +10,12 @@ node_modules/
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
+# Next.js
+apps/nextjs/.next/
+apps/nextjs/out/
 
 # production
-/build
+apps/nextjs/build
 
 # Build outputs
 dist/
@@ -49,10 +49,7 @@ next-env.d.ts
 docker-compose.override.yml
 docker-compose.yml
 
-# screenshots
-screenshots/
-
-# browser data
+# Shortest
 .shortest/
 
 # tarball

@@ -8,18 +8,18 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm --filter @anti-work/nextjs dev",
-    "build": "pnpm --filter @anti-work/nextjs build",
-    "start": "pnpm --filter @anti-work/nextjs start",
     "cli:build": "cd packages/shortest && pnpm build",
     "cli:dev": "cd packages/shortest && pnpm dev",
     "cli:test": "cd packages/shortest && pnpm shortest",
     "cli:typecheck": "tsc -p packages/shortest/tsconfig.json --noEmit",
-    "nextjs:typecheck": "pnpm --filter @anti-work/nextjs typecheck",
-    "nextjs:test:e2e": "pnpm --filter @anti-work/nextjs test:e2e",
-    "db:generate": "cd apps/nextjs && pnpm drizzle-kit generate",
-    "db:migrate": "cd apps/nextjs && pnpm db:migrate",
-    "db:seed": "cd apps/nextjs && pnpm db:seed",
+    "nextjs:db:generate": "cd apps/nextjs && npx dotenv-cli -e ../../.env.local -- pnpm run drizzle-kit generate",
+    "nextjs:db:migrate": "cd apps/nextjs && npx dotenv-cli -e ../../.env.local -- pnpm run db:migrate",
+    "nextjs:db:seed": "cd apps/nextjs && npx dotenv-cli -e ../../.env.local -- pnpm run db:seed",
+    "nextjs:dev": "cd apps/nextjs && npx dotenv-cli -e ../../.env.local -- pnpm run dev",
+    "nextjs:build": "cd apps/nextjs && npx dotenv-cli -e ../../.env.local -- pnpm run build",
+    "nextjs:start": "cd apps/nextjs && npx dotenv-cli -e ../../.env.local -- pnpm run start",
+    "nextjs:test:e2e": "cd apps/nextjs && npx dotenv-cli -e ../../.env.local -- pnpm run test:e2e",
+    "nextjs:typecheck": "cd apps/nextjs && npx dotenv-cli -e ../../.env.local -- pnpm run typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
@@ -33,6 +33,7 @@
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^5.2.3",
     "eslint-plugin-react": "^7.37.4",
-    "eslint-plugin-react-hooks": "^5.1.0"
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "dotenv-cli": "latest"
   }
 }
