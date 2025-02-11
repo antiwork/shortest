@@ -227,27 +227,8 @@ export class BrowserTool extends BaseBrowserTool {
           await this.clickAtCoordinates(clickCoords[0], clickCoords[1]);
           output = `${input.action} at (${clickCoords[0]}, ${clickCoords[1]})`;
 
-          // Get initial metadata before potential navigation
+          // Get metadata after navigation is complete
           metadata = await this.getMetadata();
-
-          // Wait briefly for navigation to start
-          await this.page.waitForTimeout(100);
-
-          // If navigation started, get updated metadata
-          if (
-            await this.page
-              .evaluate(() => document.readyState !== "complete")
-              .catch(() => true)
-          ) {
-            try {
-              await this.page.waitForLoadState("domcontentloaded", {
-                timeout: 5000,
-              });
-              metadata = await this.getMetadata();
-            } catch {
-              // Keep the initial metadata if navigation timeout
-            }
-          }
           break;
         }
 
@@ -642,13 +623,20 @@ export class BrowserTool extends BaseBrowserTool {
         },
       };
 
-      // Only try to get cursor position if page is stable
+      // Only try to get cursor position if page is stable and not navigating
       if (await this.isPageStable()) {
-        const position = await actions.getCursorPosition(this.page);
-        metadata.cursor_info = {
-          position,
-          visible: this.cursorVisible,
-        };
+        try {
+          const position = await actions.getCursorPosition(this.page);
+          metadata.cursor_info = {
+            position,
+            visible: this.cursorVisible,
+          };
+        } catch (error: unknown) {
+          // Ignore cursor errors during navigation
+          if (error instanceof Error && !error.message.includes('context was destroyed')) {
+            throw error;
+          }
+        }
       }
 
       return metadata;

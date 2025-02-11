@@ -68,8 +68,18 @@ export async function click(page: Page, x: number, y: number): Promise<void> {
   const scaledY = Math.round(y * scaleRatio.y);
 
   await mouseMove(page, x, y);
+  
+  // Start navigation promise before clicking
+  const navigationPromise = page.waitForNavigation({ 
+    waitUntil: 'domcontentloaded',
+    timeout: 5000 
+  }).catch(() => {}); // Ignore timeout
+  
   await page.mouse.click(scaledX, scaledY);
   await showClickAnimation(page, "left");
+  
+  // Wait for navigation if it started
+  await navigationPromise;
 }
 
 export async function dragMouse(
