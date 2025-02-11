@@ -1,3 +1,5 @@
+import { anthropic } from "@ai-sdk/anthropic";
+import { sleep } from "@anthropic-ai/sdk/core";
 import {
   CoreMessage,
   CoreTool,
@@ -11,21 +13,17 @@ import {
 import pc from "picocolors";
 import { z } from "zod";
 
-import { sleep } from "@anthropic-ai/sdk/core";
-import { anthropic } from "@ai-sdk/anthropic";
-
-import { BrowserTool } from "@/browser/core/browser-tool";
+import { getConfig } from "..";
+import { SYSTEM_PROMPT } from "./prompts";
+import { createAIProvider } from "./provider";
+import { aiJSONResponseSchema, extractJsonPayload } from "./utils/json";
 import { BashTool } from "@/browser/core/bash-tool";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { BaseCache } from "@/cache/cache";
+import { getLogger, Log } from "@/log";
 import { IAIClient, AIClientOptions, TestFunction, ToolResult } from "@/types";
 import { CacheEntry, CacheStep } from "@/types/cache";
-import { BaseCache } from "@/cache/cache";
 import { AIError } from "@/utils/errors";
-import { getLogger, Log } from "@/log";
-
-import { getConfig } from "..";
-import { createAIProvider } from "./provider";
-import { SYSTEM_PROMPT } from "./prompts";
-import { aiJSONResponseSchema, extractJsonPayload } from "./utils/json";
 
 export class AIClient implements IAIClient {
   private client: LanguageModelV1;

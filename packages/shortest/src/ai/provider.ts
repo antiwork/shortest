@@ -1,5 +1,5 @@
-import { LanguageModelV1 } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { LanguageModelV1 } from "ai";
 import { AIConfig } from "@/types";
 
 /**

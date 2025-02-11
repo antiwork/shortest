@@ -4,6 +4,7 @@ import pc from "picocolors";
 import { APIRequest, BrowserContext } from "playwright";
 import * as playwright from "playwright";
 import { request, APIRequestContext } from "playwright";
+import { z } from "zod";
 import { BrowserTool } from "../../browser/core/browser-tool";
 import { BrowserManager } from "../../browser/manager";
 import { BaseCache } from "../../cache/cache";
@@ -20,7 +21,6 @@ import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
 import { AIClient } from "@/ai/client";
 import { getLogger, Log } from "@/log";
-import { z } from "zod";
 
 export const TokenMetricsSchema = z.object({
   input: z.number().default(0),
