@@ -17,6 +17,9 @@
     "cli:typecheck": "tsc -p packages/shortest/tsconfig.json --noEmit",
     "nextjs:typecheck": "pnpm --filter @anti-work/nextjs typecheck",
     "nextjs:test:e2e": "pnpm --filter @anti-work/nextjs test:e2e",
+    "db:generate": "cd apps/nextjs && pnpm drizzle-kit generate",
+    "db:migrate": "cd apps/nextjs && pnpm db:migrate",
+    "db:seed": "cd apps/nextjs && pnpm db:seed",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
