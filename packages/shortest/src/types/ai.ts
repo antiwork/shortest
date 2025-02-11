@@ -44,7 +44,6 @@ export type RequestComputer = RequestTypes.ToolRequest<RequestTypes.Computer>;
 export interface AIClientOptions {
   config: LLMConfig;
   browserTool: BrowserTool;
-  isDebugMode: boolean;
   cache: BaseCache<CacheEntry>;
 }
 export interface IAIClient {

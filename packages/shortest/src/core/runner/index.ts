@@ -20,12 +20,31 @@ import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
 import { AIClient } from "@/ai/client";
 import { getLogger, Log } from "@/log";
+import { z } from "zod";
 
-interface TestResult {
-  result: "pass" | "fail";
-  reason: string;
-  tokenUsage?: { input: number; output: number };
-}
+export const TokenMetricsSchema = z.object({
+  input: z.number().default(0),
+  output: z.number().default(0),
+});
+export type TokenMetrics = z.infer<typeof TokenMetricsSchema>;
+
+const STATUSES = ["pending", "running", "passed", "failed"] as const;
+export type TestStatus = (typeof STATUSES)[number];
+
+export const TestResultSchema = z.object({
+  test: z.any() as z.ZodType<TestFunction>,
+  status: z.enum(STATUSES),
+  reason: z.string(),
+  tokenUsage: TokenMetricsSchema.default({ input: 0, output: 0 }),
+});
+export type TestResult = z.infer<typeof TestResultSchema>;
+
+export const FileResultSchema = z.object({
+  filePath: z.string(),
+  status: z.enum(STATUSES),
+  reason: z.string(),
+});
+export type FileResult = z.infer<typeof FileResultSchema>;
 
 export class TestRunner {
   private config!: ShortestConfig;
@@ -182,7 +201,6 @@ export class TestRunner {
     const aiClient = new AIClient({
       config: this.config.ai,
       browserTool,
-      isDebugMode: this.debugAI,
       cache: this.cache,
     });
 

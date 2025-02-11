@@ -23,6 +23,7 @@ import { BaseCache } from "@/cache/cache";
 import { TestFunction, ToolResult } from "@/types";
 import { LLMError } from "@/utils/errors";
 import { formatZodError } from "@/utils/zod";
+import { getLogger, Log } from "@/log";
 
 export class AIClient implements IAIClient {
   private client: LanguageModelV1;
@@ -30,14 +31,14 @@ export class AIClient implements IAIClient {
   private conversationHistory: Array<CoreMessage> = [];
   private pendingCache: Partial<{ steps?: CacheStep[] }> = {};
   private cache: BaseCache<CacheEntry>;
-  private isDebugMode: boolean;
+  private log: Log;
 
-  constructor({ config, browserTool, isDebugMode, cache }: AIClientOptions) {
+  constructor({ config, browserTool, cache }: AIClientOptions) {
     this.client = createAIClient(config);
     this.browserTool = browserTool;
     // Todo remove it once we have global debug mode access
-    this.isDebugMode = isDebugMode;
     this.cache = cache;
+    this.log = getLogger();
   }
 
   async processAction(prompt: string, test: TestFunction) {
@@ -54,16 +55,14 @@ export class AIClient implements IAIClient {
         retries++;
         if (retries === MAX_RETRIES) throw error;
 
-        console.log(`  Retry attempt ${retries}/${MAX_RETRIES}`);
+        this.log.debug(`  Retry attempt ${retries}/${MAX_RETRIES}`);
         await sleep(5000 * retries);
       }
     }
   }
 
   private async makeRequest(prompt: string, test: TestFunction) {
-    if (this.isDebugMode) {
-      console.log(pc.cyan("\n🤖 Prompt:"), pc.dim(prompt));
-    }
+    this.log.debug(pc.cyan("\n Prompt:"), pc.dim(prompt));
 
     // Push initial user prompt
     this.conversationHistory.push({
@@ -113,33 +112,29 @@ export class AIClient implements IAIClient {
         });
       } catch (error) {
         if (NoSuchToolError.isInstance(error)) {
-          console.log("Tool is not supported");
+          this.log.error("Tool is not supported");
         } else if (InvalidToolArgumentsError.isInstance(error)) {
-          console.log("Invalid arguments for a tool were provided");
+          this.log.error("Invalid arguments for a tool were provided");
         }
         throw error;
       }
 
-      if (this.isDebugMode) {
-        process.stdout.write(
-          `\nLLM step completed with finish reason: '${resp.finishReason}'`,
+      this.log.debug(
+        `\nLLM step completed with finish reason: '${resp.finishReason}'`,
+      );
+
+      for (const { toolName, args } of resp.toolCalls) {
+        this.log.debug(`\nTool call: '${toolName}' ${JSON.stringify(args)}`);
+      }
+
+      for (const { toolName, result } of resp.toolResults as any) {
+        if (result.base64_image) {
+          result.base64_image = result.base64_image.substring(0, 25) + "...";
+        }
+
+        this.log.debug(
+          `\nTool response: '${toolName}' ${JSON.stringify(result)}`,
         );
-
-        for (const { toolName, args } of resp.toolCalls) {
-          process.stdout.write(
-            `\nTool call: '${toolName}' ${JSON.stringify(args)}`,
-          );
-        }
-
-        for (const { toolName, result } of resp.toolResults as any) {
-          if (result.base64_image) {
-            result.base64_image = result.base64_image.substring(0, 25) + "...";
-          }
-
-          process.stdout.write(
-            `\nTool response: '${toolName}' ${JSON.stringify(result)}`,
-          );
-        }
       }
 
       this.conversationHistory.push(...resp.response.messages);
