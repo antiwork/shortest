@@ -157,7 +157,7 @@ async function main() {
     .filter((arg) => !isValidArg(arg));
 
   if (invalidFlags.length > 0) {
-    log.error("Invalid argument(s)", { invalidFlags });
+    console.error("Invalid argument(s)", { invalidFlags });
     process.exit(1);
   }
 
@@ -182,7 +182,7 @@ async function main() {
     const testPattern = cliTestPattern || config.testPattern;
     await runner.runTests(testPattern);
   } catch (error: any) {
-    log.error(pc.red(error.name), { message: error.message });
+    console.error(pc.red(error.name), { message: error.message });
     process.exit(1);
   }
 }
