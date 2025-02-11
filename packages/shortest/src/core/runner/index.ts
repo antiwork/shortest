@@ -19,6 +19,7 @@ import { hashData } from "../../utils/crypto";
 import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
 import { AIClient } from "@/ai/client";
+import { getLogger, Log } from "@/log";
 
 interface TestResult {
   result: "pass" | "fail";
