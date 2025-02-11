@@ -20,11 +20,7 @@ import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
 import { AIClient } from "@/ai/client";
 import { getLogger, Log } from "@/log";
-<<<<<<< Updated upstream
-=======
-import { z } from "zod";
 import { getErrorDetails } from "@/utils/errors";
->>>>>>> Stashed changes
 
 export const TokenMetricsSchema = z.object({
   input: z.number().default(0),
