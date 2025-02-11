@@ -23,6 +23,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && pnpm build:types && pnpm build:js && pnpm build:cli",
+    "build:pack": "pnpm build && pnpm pack",
     "prepare": "pnpm build",
     "prepublishOnly": "pnpm build",
     "postinstall": "node -e \"if (process.platform !== 'win32') { try { require('child_process').execSync('chmod +x dist/cli/bin.js') } catch (_) {} }\"",
