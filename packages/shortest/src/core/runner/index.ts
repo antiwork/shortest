@@ -199,7 +199,6 @@ export class TestRunner {
     });
 
     const aiClient = new AIClient({
-      config: this.config.ai,
       browserTool,
       cache: this.cache,
     });
@@ -319,7 +318,7 @@ export class TestRunner {
 
     return {
       status: response?.result ?? "fail",
-      reason: response?.reason ?? "No response received from LLM.",
+      reason: response?.reason ?? "No response received from AI.",
       tokenUsage: {
         input: metadata.usage?.promptTokens ?? 0,
         output: metadata.usage?.completionTokens ?? 0,

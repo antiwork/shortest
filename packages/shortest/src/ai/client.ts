@@ -15,15 +15,15 @@ import { z } from "zod";
 import { BrowserTool } from "../browser/core/browser-tool";
 import { IAIClient, AIClientOptions } from "../types/ai";
 import { CacheEntry, CacheStep } from "../types/cache";
-import { createAIClient } from "./client-provider";
+import { createAIProvider } from "./provider";
 import { SYSTEM_PROMPT } from "./prompts";
-import { llmJSONResponseSchema } from "./validation";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BaseCache } from "@/cache/cache";
 import { TestFunction, ToolResult } from "@/types";
-import { LLMError } from "@/utils/errors";
-import { formatZodError } from "@/utils/zod";
+import { AIError } from "@/utils/errors";
 import { getLogger, Log } from "@/log";
+import { getConfig } from "..";
+import { aiJSONResponseSchema, extractJsonPayload } from "./utils/json";
 
 export class AIClient implements IAIClient {
   private client: LanguageModelV1;
@@ -33,8 +33,8 @@ export class AIClient implements IAIClient {
   private cache: BaseCache<CacheEntry>;
   private log: Log;
 
-  constructor({ config, browserTool, cache }: AIClientOptions) {
-    this.client = createAIClient(config);
+  constructor({ browserTool, cache }: AIClientOptions) {
+    this.client = createAIProvider(getConfig().ai);
     this.browserTool = browserTool;
     // Todo remove it once we have global debug mode access
     this.cache = cache;
@@ -119,8 +119,6 @@ export class AIClient implements IAIClient {
         throw error;
       }
 
-      this.log.info(resp.text);
-
       this.log.debug(
         `\nLLM step completed with finish reason: '${resp.finishReason}'`,
       );
@@ -144,37 +142,14 @@ export class AIClient implements IAIClient {
       this.processErrors(resp);
 
       // At this point, response reason is not a tool call, and it's not errored
-      const jsonMatch = resp.text.match(/{[\s\S]*}/)?.[0];
+      const json = extractJsonPayload(resp.text, aiJSONResponseSchema);
 
-      this.log.info({ jsonMatch });
-
-      if (!jsonMatch) {
-        throw new LLMError("invalid-response", "LLM didn't return JSON.");
-      }
-
-      let parsedResponse;
-      try {
-        this.log.info("parsing....");
-        parsedResponse = llmJSONResponseSchema.parse(JSON.parse(jsonMatch));
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          this.log.error({ error });
-          throw new LLMError(
-            "invalid-response",
-            formatZodError(error, "Invalid LLM response."),
-          );
-        }
-        throw error;
-      }
-
-      this.log.info({ parsedResponse });
-
-      if (parsedResponse.result === "pass") {
+      if (json.result === "pass") {
         this.cache.set(test, this.pendingCache);
       }
 
       return {
-        response: parsedResponse,
+        response: json,
         metadata: {
           usage: resp.usage,
         },
@@ -281,19 +256,19 @@ export class AIClient implements IAIClient {
     const reason = resp.finishReason;
     switch (reason) {
       case "length":
-        throw new LLMError(
+        throw new AIError(
           "token-limit-exceeded",
           "Generation stopped because the maximum token length was reached.",
         );
       case "content-filter":
-        throw new LLMError(
+        throw new AIError(
           "unsafe-content-detected",
           "Content filter violation: generation aborted.",
         );
       case "error":
-        throw new LLMError("unknown", "An error occurred during generation.");
+        throw new AIError("unknown", "An error occurred during generation.");
       case "other":
-        throw new LLMError("unknown", "An error occurred during generation.");
+        throw new AIError("unknown", "An error occurred during generation.");
     }
   }
 

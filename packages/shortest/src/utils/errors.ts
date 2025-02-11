@@ -13,17 +13,17 @@ export class ConfigError extends Error {
   }
 }
 
-export type LLMErrorType =
+export type AIErrorType =
   | "invalid-response"
   | "token-limit-exceeded"
   | "unsafe-content-detected"
   | "unknown";
-export class LLMError extends Error {
-  type: LLMErrorType;
+export class AIError extends Error {
+  type: AIErrorType;
 
-  constructor(type: LLMErrorType, message: string) {
+  constructor(type: AIErrorType, message: string) {
     super(message);
-    this.name = "LLMError";
+    this.name = "AIError";
     this.type = type;
   }
 }

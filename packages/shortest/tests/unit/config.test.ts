@@ -1,5 +1,4 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { LLMSupportedModels, LLMSupportedProviders } from "@/types";
 import { parseConfig } from "@/utils/config";
 
 describe("Config parsing", () => {
@@ -114,9 +113,9 @@ describe("Config parsing", () => {
       baseUrl: "https://example.com",
       testPattern: ".*",
       ai: {
-        provider: LLMSupportedProviders.ANTHROPIC,
+        provider: "anthropic",
         apiKey,
-        model: LLMSupportedModels.CLAUDE_3_5_SONNET, // defaults to CLAUDE_3_5_SONNET automatically
+        model: "claude-3-5-sonnet", // defaults to claude-3-5-sonnet automatically
       },
     };
 
