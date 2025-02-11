@@ -35,27 +35,26 @@ export class TestRunner {
   private compiler: TestCompiler;
   private browserManager!: BrowserManager;
   private reporter: TestReporter;
-  private debugAI: boolean;
   private noCache: boolean;
   private testContext: TestContext | null = null;
   private cache: BaseCache<CacheEntry>;
+  private log: Log;
 
   constructor(
     cwd: string,
     exitOnSuccess = true,
     forceHeadless = false,
     targetUrl?: string,
-    debugAI = false,
     noCache = false,
   ) {
     this.cwd = cwd;
     this.exitOnSuccess = exitOnSuccess;
     this.forceHeadless = forceHeadless;
     this.targetUrl = targetUrl;
-    this.debugAI = debugAI;
     this.noCache = noCache;
     this.compiler = new TestCompiler();
     this.reporter = new TestReporter();
+    this.log = getLogger();
     this.cache = new BaseCache();
   }
 
@@ -82,6 +81,7 @@ export class TestRunner {
   }
 
   private async findTestFiles(pattern?: string): Promise<string[]> {
+    this.log.trace("Finding test files", { pattern });
     const testPattern = pattern || this.config.testPattern || "**/*.test.ts";
 
     const files = await glob(testPattern, {
@@ -94,6 +94,9 @@ export class TestRunner {
         "Test Discovery",
         `No test files found matching: ${testPattern}`,
       );
+      this.log.error("No test files found matching", {
+        pattern: testPattern,
+      });
       process.exit(1);
     }
 
@@ -140,24 +143,22 @@ export class TestRunner {
     test: TestFunction,
     context: BrowserContext,
     config: { noCache: boolean } = { noCache: false },
-  ): Promise<{
-    result: "pass" | "fail";
-    reason: string;
-    tokenUsage: { input: number; output: number };
-  }> {
+  ): Promise<TestResult> {
     // If it's direct execution, skip AI
     if (test.directExecution) {
       try {
         const testContext = await this.createTestContext(context);
         await test.fn?.(testContext);
         return {
-          result: "pass" as const,
+          test: test,
+          status: "passed",
           reason: "Direct execution successful",
           tokenUsage: { input: 0, output: 0 },
         };
       } catch (error) {
         return {
-          result: "fail" as const,
+          test: test,
+          status: "failed",
           reason:
             error instanceof Error ? error.message : "Direct execution failed",
           tokenUsage: { input: 0, output: 0 },
@@ -227,9 +228,10 @@ export class TestRunner {
               await test.afterFn(testContext);
             } catch (error) {
               return {
-                result: "fail" as const,
+                test: test,
+                status: "failed",
                 reason:
-                  result?.result === "fail"
+                  result?.status === "failed"
                     ? `AI: ${result.reason}, After: ${
                         error instanceof Error ? error.message : String(error)
                       }`
@@ -260,7 +262,8 @@ export class TestRunner {
         await test.beforeFn(testContext);
       } catch (error) {
         return {
-          result: "fail" as const,
+          test: test,
+          status: "failed",
           reason: error instanceof Error ? error.message : String(error),
           tokenUsage: { input: 0, output: 0 },
         };
@@ -277,7 +280,8 @@ export class TestRunner {
         await test.afterFn(testContext);
       } catch (error) {
         return {
-          result: "fail" as const,
+          test: test,
+          status: "failed",
           reason:
             response?.result === "fail"
               ? `AI: ${response.reason}, After: ${
@@ -312,21 +316,23 @@ export class TestRunner {
       registry.currentFileTests = [];
 
       const filePathWithoutCwd = file.replace(this.cwd + "/", "");
-      this.reporter.startFile(filePathWithoutCwd);
       const compiledPath = await this.compiler.compileFile(file);
+      this.log.trace("Importing compiled file", {
+        compiledPath,
+      });
       await import(pathToFileURL(compiledPath).href);
 
       let context;
       try {
+        this.log.trace("Launching browser");
         context = await this.browserManager.launch();
       } catch (error) {
-        console.error(
-          `Browser initialization failed: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+        this.log.error(pc.red("Browser initialization failed"), {
+          error: error instanceof Error ? error.message : String(error),
+        });
         return;
       }
+      this.log.trace("Creating test context");
       const testContext = await this.createTestContext(context);
 
       try {
@@ -335,21 +341,22 @@ export class TestRunner {
           await hook(testContext);
         }
 
+        this.reporter.onFileStart(
+          filePathWithoutCwd,
+          registry.currentFileTests.length,
+        );
+
         // Execute tests in order they were defined
+        this.log.info(`Running ${registry.currentFileTests.length} test(s)`);
         for (const test of registry.currentFileTests) {
           // Execute beforeEach hooks with shared context
           for (const hook of registry.beforeEachFns) {
             await hook(testContext);
           }
 
-          this.reporter.initializeTest(test);
-          this.reporter.startTest(test);
-          const result = await this.executeTest(test, context);
-          this.reporter.endTest(
-            result.result === "pass" ? "passed" : "failed",
-            result.result === "fail" ? new Error(result.reason) : undefined,
-            result.tokenUsage,
-          );
+          this.reporter.onTestStart(test);
+          const testResult = await this.executeTest(test, context);
+          this.reporter.onTestEnd(testResult);
 
           // Execute afterEach hooks with shared context
           for (const hook of registry.afterEachFns) {
@@ -368,11 +375,23 @@ export class TestRunner {
         registry.afterAllFns = [];
         registry.beforeEachFns = [];
         registry.afterEachFns = [];
+        const fileResult: FileResult = {
+          filePath: file,
+          status: "passed",
+          reason: "",
+        };
+        this.reporter.onFileEnd(fileResult);
       }
     } catch (error) {
       this.testContext = null; // Reset on error
       if (error instanceof Error) {
-        this.reporter.endTest("failed", error);
+        const fileResult: FileResult = {
+          filePath: file,
+          status: "failed",
+          reason: error.message,
+        };
+
+        this.reporter.onFileEnd(fileResult);
       }
     }
   }
@@ -389,11 +408,12 @@ export class TestRunner {
       process.exit(1);
     }
 
+    this.reporter.onRunStart(files.length);
     for (const file of files) {
       await this.executeTestFile(file);
     }
 
-    this.reporter.summary();
+    this.reporter.onRunEnd();
 
     if (this.exitOnSuccess && this.reporter.allTestsPassed()) {
       process.exit(0);
@@ -407,9 +427,10 @@ export class TestRunner {
     browserTool: BrowserTool,
   ): Promise<TestResult> {
     const cachedTest = await this.cache.get(test);
-    if (this.debugAI) {
-      console.log(pc.green(`  Executing cached test ${hashData(test)}`));
-    }
+    this.log.debug("Running cached test", {
+      hash: hashData(test),
+    });
+    this.log.debug("💾", "Executing cached test", { hash: hashData(test) });
 
     const steps = cachedTest?.data.steps
       // do not take screenshots in cached mode
@@ -420,7 +441,8 @@ export class TestRunner {
 
     if (!steps) {
       return {
-        result: "fail" as const,
+        test: test,
+        status: "failed",
         reason: "No steps to execute, running test in normal mode",
         tokenUsage: { input: 0, output: 0 },
       };
@@ -440,7 +462,8 @@ export class TestRunner {
 
         if (componentStr !== step.extras.componentStr) {
           return {
-            result: "fail" as const,
+            test: test,
+            status: "failed",
             reason:
               "Component UI elements are different, running test in normal mode",
             tokenUsage: { input: 0, output: 0 },
@@ -451,17 +474,19 @@ export class TestRunner {
         try {
           await browserTool.execute(step.action.input);
         } catch (error) {
-          console.error(
-            `Failed to execute step with input ${step.action.input}`,
+          this.log.error(pc.red("Failed to execute step"), {
+            input: step.action.input,
             error,
-          );
+          });
         }
       }
     }
 
     return {
-      result: "pass",
+      test: test,
+      status: "passed",
       reason: "All actions successfully replayed from cache",
+      tokenUsage: { input: 0, output: 0 },
     };
   }
 }
