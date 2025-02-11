@@ -8,6 +8,7 @@ import { getLogger, Log } from "@/log/index";
 import { ToolResult } from "@/types";
 import { AIConfig, RequestBash, RequestComputer } from "@/types/ai";
 import { CacheAction, CacheStep } from "@/types/cache";
+import { getErrorDetails } from "@/utils/errors";
 
 export class AIClient {
   private client: Anthropic;
@@ -155,7 +156,10 @@ export class AIClient {
                     );
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    this.log.error("Error executing bash command", { error });
+                    this.log.error(
+                      "Error executing bash command",
+                      getErrorDetails(error),
+                    );
                     throw error;
                   }
                 default:
@@ -190,7 +194,10 @@ export class AIClient {
 
                     return { toolRequest, toolResult };
                   } catch (error) {
-                    this.log.error("Error executing browser tool", { error });
+                    this.log.error(
+                      "Error executing browser tool",
+                      getErrorDetails(error),
+                    );
                     throw error;
                   }
               }
@@ -264,7 +271,7 @@ export class AIClient {
           await new Promise((resolve) => setTimeout(resolve, 60000));
           continue;
         }
-        this.log.error("AI request failed", { error });
+        this.log.error("AI request failed", getErrorDetails(error));
         throw error;
       }
     }

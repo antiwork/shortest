@@ -2,7 +2,7 @@ import {
   APIRequest as APIRequestType,
   APIRequestConfig,
   APIFetchConfig,
-} from "../../types/request";
+} from "@/types/request";
 
 function generatePrompt(
   request: APIRequestType,
