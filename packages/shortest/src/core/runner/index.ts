@@ -302,7 +302,7 @@ export class TestRunner {
           test: test,
           status: "failed",
           reason:
-            response?.result === "fail"
+            response?.status === "failed"
               ? `AI: ${response.reason}, After: ${
                   error instanceof Error ? error.message : String(error)
                 }`
@@ -318,7 +318,7 @@ export class TestRunner {
     }
 
     return {
-      result: response?.result ?? "fail",
+      status: response?.result ?? "fail",
       reason: response?.reason ?? "No response received from LLM.",
       tokenUsage: {
         input: metadata.usage?.promptTokens ?? 0,

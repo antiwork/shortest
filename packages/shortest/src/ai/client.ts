@@ -119,6 +119,8 @@ export class AIClient implements IAIClient {
         throw error;
       }
 
+      this.log.info(resp.text);
+
       this.log.debug(
         `\nLLM step completed with finish reason: '${resp.finishReason}'`,
       );
@@ -144,15 +146,19 @@ export class AIClient implements IAIClient {
       // At this point, response reason is not a tool call, and it's not errored
       const jsonMatch = resp.text.match(/{[\s\S]*}/)?.[0];
 
+      this.log.info({ jsonMatch });
+
       if (!jsonMatch) {
         throw new LLMError("invalid-response", "LLM didn't return JSON.");
       }
 
       let parsedResponse;
       try {
+        this.log.info("parsing....");
         parsedResponse = llmJSONResponseSchema.parse(JSON.parse(jsonMatch));
       } catch (error) {
         if (error instanceof z.ZodError) {
+          this.log.error({ error });
           throw new LLMError(
             "invalid-response",
             formatZodError(error, "Invalid LLM response."),
@@ -160,6 +166,8 @@ export class AIClient implements IAIClient {
         }
         throw error;
       }
+
+      this.log.info({ parsedResponse });
 
       if (parsedResponse.result === "pass") {
         this.cache.set(test, this.pendingCache);

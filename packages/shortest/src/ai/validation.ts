@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const llmJSONResponseSchema = z.object({
-  result: z.enum(["pass", "fail"]),
+  status: z.enum(["passed", "failed"]),
   reason: z.string(),
 });
 
