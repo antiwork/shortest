@@ -1,6 +1,5 @@
 import { pathToFileURL } from "url";
 import { glob } from "glob";
-import pc from "picocolors";
 import { APIRequest, BrowserContext } from "playwright";
 import * as playwright from "playwright";
 import { request, APIRequestContext } from "playwright";
@@ -21,6 +20,7 @@ import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
 import { AIClient } from "@/ai/client";
 import { getLogger, Log } from "@/log";
+import { getErrorDetails } from "@/utils/errors";
 
 export const TokenMetricsSchema = z.object({
   input: z.number().default(0),
@@ -346,9 +346,7 @@ export class TestRunner {
         this.log.trace("Launching browser");
         context = await this.browserManager.launch();
       } catch (error) {
-        this.log.error(pc.red("Browser initialization failed"), {
-          error: error instanceof Error ? error.message : String(error),
-        });
+        this.log.error("Browser initialization failed", getErrorDetails(error));
         return;
       }
       this.log.trace("Creating test context");
@@ -493,9 +491,9 @@ export class TestRunner {
         try {
           await browserTool.execute(step.action.input);
         } catch (error) {
-          this.log.error(pc.red("Failed to execute step"), {
+          this.log.error("Failed to execute step", {
             input: step.action.input,
-            error,
+            ...getErrorDetails(error),
           });
         }
       }

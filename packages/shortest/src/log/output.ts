@@ -115,7 +115,8 @@ export class LogOutput {
   }
 
   private static renderForTerminal(event: LogEvent, group?: LogGroup): string {
-    const { level, message, timestamp, metadata } = event;
+    const { level, timestamp, metadata } = event;
+    let { message } = event;
     const groupIdentifiers = group ? group.getGroupIdentifiers() : [];
     let colorFn = pc.white;
 
@@ -138,6 +139,9 @@ export class LogOutput {
     }
 
     const metadataStr = LogOutput.getMetadataString(metadata);
+    if (event.level === "error") {
+      message = pc.red(message);
+    }
 
     let outputParts = [];
     outputParts.push(colorFn(`${level}`.padEnd(LogOutput.MAX_LEVEL_LENGTH)));

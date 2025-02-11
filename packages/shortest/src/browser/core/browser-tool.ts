@@ -15,24 +15,24 @@ import {
   unlinkSync,
 } from "fs";
 import { join } from "path";
-import pc from "picocolors";
 import { Page } from "playwright";
-import { getConfig, initializeConfig } from "../../index";
-import { getLogger, Log } from "../../log/index";
+import * as actions from "@/browser/actions";
+import { BaseBrowserTool, ToolError } from "@/browser/core";
+import { GitHubTool } from "@/browser/integrations/github";
+import { MailosaurTool } from "@/browser/integrations/mailosaur";
+import { BrowserManager } from "@/browser/manager";
+import { getConfig, initializeConfig } from "@/index";
+import { getLogger, Log } from "@/log/index";
 import {
   TestContext,
   BrowserToolConfig,
   TestFunction,
   ShortestConfig,
-} from "../../types";
-import { ActionInput, ToolResult, BetaToolType } from "../../types/browser";
-import { CallbackError } from "../../types/test";
-import { AssertionCallbackError } from "../../types/test";
-import * as actions from "../actions";
-import { GitHubTool } from "../integrations/github";
-import { MailosaurTool } from "../integrations/mailosaur";
-import { BrowserManager } from "../manager";
-import { BaseBrowserTool, ToolError } from "./index";
+} from "@/types";
+import { ActionInput, ToolResult, BetaToolType } from "@/types/browser";
+import { CallbackError } from "@/types/test";
+import { AssertionCallbackError } from "@/types/test";
+import { getErrorDetails } from "@/utils/errors";
 
 export class BrowserTool extends BaseBrowserTool {
   private page: Page;
@@ -198,7 +198,7 @@ export class BrowserTool extends BaseBrowserTool {
         !error.message.includes("context was destroyed") &&
         !error.message.includes("Target closed")
       ) {
-        this.log.error("Cursor initialization failed", { error });
+        this.log.error("Cursor initialization failed", getErrorDetails(error));
       }
     }
   }
@@ -590,7 +590,7 @@ export class BrowserTool extends BaseBrowserTool {
         metadata,
       };
     } catch (error) {
-      this.log.error(pc.red("Browser action failed"), { error });
+      this.log.error("Browser action failed", getErrorDetails(error));
 
       if (error instanceof AssertionCallbackError) {
         return {
@@ -766,13 +766,16 @@ export class BrowserTool extends BaseBrowserTool {
         if (isOld || isBeyondLimit) {
           try {
             unlinkSync(file.path);
-          } catch (error) {
-            this.log.error(pc.red("Failed to delete screenshot"), { error });
+          } catch (error: unknown) {
+            this.log.error(
+              "Failed to delete screenshot",
+              getErrorDetails(error),
+            );
           }
         }
       });
     } catch (error) {
-      this.log.error(pc.red("Failed to clean up screenshots"), { error });
+      this.log.error("Failed to clean up screenshots", getErrorDetails(error));
     }
   }
 
