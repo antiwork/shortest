@@ -122,10 +122,8 @@ function getParamValue(args: string[], paramName: string): string | undefined {
 async function main() {
   const args = process.argv.slice(2);
   const logLevel = getParamValue(args, "--log-level");
-  const logFormat = getParamValue(args, "--log-format");
   const log = getLogger({
     level: logLevel as LogLevel,
-    format: logFormat as LogFormat,
   });
 
   const debugAI = args.includes("--debug-ai");
