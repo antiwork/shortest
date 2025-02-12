@@ -26,7 +26,7 @@ export class LogOutput {
     ...LOG_LEVELS.map((level) => level.length),
   );
 
-  private static readonly FILTERED_KEYS = ["apiKey"];
+  private static readonly FILTERED_KEYS = ["apiKey", "base64_image"];
 
   /**
    * Renders a log event
@@ -64,41 +64,6 @@ export class LogOutput {
       default:
         throw new Error(`Unsupported log format: ${format}`);
     }
-  }
-
-  private static parseAndFilterMetadata(
-    metadata: Record<string, any>,
-  ): Record<string, any> {
-    return Object.fromEntries(
-      Object.entries(metadata).map(([k, v]) => {
-        if (LogOutput.FILTERED_KEYS.includes(k)) {
-          return [k, "[FILTERED]"];
-        }
-
-        if (typeof v === "object" && v !== null) {
-          const stringified = JSON.stringify(
-            Object.fromEntries(
-              Object.entries(v).map(([k2, v2]) => {
-                if (LogOutput.FILTERED_KEYS.includes(k2)) {
-                  return [k2, "[FILTERED]"];
-                }
-                return [k2, v2];
-              }),
-            ),
-            null,
-            2,
-          );
-          return [k, stringified];
-        }
-
-        // Format string values with newlines
-        if (typeof v === "string" && v.includes("\n")) {
-          return [k, "\n  " + v.split("\n").join("\n  ")];
-        }
-
-        return [k, JSON.stringify(v)];
-      }),
-    );
   }
 
   private static renderForReporter(event: LogEvent, group?: LogGroup): string {
@@ -162,11 +127,54 @@ export class LogOutput {
   private static getMetadataString(
     metadata: Record<string, any>,
   ): string | undefined {
-    const parsedMetadata = LogOutput.parseAndFilterMetadata(metadata);
-    return metadata
-      ? Object.entries(parsedMetadata)
-          .map(([k, v]) => `${pc.dim(k)}=${v}`)
-          .join(" ")
-      : undefined;
+    if (!metadata) return undefined;
+
+    return Object.entries(metadata)
+      .map(([k, v]) => {
+        const filteredValue = LogOutput.filterValue(k, v, 0);
+        return `${pc.dim(k)}=${
+          typeof filteredValue === "object"
+            ? JSON.stringify(filteredValue, null, 2)
+            : filteredValue
+        }`;
+      })
+      .join(" ");
+  }
+
+  private static filterValue(key: string, value: any, depth: number): any {
+    const MAX_METADATA_DEPTH = 4;
+    const FILTERED_PLACEHOLDER = "[FILTERED]";
+    const TRUNCATED_PLACEHOLDER = "[TRUNCATED]";
+
+    if (depth > MAX_METADATA_DEPTH) {
+      return TRUNCATED_PLACEHOLDER;
+    }
+
+    if (LogOutput.FILTERED_KEYS.includes(key)) {
+      return FILTERED_PLACEHOLDER;
+    }
+
+    if (typeof value === "object" && value !== null) {
+      return Object.fromEntries(
+        Object.entries(value).map(([k, v]) => [
+          k,
+          LogOutput.filterValue(k, v, depth + 1),
+        ]),
+      );
+    }
+
+    if (typeof value === "string" && value.includes("\n")) {
+      return "\n  " + value.split("\n").join("\n  ");
+    }
+
+    if (typeof value === "string") {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+
+    return value;
   }
 }
