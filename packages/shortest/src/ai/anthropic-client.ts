@@ -1,3 +1,4 @@
+// TODO: Remove before merging
 import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT } from "@/ai/prompts";
 import { AITools } from "@/ai/tools";
@@ -122,12 +123,12 @@ export class AIClient {
 
         response.content.forEach((block) => {
           if (block.type === "text") {
-            this.log.debug("Response", {
+            this.log.trace("Response", {
               response: (block as any).text,
             });
           } else if (block.type === "tool_use") {
             const toolBlock = block as Anthropic.Beta.Messages.BetaToolUseBlock;
-            this.log.debug("Tool request", {
+            this.log.trace("Tool request", {
               tool: toolBlock.name,
               input: toolBlock.input,
             });

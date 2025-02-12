@@ -10,7 +10,6 @@ import {
   NoSuchToolError,
   tool,
 } from "ai";
-import pc from "picocolors";
 import { z } from "zod";
 
 import { getConfig } from "..";
@@ -23,7 +22,7 @@ import { BaseCache } from "@/cache/cache";
 import { getLogger, Log } from "@/log";
 import { IAIClient, AIClientOptions, TestFunction, ToolResult } from "@/types";
 import { CacheEntry, CacheStep } from "@/types/cache";
-import { AIError } from "@/utils/errors";
+import { getErrorDetails, AIError } from "@/utils/errors";
 
 export class AIClient implements IAIClient {
   private client: LanguageModelV1;
@@ -41,38 +40,43 @@ export class AIClient implements IAIClient {
   }
 
   async processAction(prompt: string, test: TestFunction) {
-    let MAX_RETRIES = 3;
+    const MAX_RETRIES = 3;
     let retries = 0;
     while (retries < MAX_RETRIES) {
       try {
         return await this.makeRequest(prompt, test);
       } catch (error: any) {
+        this.log.error("Action failed", getErrorDetails(error));
         if (this.isNonRetryableError(error)) {
           throw error;
         }
-
         retries++;
         if (retries === MAX_RETRIES) throw error;
 
-        this.log.debug(`  Retry attempt ${retries}/${MAX_RETRIES}`);
+        this.log.trace("Retry attempt", {
+          retries: retries,
+          maxRetries: MAX_RETRIES,
+        });
         await sleep(5000 * retries);
       }
     }
   }
 
   private async makeRequest(prompt: string, test: TestFunction) {
-    this.log.debug(pc.cyan("\n Prompt:"), pc.dim(prompt));
-
     // Push initial user prompt
     this.conversationHistory.push({
       role: "user",
       content: prompt,
     });
+    let aiRequestCount = 0;
 
     while (true) {
       let resp;
       try {
         await sleep(1000);
+        aiRequestCount++;
+        this.log.setGroup(`${aiRequestCount}`);
+        this.log.trace("Making AI request", { prompt });
         resp = await generateText({
           system: SYSTEM_PROMPT,
           model: this.client,
@@ -110,43 +114,52 @@ export class AIClient implements IAIClient {
           },
         });
       } catch (error) {
+        this.log.error("Error making request", {
+          ...getErrorDetails(error),
+        });
         if (NoSuchToolError.isInstance(error)) {
           this.log.error("Tool is not supported");
         } else if (InvalidToolArgumentsError.isInstance(error)) {
           this.log.error("Invalid arguments for a tool were provided");
         }
+        this.log.resetGroup();
         throw error;
       }
 
-      this.log.debug(
-        `\nLLM step completed with finish reason: '${resp.finishReason}'`,
-      );
+      this.log.trace("Request completed", {
+        text: resp.text,
+        finishReason: resp.finishReason,
+        usage: resp.usage,
+        warnings: resp.warnings,
+        responseMessages: resp.response.messages.map((m) => ({
+          role: m.role,
+        })),
+      });
 
       for (const { toolName, args } of resp.toolCalls) {
-        this.log.debug(`\nTool call: '${toolName}' ${JSON.stringify(args)}`);
+        this.log.trace("Tool call", { name: toolName, ...args });
       }
 
       for (const { toolName, result } of resp.toolResults as any) {
-        if (result.base64_image) {
-          result.base64_image = result.base64_image.substring(0, 25) + "...";
-        }
-
-        this.log.debug(
-          `\nTool response: '${toolName}' ${JSON.stringify(result)}`,
-        );
+        this.log.trace("Tool response", { name: toolName, ...result });
       }
 
       this.conversationHistory.push(...resp.response.messages);
-      if (resp.finishReason === "tool-calls") continue;
-      this.processErrors(resp);
+      if (resp.finishReason === "tool-calls") {
+        this.log.resetGroup();
+        continue;
+      }
+      this.processError(resp);
 
       // At this point, response reason is not a tool call, and it's not errored
       const json = extractJsonPayload(resp.text, aiJSONResponseSchema);
+      this.log.trace("👿");
+      this.log.trace("AI response", { ...json });
 
       if (json.status === "passed") {
         this.cache.set(test, this.pendingCache);
       }
-
+      this.log.resetGroup();
       return {
         response: json,
         metadata: {
@@ -249,29 +262,34 @@ export class AIClient implements IAIClient {
         ];
   }
 
-  private processErrors(
+  private processError(
     resp: GenerateTextResult<Record<string, CoreTool>>,
   ): void {
     const reason = resp.finishReason;
     switch (reason) {
       case "length":
+        this.log.resetGroup();
         throw new AIError(
           "token-limit-exceeded",
           "Generation stopped because the maximum token length was reached.",
         );
       case "content-filter":
+        this.log.resetGroup();
         throw new AIError(
           "unsafe-content-detected",
           "Content filter violation: generation aborted.",
         );
       case "error":
+        this.log.resetGroup();
         throw new AIError("unknown", "An error occurred during generation.");
       case "other":
+        this.log.resetGroup();
         throw new AIError("unknown", "An error occurred during generation.");
     }
   }
 
   private addToPendingCache(cacheStep: CacheStep) {
+    this.log.trace("Adding to pending cache", { cacheStep });
     this.pendingCache.steps = [...(this.pendingCache.steps || []), cacheStep];
   }
 

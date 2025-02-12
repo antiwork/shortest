@@ -93,6 +93,7 @@ export class TestReporter {
 
   onFileEnd(fileResult: FileResult) {
     if (fileResult.status === "failed") {
+      this.log.error("Error processing file", { ...fileResult });
       this.error("Error processing file", fileResult.reason);
     }
     this.reporterLog.resetGroup();

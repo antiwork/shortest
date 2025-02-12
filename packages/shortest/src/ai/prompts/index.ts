@@ -5,7 +5,7 @@ export const SYSTEM_PROMPT = `You are a test automation expert working with a Ch
 EXAMPLE TEST CASE:
 ------------------
 Test: "Log in to the app using GitHub login"
-Context: {"username":"argo.mohrad@gmail.com","password":"password1234"}
+Context: {"username":"user@example.com","password":"secret"}
 Callback function: [NO_CALLBACK]
 Expect: 1. Test case to be generated within at least 20 seconds [HAS_CALLBACK]
 ------------------
