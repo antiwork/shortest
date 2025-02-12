@@ -26,8 +26,6 @@ export class LogOutput {
     ...LOG_LEVELS.map((level) => level.length),
   );
 
-  private static readonly FILTERED_KEYS = ["apiKey", "base64_image"];
-
   /**
    * Renders a log event
    *
@@ -80,7 +78,7 @@ export class LogOutput {
   }
 
   private static renderForTerminal(event: LogEvent, group?: LogGroup): string {
-    const { level, timestamp, metadata } = event;
+    const { level, timestamp, formattedMetadata } = event;
     let { message } = event;
     const groupIdentifiers = group ? group.getGroupIdentifiers() : [];
     let colorFn = pc.white;
@@ -103,18 +101,24 @@ export class LogOutput {
         break;
     }
 
-    const metadataStr = LogOutput.getMetadataString(metadata);
     if (event.level === "error") {
       message = pc.red(message);
     }
 
     let outputParts = [];
     outputParts.push(colorFn(`${level}`.padEnd(LogOutput.MAX_LEVEL_LENGTH)));
-    outputParts.push(timestamp);
+    outputParts.push(
+      timestamp.toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+    );
     outputParts.push(...groupIdentifiers.map((name) => pc.dim(name)));
     outputParts.push(message);
-    if (metadataStr) {
-      outputParts.push(metadataStr);
+    if (formattedMetadata) {
+      outputParts.push(formattedMetadata);
     }
 
     const output = outputParts.join(" | ");
@@ -122,59 +126,5 @@ export class LogOutput {
       return pc.yellowBright(output);
     }
     return output;
-  }
-
-  private static getMetadataString(
-    metadata: Record<string, any>,
-  ): string | undefined {
-    if (!metadata) return undefined;
-
-    return Object.entries(metadata)
-      .map(([k, v]) => {
-        const filteredValue = LogOutput.filterValue(k, v, 0);
-        return `${pc.dim(k)}=${
-          typeof filteredValue === "object"
-            ? JSON.stringify(filteredValue, null, 2)
-            : filteredValue
-        }`;
-      })
-      .join(" ");
-  }
-
-  private static filterValue(key: string, value: any, depth: number): any {
-    const MAX_METADATA_DEPTH = 4;
-    const FILTERED_PLACEHOLDER = "[FILTERED]";
-    const TRUNCATED_PLACEHOLDER = "[TRUNCATED]";
-
-    if (depth > MAX_METADATA_DEPTH) {
-      return TRUNCATED_PLACEHOLDER;
-    }
-
-    if (LogOutput.FILTERED_KEYS.includes(key)) {
-      return FILTERED_PLACEHOLDER;
-    }
-
-    if (typeof value === "object" && value !== null) {
-      return Object.fromEntries(
-        Object.entries(value).map(([k, v]) => [
-          k,
-          LogOutput.filterValue(k, v, depth + 1),
-        ]),
-      );
-    }
-
-    if (typeof value === "string" && value.includes("\n")) {
-      return "\n  " + value.split("\n").join("\n  ");
-    }
-
-    if (typeof value === "string") {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value;
-      }
-    }
-
-    return value;
   }
 }
