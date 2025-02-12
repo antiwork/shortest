@@ -1,299 +1,280 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { sleep } from "@anthropic-ai/sdk/core";
-import {
-  CoreMessage,
-  CoreTool,
-  generateText,
-  GenerateTextResult,
-  InvalidToolArgumentsError,
-  LanguageModelV1,
-  NoSuchToolError,
-  tool,
-} from "ai";
-import { z } from "zod";
-
-import { getConfig } from "..";
-import { SYSTEM_PROMPT } from "./prompts";
-import { createAIProvider } from "./provider";
-import { aiJSONResponseSchema, extractJsonPayload } from "./utils/json";
+// TODO: Remove before merging
+import Anthropic from "@anthropic-ai/sdk";
+import { SYSTEM_PROMPT } from "@/ai/prompts";
+import { AITools } from "@/ai/tools";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BrowserTool } from "@/browser/core/browser-tool";
-import { BaseCache } from "@/cache/cache";
-import { getLogger, Log } from "@/log";
-import { IAIClient, AIClientOptions, TestFunction, ToolResult } from "@/types";
-import { CacheEntry, CacheStep } from "@/types/cache";
-import { getErrorDetails, AIError } from "@/utils/errors";
+import { CONFIG_FILENAME } from "@/constants";
+import { getLogger, Log } from "@/log/index";
+import { ToolResult } from "@/types";
+import { AIConfig, RequestBash, RequestComputer } from "@/types/ai";
+import { CacheAction, CacheStep } from "@/types/cache";
+import { getErrorDetails } from "@/utils/errors";
 
-export class AIClient implements IAIClient {
-  private client: LanguageModelV1;
-  private browserTool: BrowserTool;
-  private conversationHistory: Array<CoreMessage> = [];
-  private pendingCache: Partial<{ steps?: CacheStep[] }> = {};
-  private cache: BaseCache<CacheEntry>;
+export class AIClient {
+  private client: Anthropic;
+  private model: string;
+  private maxMessages: number;
   private log: Log;
 
-  constructor({ browserTool, cache }: AIClientOptions) {
-    this.client = createAIProvider(getConfig().ai);
-    this.browserTool = browserTool;
-    this.cache = cache;
+  constructor(config: AIConfig) {
     this.log = getLogger();
+    this.log.trace("Initializing AIClient", { config });
+    if (!config.apiKey) {
+      this.log.error(
+        `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
+      );
+      throw new Error(
+        `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
+      );
+    }
+
+    this.client = new Anthropic({
+      apiKey: config.apiKey,
+    });
+    this.model = "claude-3-5-sonnet-20241022";
+    this.maxMessages = 10;
   }
 
-  async processAction(prompt: string, test: TestFunction) {
-    const MAX_RETRIES = 3;
-    let retries = 0;
-    while (retries < MAX_RETRIES) {
+  async processAction(
+    prompt: string,
+    browserTool: BrowserTool,
+    outputCallback?: (
+      content: Anthropic.Beta.Messages.BetaContentBlockParam,
+    ) => void,
+    toolOutputCallback?: (name: string, input: any) => void,
+  ): Promise<{
+    finalResponse: any;
+    tokenUsage: { input: number; output: number };
+    pendingCache: any;
+  }> {
+    const maxRetries = 3;
+    let attempts = 0;
+
+    while (attempts < maxRetries) {
       try {
-        return await this.makeRequest(prompt, test);
+        return await this.makeRequest(
+          prompt,
+          browserTool,
+          outputCallback,
+          toolOutputCallback,
+        );
       } catch (error: any) {
-        this.log.error("Action failed", getErrorDetails(error));
-        if (this.isNonRetryableError(error)) {
+        if ([401, 403, 500].includes(error.status)) {
           throw error;
         }
-        retries++;
-        if (retries === MAX_RETRIES) throw error;
 
-        this.log.trace("Retry attempt", {
-          retries: retries,
-          maxRetries: MAX_RETRIES,
-        });
-        await sleep(5000 * retries);
+        attempts++;
+        if (attempts === maxRetries) throw error;
+
+        this.log.debug("Retry attempt", { attempt: attempts, maxRetries });
+        await new Promise((r) => setTimeout(r, 5000 * attempts));
       }
     }
-  }
-
-  private async makeRequest(prompt: string, test: TestFunction) {
-    // Push initial user prompt
-    this.conversationHistory.push({
-      role: "user",
-      content: prompt,
-    });
-    let aiRequestCount = 0;
-
-    while (true) {
-      let resp;
-      try {
-        await sleep(1000);
-        aiRequestCount++;
-        this.log.setGroup(`${aiRequestCount}`);
-        this.log.trace("Making AI request", { prompt });
-        resp = await generateText({
-          system: SYSTEM_PROMPT,
-          model: this.client,
-          messages: this.conversationHistory,
-          tools: this.tools,
-          maxTokens: 1024,
-          onStepFinish: async (event) => {
-            function isMouseMove(args: any) {
-              return args.action === "mouse_move" && args.coordinate.length;
-            }
-
-            for (const toolResult of event.toolResults as any[]) {
-              let extras: Record<string, unknown> = {};
-              if (isMouseMove(toolResult.args)) {
-                const [x, y] = (toolResult.args as any).coordinate;
-                extras.componentStr =
-                  await this.browserTool.getNormalizedComponentStringByCoords(
-                    x,
-                    y,
-                  );
-              }
-
-              this.addToPendingCache({
-                reasoning: event.text,
-                action: {
-                  name: toolResult.args.action,
-                  input: toolResult.args,
-                  type: "tool_use",
-                },
-                result: toolResult.result.output,
-                extras,
-                timestamp: Date.now(),
-              });
-            }
-          },
-        });
-      } catch (error) {
-        this.log.error("Error making request", {
-          ...getErrorDetails(error),
-        });
-        if (NoSuchToolError.isInstance(error)) {
-          this.log.error("Tool is not supported");
-        } else if (InvalidToolArgumentsError.isInstance(error)) {
-          this.log.error("Invalid arguments for a tool were provided");
-        }
-        this.log.resetGroup();
-        throw error;
-      }
-
-      this.log.trace("Request completed", {
-        text: resp.text,
-        finishReason: resp.finishReason,
-        usage: resp.usage,
-        warnings: resp.warnings,
-        responseMessages: resp.response.messages.map((m) => ({
-          role: m.role,
-        })),
-      });
-
-      for (const { toolName, args } of resp.toolCalls) {
-        this.log.trace("Tool call", { name: toolName, ...args });
-      }
-
-      for (const { toolName, result } of resp.toolResults as any) {
-        this.log.trace("Tool response", { name: toolName, ...result });
-      }
-
-      this.conversationHistory.push(...resp.response.messages);
-      if (resp.finishReason === "tool-calls") {
-        this.log.resetGroup();
-        continue;
-      }
-      this.processError(resp);
-
-      // At this point, response reason is not a tool call, and it's not errored
-      const json = extractJsonPayload(resp.text, aiJSONResponseSchema);
-      this.log.trace("👿");
-      this.log.trace("AI response", { ...json });
-
-      if (json.status === "passed") {
-        this.cache.set(test, this.pendingCache);
-      }
-      this.log.resetGroup();
-      return {
-        response: json,
-        metadata: {
-          usage: resp.usage,
-        },
-      };
-    }
-  }
-
-  private get tools(): Record<string, CoreTool> {
     return {
-      computer: anthropic.tools.computer_20241022({
-        displayWidthPx: 1920,
-        displayHeightPx: 1080,
-        displayNumber: 0,
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      bash: anthropic.tools.bash_20241022({
-        execute: async ({ command }) => {
-          return await new BashTool().execute(command);
-        },
-        experimental_toToolResultContent(result) {
-          return [
-            {
-              type: "text",
-              text: result,
-            },
-          ];
-        },
-      }),
-      github_login: tool({
-        description: "Handle GitHub OAuth login with 2FA",
-        parameters: z.object({
-          action: z.literal("github_login"),
-          username: z.string(),
-          password: z.string(),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      check_email: tool({
-        description: "View received email in new browser tab",
-        parameters: z.object({
-          action: z.literal("check_email"),
-          email: z.string().describe("Email content or address to check for"),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      sleep: tool({
-        description: "Pause test execution for specified duration",
-        parameters: z.object({
-          action: z.literal("sleep"),
-          duration: z.number().min(0).max(60000),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      run_callback: tool({
-        description: "Run callback function for current test step",
-        parameters: z.object({
-          action: z.literal("run_callback"),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      navigate: tool({
-        description: "Navigate to URLs in new browser tabs",
-        parameters: z.object({
-          action: z.literal("navigate"),
-          url: z.string().url().describe("The URL to navigate to"),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
+      finalResponse: null,
+      tokenUsage: { input: 0, output: 0 },
+      pendingCache: null,
     };
   }
 
-  private browserToolResultToToolResultContent(result: ToolResult) {
-    return result.base64_image
-      ? [
-          {
-            type: "image" as const,
-            data: result.base64_image,
-            mimeType: "image/jpeg",
-          },
-        ]
-      : [
-          {
-            type: "text" as const,
-            text: result.output!,
-          },
-        ];
-  }
+  async makeRequest(
+    prompt: string,
+    browserTool: BrowserTool,
+    _outputCallback?: (
+      content: Anthropic.Beta.Messages.BetaContentBlockParam,
+    ) => void,
+    _toolOutputCallback?: (name: string, input: any) => void,
+  ): Promise<{
+    messages: any;
+    finalResponse: any;
+    pendingCache: any;
+    tokenUsage: { input: number; output: number };
+  }> {
+    const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
+    const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
 
-  private processError(
-    resp: GenerateTextResult<Record<string, CoreTool>>,
-  ): void {
-    const reason = resp.finishReason;
-    switch (reason) {
-      case "length":
-        this.log.resetGroup();
-        throw new AIError(
-          "token-limit-exceeded",
-          "Generation stopped because the maximum token length was reached.",
-        );
-      case "content-filter":
-        this.log.resetGroup();
-        throw new AIError(
-          "unsafe-content-detected",
-          "Content filter violation: generation aborted.",
-        );
-      case "error":
-        this.log.resetGroup();
-        throw new AIError("unknown", "An error occurred during generation.");
-      case "other":
-        this.log.resetGroup();
-        throw new AIError("unknown", "An error occurred during generation.");
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    messages.push({
+      role: "user",
+      content: prompt,
+    });
+
+    while (true) {
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        this.log.trace("Making request", { prompt });
+        const response = await this.client.beta.messages.create({
+          model: this.model,
+          max_tokens: 1024,
+          messages,
+          system: SYSTEM_PROMPT,
+          tools: [...AITools],
+          betas: ["computer-use-2024-10-22"],
+        });
+
+        totalInputTokens += response.usage.input_tokens;
+        totalOutputTokens += response.usage.output_tokens;
+        const tokenUsage = {
+          input: totalInputTokens,
+          output: totalOutputTokens,
+        };
+
+        response.content.forEach((block) => {
+          if (block.type === "text") {
+            this.log.trace("Response", {
+              response: (block as any).text,
+            });
+          } else if (block.type === "tool_use") {
+            const toolBlock = block as Anthropic.Beta.Messages.BetaToolUseBlock;
+            this.log.trace("Tool request", {
+              tool: toolBlock.name,
+              input: toolBlock.input,
+            });
+          }
+        });
+
+        // Add assistant's response to history
+        messages.push({
+          role: "assistant",
+          content: response.content,
+        });
+
+        // Collect executable tool actions
+        const toolRequests = response.content.filter(
+          (block) => block.type === "tool_use",
+        ) as Anthropic.Beta.Messages.BetaToolUseBlock[];
+
+        if (toolRequests.length > 0) {
+          const toolResults = await Promise.all(
+            toolRequests.map(async (toolRequest) => {
+              switch (toolRequest.name) {
+                case "bash":
+                  try {
+                    const toolResult = await new BashTool().execute(
+                      (toolRequest as RequestBash).input.command,
+                    );
+                    return { toolRequest, toolResult };
+                  } catch (error) {
+                    this.log.error(
+                      "Error executing bash command",
+                      getErrorDetails(error),
+                    );
+                    throw error;
+                  }
+                default:
+                  try {
+                    const toolResult = await browserTool.execute(
+                      (toolRequest as RequestComputer).input,
+                    );
+
+                    let extras: any = {};
+                    if ((toolRequest.input as unknown as any).coordinate) {
+                      const [x, y] = (toolRequest.input as unknown as any)
+                        .coordinate;
+                      const componentStr =
+                        await browserTool.getNormalizedComponentStringByCoords(
+                          x,
+                          y,
+                        );
+                      extras = { componentStr };
+                    }
+
+                    // Update the cache
+                    pendingCache.steps = [
+                      ...(pendingCache.steps || []),
+                      {
+                        action: toolRequest as CacheAction,
+                        reasoning: toolResult.output || "",
+                        result: toolResult.output || null,
+                        extras,
+                        timestamp: Date.now(),
+                      },
+                    ];
+
+                    return { toolRequest, toolResult };
+                  } catch (error) {
+                    this.log.error(
+                      "Error executing browser tool",
+                      getErrorDetails(error),
+                    );
+                    throw error;
+                  }
+              }
+            }),
+          );
+
+          toolResults.forEach((result) => {
+            if (result) {
+              const { toolRequest, toolResult } = result;
+
+              switch (toolRequest.name) {
+                case "bash":
+                  messages.push({
+                    role: "user",
+                    content: [
+                      {
+                        type: "tool_result",
+                        tool_use_id: toolRequest.id,
+                        content: [
+                          {
+                            type: "text",
+                            text: JSON.stringify(toolResult),
+                          },
+                        ],
+                      },
+                    ],
+                  });
+                  break;
+                default:
+                  messages.push({
+                    role: "user",
+                    content: [
+                      {
+                        type: "tool_result",
+                        tool_use_id: toolRequest.id,
+                        content: (toolResult as ToolResult).base64_image
+                          ? [
+                              {
+                                type: "image" as const,
+                                source: {
+                                  type: "base64" as const,
+                                  media_type: "image/jpeg" as const,
+                                  data: (toolResult as ToolResult)
+                                    .base64_image!,
+                                },
+                              },
+                            ]
+                          : [
+                              {
+                                type: "text" as const,
+                                text: (toolResult as ToolResult).output || "",
+                              },
+                            ],
+                      },
+                    ],
+                  });
+              }
+            }
+          });
+        } else {
+          return {
+            messages,
+            finalResponse: response,
+            pendingCache,
+            tokenUsage,
+          };
+        }
+      } catch (error: any) {
+        if (error.message?.includes("rate_limit")) {
+          this.log.debug("⏳", "Rate limited, waiting 60s...");
+          await new Promise((resolve) => setTimeout(resolve, 60000));
+          continue;
+        }
+        this.log.error("AI request failed", getErrorDetails(error));
+        throw error;
+      }
     }
-  }
-
-  private addToPendingCache(cacheStep: CacheStep) {
-    this.log.trace("Adding to pending cache", { cacheStep });
-    this.pendingCache.steps = [...(this.pendingCache.steps || []), cacheStep];
-  }
-
-  private isNonRetryableError(error: any) {
-    return [401, 403, 500].includes(error.status);
   }
 }
