@@ -78,7 +78,7 @@ export class LogOutput {
   }
 
   private static renderForTerminal(event: LogEvent, group?: LogGroup): string {
-    const { level, timestamp, formattedMetadata } = event;
+    const { level, timestamp, parsedMetadata } = event;
     let { message } = event;
     const groupIdentifiers = group ? group.getGroupIdentifiers() : [];
     let colorFn = pc.white;
@@ -117,7 +117,19 @@ export class LogOutput {
     );
     outputParts.push(...groupIdentifiers.map((name) => pc.dim(name)));
     outputParts.push(message);
-    if (formattedMetadata) {
+    if (parsedMetadata) {
+      const formattedMetadata =
+        typeof parsedMetadata === "string"
+          ? parsedMetadata
+          : Object.entries(parsedMetadata)
+              .map(([k, v]) => {
+                const value =
+                  typeof v === "string"
+                    ? v.replace(/\\"/g, '"').replace(/\\n/g, "\n")
+                    : JSON.stringify(v, null, 2).replace(/\\n/g, "\n");
+                return `${pc.dim(k)}=${value}${value.includes("\n") ? "\n" : ""}`;
+              })
+              .join(" ");
       outputParts.push(formattedMetadata);
     }
 

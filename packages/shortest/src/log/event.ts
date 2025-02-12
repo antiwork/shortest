@@ -24,7 +24,7 @@ export class LogEvent {
   readonly message: string;
   readonly metadata: Record<string, any> = {};
 
-  private _formattedMetadata: string | undefined | null = null;
+  private _parsedMetadata: Record<string, any> | undefined | null = null;
 
   constructor(
     level: LogLevel,
@@ -37,26 +37,21 @@ export class LogEvent {
     this.metadata = metadata ?? {};
   }
 
-  get formattedMetadata(): string | undefined {
+  get parsedMetadata(): Record<string, any> | undefined {
     return (
-      this._formattedMetadata ??
-      (this._formattedMetadata = this.formatMetadata())
+      this._parsedMetadata ?? (this._parsedMetadata = this.parseMetadata())
     );
   }
 
-  private formatMetadata(): string | undefined {
+  private parseMetadata(): Record<string, any> | undefined {
     if (!Object.keys(this.metadata).length) return undefined;
 
-    return Object.entries(this.metadata)
-      .map(([k, v]) => {
-        const filteredValue = LogEvent.filterValue(k, v, 0);
-        return `${k}=${
-          typeof filteredValue === "object"
-            ? JSON.stringify(filteredValue, null, 2)
-            : filteredValue
-        }`;
-      })
-      .join(" ");
+    return Object.fromEntries(
+      Object.entries(this.metadata).map(([k, v]) => [
+        k,
+        LogEvent.filterValue(k, v, 0),
+      ]),
+    );
   }
 
   private static filterValue(key: string, value: any, depth: number): any {

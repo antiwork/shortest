@@ -68,21 +68,25 @@ export class AIClient implements IAIClient {
       role: "user",
       content: prompt,
     });
-    let aiRequestCount = 0;
+    let requestCount = 0;
 
     while (true) {
       let resp;
       try {
         await sleep(1000);
-        aiRequestCount++;
-        this.log.setGroup(`${aiRequestCount}`);
-        this.log.trace("Making AI request", { prompt });
+        requestCount++;
+        this.log.setGroup(`${requestCount}`);
+        this.log.trace("Generating text", {
+          currentPrompt: prompt,
+          messageCount: this.conversationHistory.length,
+          tools: Object.keys(this.tools),
+        });
         resp = await generateText({
           system: SYSTEM_PROMPT,
           model: this.client,
-          messages: this.conversationHistory,
-          tools: this.tools,
           maxTokens: 1024,
+          tools: this.tools,
+          messages: this.conversationHistory,
           onStepFinish: async (event) => {
             function isMouseMove(args: any) {
               return args.action === "mouse_move" && args.coordinate.length;
@@ -153,8 +157,7 @@ export class AIClient implements IAIClient {
 
       // At this point, response reason is not a tool call, and it's not errored
       const json = extractJsonPayload(resp.text, aiJSONResponseSchema);
-      this.log.trace("👿");
-      this.log.trace("AI response", { ...json });
+      this.log.trace("Response", { ...json });
 
       if (json.status === "passed") {
         this.cache.set(test, this.pendingCache);
