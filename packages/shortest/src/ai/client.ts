@@ -14,18 +14,18 @@ import { z } from "zod";
 
 import { getConfig } from "..";
 import { SYSTEM_PROMPT } from "./prompts";
-import { aiJSONResponseSchema, extractJsonPayload } from "./utils/json";
+import { AIJSONResponse, extractJsonPayload } from "./utils/json";
 import { createProvider } from "@/ai/provider";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BaseCache } from "@/cache/cache";
 import { getLogger, Log } from "@/log";
-import { IAIClient, AIClientOptions, TestFunction, ToolResult } from "@/types";
-import { TokenUsage } from "@/types/ai";
+import { TestFunction, ToolResult } from "@/types";
+import { TokenUsage, TokenUsageSchema } from "@/types/ai";
 import { CacheEntry, CacheStep } from "@/types/cache";
 import { getErrorDetails, AIError } from "@/utils/errors";
 
-export class AIClient implements IAIClient {
+export class AIClient {
   private client: LanguageModelV1;
   private browserTool: BrowserTool;
   private conversationHistory: Array<CoreMessage> = [];
@@ -34,32 +34,44 @@ export class AIClient implements IAIClient {
   private log: Log;
   private usage: TokenUsage;
 
-  constructor({ browserTool, cache }: AIClientOptions) {
+  constructor({
+    browserTool,
+    cache,
+  }: {
+    browserTool: BrowserTool;
+    cache: BaseCache<CacheEntry>;
+  }) {
     this.client = createProvider(getConfig().ai);
     this.browserTool = browserTool;
     this.cache = cache;
-    this.usage = {
-      completionTokens: 0,
-      promptTokens: 0,
-      totalTokens: 0,
-    };
+    this.usage = TokenUsageSchema.parse({});
     this.log = getLogger();
   }
 
-  async processAction(prompt: string, test: TestFunction) {
+  async processAction(
+    prompt: string,
+    test: TestFunction,
+  ): Promise<{
+    response: AIJSONResponse;
+    metadata: {
+      usage: TokenUsage;
+    };
+  }> {
     const MAX_RETRIES = 3;
     let retries = 0;
     while (retries < MAX_RETRIES) {
       try {
-        return await this.makeRequest(prompt, test);
+        const result = await this.makeRequest(prompt, test);
+        if (!result) {
+          throw new AIError("invalid-response", "No response received from AI");
+        }
+        return result;
       } catch (error: any) {
         this.log.error("Action failed", getErrorDetails(error));
         if (this.isNonRetryableError(error)) {
           throw error;
         }
         retries++;
-        if (retries === MAX_RETRIES) throw error;
-
         this.log.trace("Retry attempt", {
           retries: retries,
           maxRetries: MAX_RETRIES,
@@ -67,6 +79,7 @@ export class AIClient implements IAIClient {
         await sleep(5000 * retries);
       }
     }
+    throw new AIError("max-retries-reached", "Max retries reached");
   }
 
   private async makeRequest(prompt: string, test: TestFunction) {
@@ -164,7 +177,7 @@ export class AIClient implements IAIClient {
       this.processError(resp);
 
       // At this point, response reason is not a tool call, and it's not errored
-      const json = extractJsonPayload(resp.text, aiJSONResponseSchema);
+      const json = extractJsonPayload(resp.text);
       this.log.trace("Response", { ...json });
 
       if (json.status === "passed") {

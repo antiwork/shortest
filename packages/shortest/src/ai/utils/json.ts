@@ -4,6 +4,13 @@ import { formatZodError } from "@/utils/zod";
 
 const JSON_REGEX = /{[\s\S]*?}/g;
 
+const aiJSONResponseSchema = z.object({
+  status: z.enum(["passed", "failed"]),
+  reason: z.string(),
+});
+
+export type AIJSONResponse = z.infer<typeof aiJSONResponseSchema>;
+
 /**
  * Extracts and validates the JSON payload from an AI response string.
  *
@@ -11,15 +18,20 @@ const JSON_REGEX = /{[\s\S]*?}/g;
  * @param schema - A Zod schema to validate and parse the JSON object.
  * @returns The validated JSON object.
  * @throws Error if no JSON is found, multiple JSON objects are found, JSON parsing fails, or validation fails.
+ *
+ * @private
  */
-export function extractJsonPayload<T>(
+export function extractJsonPayload(
   response: string,
-  schema: z.ZodSchema<T>,
-): T {
+  schema: typeof aiJSONResponseSchema = aiJSONResponseSchema,
+) {
   const jsonMatches = response.match(JSON_REGEX);
 
   if (!jsonMatches || jsonMatches.length === 0) {
-    throw new AIError("invalid-response", "AI didn't return JSON.");
+    throw new AIError(
+      "invalid-response",
+      "AI didn't return the expected JSON payload.",
+    );
   }
 
   if (jsonMatches.length > 1) {
@@ -44,10 +56,3 @@ export function extractJsonPayload<T>(
     throw error;
   }
 }
-
-export const aiJSONResponseSchema = z.object({
-  status: z.enum(["passed", "failed"]),
-  reason: z.string(),
-});
-
-export type AIJSONResponse = z.infer<typeof aiJSONResponseSchema>;

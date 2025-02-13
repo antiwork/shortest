@@ -15,6 +15,7 @@ export class ConfigError extends Error {
 
 export type AIErrorType =
   | "invalid-response"
+  | "max-retries-reached"
   | "token-limit-exceeded"
   | "unsafe-content-detected"
   | "unsupported-provider"
