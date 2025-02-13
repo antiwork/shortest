@@ -139,7 +139,7 @@ describe("Config parsing", () => {
           ...baseConfig,
           ai: {
             ...baseConfig.ai,
-            provider: "unknown",
+            provider: "unknown" as any,
           },
         };
         expect(() => parseConfig(userConfig)).toThrowError(
@@ -152,7 +152,7 @@ describe("Config parsing", () => {
       test("throws an error", () => {
         const userConfig = {
           ...baseConfig,
-          ai: { ...baseConfig.ai, model: "invalid-model" },
+          ai: { ...baseConfig.ai, model: "invalid-model" as any },
         };
         expect(() => parseConfig(userConfig)).toThrowError(
           "Invalid shortest.config\nai.model: Invalid enum value. Expected 'claude-3-5-sonnet-20241022', received 'invalid-model'",
@@ -213,7 +213,7 @@ describe("Config parsing", () => {
   test("throws on invalid testPattern", () => {
     const userConfig = {
       ...baseConfig,
-      testPattern: null,
+      testPattern: null as any,
     };
     expect(() => parseConfig(userConfig)).toThrowError(
       "Invalid shortest.config\ntestPattern: Expected string, received null",
@@ -223,7 +223,7 @@ describe("Config parsing", () => {
   test("throws when mailosaur.serverId is missing", () => {
     const userConfig = {
       ...baseConfig,
-      mailosaur: { apiKey: "key" },
+      mailosaur: { apiKey: "key" } as any,
     };
     expect(() => parseConfig(userConfig)).toThrowError(
       "Invalid shortest.config\nmailosaur.serverId: Required",
