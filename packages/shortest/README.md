@@ -39,10 +39,11 @@ export default {
   testPattern: "**/*.test.ts",
   ai: {
     provider: "anthropic",
-    apiKey: process.env.ANTHROPIC_API_KEY,
   },
 } satisfies ShortestConfig;
 ```
+Anthropic API key will default to ANTHROPIC_API_KEY environment variable. Can be overwritten via `ai.config.apiKey`.
+
 
 2. Create test files using the pattern specified in the config: `app/login.test.ts`
 

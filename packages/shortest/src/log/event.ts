@@ -59,6 +59,21 @@ export class LogEvent {
     );
   }
 
+  /**
+   * Recursively processes and filters values in metadata:
+   * - Truncates nested objects beyond depth 4
+   * - Masks sensitive keys (e.g., API keys) with [FILTERED] or partial value
+   * - Truncates specified large fields with [TRUNCATED]
+   * - Formats multiline strings with indentation
+   * - Attempts JSON parsing of string values
+   *
+   * @param {string} key - Metadata key being processed
+   * @param {any} value - Value to filter/process
+   * @param {number} depth - Current recursion depth
+   * @returns {any} Processed value
+   *
+   * @private
+   */
   private static filterValue(key: string, value: any, depth: number): any {
     const MAX_METADATA_DEPTH = 4;
 
