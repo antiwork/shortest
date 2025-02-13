@@ -12,7 +12,13 @@ const ANTHROPIC_MODELS = ["claude-3-5-sonnet-20241022"] as const;
 const aiSchema = z
   .object({
     provider: z.literal("anthropic"),
-    apiKey: z.string().default(() => process.env.ANTHROPIC_API_KEY!),
+    apiKey: z
+      .string()
+      .default(
+        () =>
+          process.env[getShortestEnvName("ANTHROPIC_API_KEY")] ||
+          process.env.ANTHROPIC_API_KEY!,
+    ),
     model: z.enum(ANTHROPIC_MODELS).default(ANTHROPIC_MODELS[0]),
   })
   .strict();
@@ -32,6 +38,12 @@ export const configSchema = z
 export const userConfigSchema = configSchema.extend({
   ai: aiSchema.strict().partial().optional(),
 });
+
+const SHORTEST_ENV_PREFIX = "SHORTTEST_";
+
+const getShortestEnvName = (key: string) => {
+  return `${SHORTEST_ENV_PREFIX}${key}`;
+};
 
 export type ShortestConfig = z.infer<typeof userConfigSchema>;
 export type ShortestStrictConfig = z.infer<typeof configSchema>;

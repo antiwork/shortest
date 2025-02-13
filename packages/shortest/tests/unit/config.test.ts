@@ -8,7 +8,6 @@ describe("Config parsing", () => {
   let baseConfig: ShortestConfig;
 
   beforeEach(() => {
-    delete process.env.ANTHROPIC_API_KEY;
     baseConfig = {
       headless: true,
       baseUrl: "https://example.com",
@@ -65,9 +64,12 @@ describe("Config parsing", () => {
     });
 
     describe("with ANTHROPIC_API_KEY", () => {
+      beforeEach(() => {
+        process.env.ANTHROPIC_API_KEY = "env-api-key";
+      });
+
       describe("without ai.apiKey", () => {
         test("uses value from ANTHROPIC_API_KEY", () => {
-          process.env.ANTHROPIC_API_KEY = "env-api-key";
           const userConfig = {
             ...baseConfig,
             ai: {
@@ -78,6 +80,28 @@ describe("Config parsing", () => {
           const config = parseConfig(userConfig);
           expect(config.ai).toEqual({
             apiKey: "env-api-key",
+            provider: "anthropic",
+            model: "claude-3-5-sonnet-20241022",
+          });
+        });
+      });
+
+      describe("with SHORTTEST_ANTHROPIC_API_KEY", () => {
+        beforeEach(() => {
+          process.env.SHORTTEST_ANTHROPIC_API_KEY = "shortest-env-api-key";
+        });
+
+        test("uses value from SHORTTEST_ANTHROPIC_API_KEY", () => {
+          const userConfig = {
+            ...baseConfig,
+            ai: {
+              ...baseConfig.ai,
+              apiKey: undefined,
+            },
+          };
+          const config = parseConfig(userConfig);
+          expect(config.ai).toEqual({
+            apiKey: "shortest-env-api-key",
             provider: "anthropic",
             model: "claude-3-5-sonnet-20241022",
           });
