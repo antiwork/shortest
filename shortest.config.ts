@@ -8,7 +8,7 @@ export default {
     provider: "anthropic",
   },
   mailosaur: {
-    apiKey: process.env.MAILOSAUR_API_KEY,
-    serverId: process.env.MAILOSAUR_SERVER_ID,
+    apiKey: process.env.MAILOSAUR_API_KEY!,
+    serverId: process.env.MAILOSAUR_SERVER_ID!,
   },
 } satisfies ShortestConfig;
