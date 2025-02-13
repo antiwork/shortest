@@ -55,7 +55,7 @@ export default {
   },
 } satisfies ShortestConfig;
 ```
-Anthropic API key will default to ANTHROPIC_API_KEY environment variable. Can be overwritten via `ai.config.apiKey`.
+Anthropic API key will default to `SHORTEST_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` environment variables. Can be overwritten via `ai.config.apiKey`.
 
 2. Create test files using the pattern specified in the config: `app/login.test.ts`
 
