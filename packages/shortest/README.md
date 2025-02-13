@@ -23,7 +23,8 @@ This will:
 
 - Automatically install the `@antiwork/shortest` package as a dev dependency if it is not already installed
 - Create a default `shortest.config.ts` file with boilerplate configuration
-- Generate a `.env.local` file (unless present) with placeholders for required environment variables, such as `ANTHROPIC_API_KEY`
+- Generate a `.env.local` file (unless present) with placeholders for required environment variables, such as
+  `SHORTEST_ANTHROPIC_API_KEY` or `ANTHROPIC_API_KEY`
 - Add `.env.local` and `.shortest/` to `.gitignore`
 
 ### Quick start
@@ -42,7 +43,7 @@ export default {
   },
 } satisfies ShortestConfig;
 ```
-Anthropic API key will default to ANTHROPIC_API_KEY environment variable. Can be overwritten via `ai.config.apiKey`.
+Anthropic API key will default to SHORTEST_ANTHROPIC_API_KEY / ANTHROPIC_API_KEY environment variables. Can be overwritten via `ai.config.apiKey`.
 
 
 2. Create test files using the pattern specified in the config: `app/login.test.ts`
