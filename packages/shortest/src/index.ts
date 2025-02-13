@@ -97,7 +97,7 @@ export async function initializeConfig(configDir?: string) {
     );
   }
   globalConfig = configs[0].config;
-  log.trace("Initialized config", { globalConfig });
+  log.debug("Config initialized", { globalConfig });
 
   return globalConfig;
 }
