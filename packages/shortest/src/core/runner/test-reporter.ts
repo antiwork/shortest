@@ -103,11 +103,15 @@ export class TestReporter {
     this.summary();
   }
 
-  private calculateCost(inputTokens: number, outputTokens: number): number {
-    const inputCost = (inputTokens / 1000) * this.COST_PER_1K_PROMPT_TOKENS;
-    const outputCost =
-      (outputTokens / 1000) * this.COST_PER_1K_COMPLETION_TOKENS;
-    return Math.round((inputCost + outputCost) * 1000) / 1000;
+  private calculateCost(
+    promptTokens: number,
+    completionTokens: number,
+  ): number {
+    const promptTokensCost =
+      (promptTokens / 1000) * this.COST_PER_1K_PROMPT_TOKENS;
+    const completionTokensCost =
+      (completionTokens / 1000) * this.COST_PER_1K_COMPLETION_TOKENS;
+    return Math.round((promptTokensCost + completionTokensCost) * 1000) / 1000;
   }
 
   private getStatusIcon(status: TestStatus): string {
