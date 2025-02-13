@@ -21,6 +21,7 @@ import { BrowserTool } from "@/browser/core/browser-tool";
 import { BaseCache } from "@/cache/cache";
 import { getLogger, Log } from "@/log";
 import { IAIClient, AIClientOptions, TestFunction, ToolResult } from "@/types";
+import { TokenUsage } from "@/types/ai";
 import { CacheEntry, CacheStep } from "@/types/cache";
 import { getErrorDetails, AIError } from "@/utils/errors";
 
@@ -31,11 +32,17 @@ export class AIClient implements IAIClient {
   private pendingCache: Partial<{ steps?: CacheStep[] }> = {};
   private cache: BaseCache<CacheEntry>;
   private log: Log;
+  private usage: TokenUsage;
 
   constructor({ browserTool, cache }: AIClientOptions) {
     this.client = createProvider(getConfig().ai);
     this.browserTool = browserTool;
     this.cache = cache;
+    this.usage = {
+      completionTokens: 0,
+      promptTokens: 0,
+      totalTokens: 0,
+    };
     this.log = getLogger();
   }
 
@@ -148,6 +155,7 @@ export class AIClient implements IAIClient {
         this.log.trace("Tool response", { name: toolName, ...result });
       }
 
+      this.updateUsage(resp.usage);
       this.conversationHistory.push(...resp.response.messages);
       if (resp.finishReason === "tool-calls") {
         this.log.resetGroup();
@@ -166,7 +174,7 @@ export class AIClient implements IAIClient {
       return {
         response: json,
         metadata: {
-          usage: resp.usage,
+          usage: this.usage,
         },
       };
     }
@@ -298,5 +306,11 @@ export class AIClient implements IAIClient {
 
   private isNonRetryableError(error: any) {
     return [401, 403, 500].includes(error.status);
+  }
+
+  private updateUsage(usage: TokenUsage) {
+    this.usage.completionTokens += usage.completionTokens;
+    this.usage.promptTokens += usage.promptTokens;
+    this.usage.totalTokens += usage.totalTokens;
   }
 }

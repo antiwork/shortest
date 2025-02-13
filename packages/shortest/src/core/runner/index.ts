@@ -20,13 +20,8 @@ import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
 import { AIClient } from "@/ai/client";
 import { getLogger, Log } from "@/log";
+import { TokenUsageSchema } from "@/types/ai";
 import { getErrorDetails } from "@/utils/errors";
-
-export const TokenMetricsSchema = z.object({
-  input: z.number().default(0),
-  output: z.number().default(0),
-});
-export type TokenMetrics = z.infer<typeof TokenMetricsSchema>;
 
 const STATUSES = ["pending", "running", "passed", "failed"] as const;
 export type TestStatus = (typeof STATUSES)[number];
@@ -35,7 +30,7 @@ export const TestResultSchema = z.object({
   test: z.any() as z.ZodType<TestFunction>,
   status: z.enum(STATUSES),
   reason: z.string(),
-  tokenUsage: TokenMetricsSchema.default({ input: 0, output: 0 }),
+  tokenUsage: TokenUsageSchema,
 });
 export type TestResult = z.infer<typeof TestResultSchema>;
 
@@ -173,7 +168,7 @@ export class TestRunner {
           test: test,
           status: "passed",
           reason: "Direct execution successful",
-          tokenUsage: { input: 0, output: 0 },
+          tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
         };
       } catch (error) {
         return {
@@ -181,7 +176,7 @@ export class TestRunner {
           status: "failed",
           reason:
             error instanceof Error ? error.message : "Direct execution failed",
-          tokenUsage: { input: 0, output: 0 },
+          tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
         };
       }
     }
@@ -256,11 +251,22 @@ export class TestRunner {
                     : error instanceof Error
                       ? error.message
                       : String(error),
-                tokenUsage: { input: 0, output: 0 },
+                tokenUsage: {
+                  completionTokens: 0,
+                  promptTokens: 0,
+                  totalTokens: 0,
+                },
               };
             }
           }
-          return { ...result, tokenUsage: { input: 0, output: 0 } };
+          return {
+            ...result,
+            tokenUsage: {
+              completionTokens: 0,
+              promptTokens: 0,
+              totalTokens: 0,
+            },
+          };
         } catch {
           // delete stale cached test entry
           await this.cache.delete(test);
@@ -283,7 +289,7 @@ export class TestRunner {
           test: test,
           status: "failed",
           reason: error instanceof Error ? error.message : String(error),
-          tokenUsage: { input: 0, output: 0 },
+          tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
         };
       }
     }
@@ -309,10 +315,7 @@ export class TestRunner {
               : error instanceof Error
                 ? error.message
                 : String(error),
-          tokenUsage: {
-            input: metadata.usage?.promptTokens ?? 0,
-            output: metadata.usage?.completionTokens ?? 0,
-          },
+          tokenUsage: metadata.usage,
         };
       }
     }
@@ -321,10 +324,7 @@ export class TestRunner {
       test,
       status: response?.status,
       reason: response?.reason,
-      tokenUsage: {
-        input: metadata.usage?.promptTokens ?? 0,
-        output: metadata.usage?.completionTokens ?? 0,
-      },
+      tokenUsage: metadata.usage,
     };
   }
 
@@ -374,6 +374,7 @@ export class TestRunner {
 
           this.reporter.onTestStart(test);
           const testResult = await this.executeTest(test, context);
+          console.log("testResult", testResult);
           this.reporter.onTestEnd(testResult);
 
           // Execute afterEach hooks with shared context
@@ -462,7 +463,7 @@ export class TestRunner {
         test: test,
         status: "failed",
         reason: "No steps to execute, running test in normal mode",
-        tokenUsage: { input: 0, output: 0 },
+        tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
       };
     }
     for (const step of steps) {
@@ -484,7 +485,11 @@ export class TestRunner {
             status: "failed",
             reason:
               "Component UI elements are different, running test in normal mode",
-            tokenUsage: { input: 0, output: 0 },
+            tokenUsage: {
+              completionTokens: 0,
+              promptTokens: 0,
+              totalTokens: 0,
+            },
           };
         }
       }
@@ -504,7 +509,7 @@ export class TestRunner {
       test: test,
       status: "passed",
       reason: "All actions successfully replayed from cache",
-      tokenUsage: { input: 0, output: 0 },
+      tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
     };
   }
 }

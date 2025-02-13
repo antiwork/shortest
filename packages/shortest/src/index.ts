@@ -96,8 +96,6 @@ export async function initializeConfig(configDir?: string) {
       `Multiple config files found: ${configs.map((c) => c.file).join(", ")}. Please keep only one.`,
     );
   }
-  console.log("---configs----");
-  console.log("configs", configs[0].config);
   globalConfig = configs[0].config;
   log.trace("Initialized config", { globalConfig });
 

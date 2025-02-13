@@ -1,4 +1,5 @@
 import { LanguageModelUsage } from "ai";
+import { z } from "zod";
 import { ActionInput } from "./browser";
 import { CacheEntry } from "./cache";
 import { TestFunction } from "./test";
@@ -40,3 +41,10 @@ export interface IAIClient {
     test: TestFunction,
   ): Promise<AIProcessActionResult | void>;
 }
+
+export const TokenUsageSchema = z.object({
+  completionTokens: z.number().default(0),
+  promptTokens: z.number().default(0),
+  totalTokens: z.number().default(0),
+});
+export type TokenUsage = z.infer<typeof TokenUsageSchema>;
