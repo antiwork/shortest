@@ -99,7 +99,7 @@ export class AIClient {
         this.log.trace("Generating text", {
           currentPrompt: prompt,
           messageCount: this.conversationHistory.length,
-          tools: Object.keys(this.tools),
+          // tools: Object.keys(this.tools),
         });
         resp = await generateText({
           system: SYSTEM_PROMPT,
@@ -313,7 +313,7 @@ export class AIClient {
   }
 
   private addToPendingCache(cacheStep: CacheStep) {
-    this.log.trace("Adding to pending cache", { cacheStep });
+    this.log.trace("Adding to pending cache");
     this.pendingCache.steps = [...(this.pendingCache.steps || []), cacheStep];
   }
 

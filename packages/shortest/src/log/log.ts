@@ -1,3 +1,4 @@
+import pc from "picocolors";
 import { LOG_LEVELS, LogLevel, LogConfig, LogConfigSchema } from "./config";
 import { LogEvent } from "./event";
 import { LogGroup } from "./group";
@@ -50,8 +51,16 @@ export class Log {
    * Processes and outputs a log event if it meets the minimum level requirement
    */
   private outputEvent(event: LogEvent): void {
-    if (!this.shouldLog(event.level)) return;
-    LogOutput.render(event, this.config.format, this.currentGroup);
+    if (this.shouldLog(event.level)) {
+      LogOutput.render(event, this.config.format, this.currentGroup);
+    } else {
+      if (event.level === "warn") {
+        console.warn(
+          pc.bgYellowBright(pc.black(" DEPRECATION WARNING ")),
+          pc.yellow(event.message),
+        );
+      }
+    }
   }
 
   /**
