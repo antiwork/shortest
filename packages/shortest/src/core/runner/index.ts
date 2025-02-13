@@ -18,7 +18,7 @@ import { CacheEntry } from "../../types/cache";
 import { hashData } from "../../utils/crypto";
 import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
-import { AIClient } from "@/ai/ai-client";
+import { AIClient } from "@/ai/client";
 import { getLogger, Log } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
 
