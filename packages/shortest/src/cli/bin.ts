@@ -4,7 +4,7 @@ import { GitHubTool } from "@/browser/integrations/github";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
 import { getConfig } from "@/index";
-import { LogLevel, LogFormat } from "@/log/config";
+import { LogLevel } from "@/log/config";
 import { getLogger } from "@/log/index";
 
 process.removeAllListeners("warning");
@@ -180,7 +180,7 @@ async function main() {
     const testPattern = cliTestPattern || config.testPattern;
     await runner.runTests(testPattern);
   } catch (error: any) {
-    console.error(pc.red(error.name), { message: error.message });
+    console.error(pc.red(error.name), error.message);
     process.exit(1);
   }
 }

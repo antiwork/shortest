@@ -19,6 +19,11 @@ import { LogLevel } from "./config";
  * @private
  */
 export class LogEvent {
+  static readonly FILTERED_METADATA_KEYS = ["anthropicKey", "apiKey"];
+  static readonly FILTERED_PLACEHOLDER = "[FILTERED]";
+  static readonly TRUNCATED_METADATA_KEYS = ["base64_image"];
+  static readonly TRUNCATED_PLACEHOLDER = "[TRUNCATED]";
+
   readonly timestamp: Date;
   readonly level: LogLevel;
   readonly message: string;
@@ -55,17 +60,28 @@ export class LogEvent {
   }
 
   private static filterValue(key: string, value: any, depth: number): any {
-    const FILTERED_METADATA_KEYS = ["apiKey", "base64_image"];
     const MAX_METADATA_DEPTH = 4;
-    const FILTERED_PLACEHOLDER = "[FILTERED]";
-    const TRUNCATED_PLACEHOLDER = "[TRUNCATED]";
 
     if (depth > MAX_METADATA_DEPTH) {
-      return TRUNCATED_PLACEHOLDER;
+      return LogEvent.TRUNCATED_PLACEHOLDER;
     }
 
-    if (FILTERED_METADATA_KEYS.includes(key)) {
-      return FILTERED_PLACEHOLDER;
+    if (LogEvent.TRUNCATED_METADATA_KEYS.includes(key)) {
+      return LogEvent.TRUNCATED_PLACEHOLDER;
+    }
+
+    if (LogEvent.FILTERED_METADATA_KEYS.includes(key)) {
+      if (typeof value === "string") {
+        if (value.length < 6) {
+          return LogEvent.FILTERED_PLACEHOLDER;
+        } else if (value.length < 15) {
+          return `${value.slice(0, 3)}...`;
+        } else {
+          return `${value.slice(0, 3)}...${value.slice(-3)}`;
+        }
+      } else {
+        return LogEvent.FILTERED_PLACEHOLDER;
+      }
     }
 
     if (typeof value === "object" && value !== null) {

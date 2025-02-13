@@ -1,24 +1,21 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { LanguageModelV1 } from "ai";
 import { AIConfig } from "@/types";
-
-/**
- * Mapping of high-level model aliases to actual model IDs for Anthropic.
- * For example, the high-level alias "claude-sonnet-3.5" is mapped to the
- * underlying model ID consumed by the SDK.
- */
-const anthropicModelMapping: Record<string, string> = {
-  "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",
-};
+import { AIError } from "@/utils/errors";
 
 /**
  * Creates a custom AI provider based on the provided configuration.
  *
  */
-export function createAIProvider(config: AIConfig): LanguageModelV1 {
-  switch (config.provider) {
+export function createProvider(aiConfig: AIConfig): LanguageModelV1 {
+  switch (aiConfig.provider) {
     case "anthropic":
-      const anthropic = createAnthropic({ apiKey: config.apiKey });
-      return anthropic(anthropicModelMapping[config.model]) as LanguageModelV1;
+      const anthropic = createAnthropic({ apiKey: aiConfig.apiKey });
+      return anthropic(aiConfig.model) as LanguageModelV1;
+    default:
+      throw new AIError(
+        "unsupported-provider",
+        `${aiConfig.provider} is not supported.`,
+      );
   }
 }

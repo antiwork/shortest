@@ -1,8 +1,5 @@
 import { z } from "zod";
-import { AISupportedModels } from "./ai";
-import { MakeOptional } from "@/utils/types";
 
-// #startblock Mailosaur
 const mailosaurSchema = z
   .object({
     apiKey: z.string(),
@@ -10,92 +7,31 @@ const mailosaurSchema = z
   })
   .optional();
 
-export interface MailosaurConfig {
-  apiKey: string;
-  serverId: string;
-}
-// #endblock Mailosaur
+const ANTHROPIC_MODELS = ["claude-3-5-sonnet-20241022"] as const;
 
-// #startblock Anthropic
-const anthropicSchema = z.object({
-  provider: z.literal("anthropic"),
-  apiKey: z.string().default(process.env.ANTHROPIC_API_KEY!),
-  model: z.enum(["claude-3-5-sonnet"]).default("claude-3-5-sonnet"),
-});
-
-export interface AnthropicConfig {
-  provider: "anthropic";
-  apiKey: string | undefined;
-  model: AISupportedModels;
-}
-
-export interface AnthropicPublicConfig {
-  provider: "anthropic";
-  apiKey: string | undefined;
-  model?: AISupportedModels;
-}
-// #endblock Anthropic
-
-// #startblock AI
-const aiSchema = z.discriminatedUnion("provider", [anthropicSchema]);
-
-export type AIConfig = AnthropicConfig;
-
-export type AIPublicConfig = AnthropicPublicConfig;
-// #endblock AI
-
-// #startblock Config
-interface ConfigBase {
-  headless: boolean;
-  baseUrl: string;
-  testPattern: string;
-}
-
-export type ShortestPublicConfig = ConfigBase &
-  Partial<{
-    mailosaur: MakeOptional<MailosaurConfig, "apiKey" | "serverId">;
-    ai: AIPublicConfig;
-    /** @deprecated Use the new 'ai' configuration instead */
-    anthropicKey: string;
-  }>;
-
-export type ShortestConfig = ConfigBase & {
-  mailosaur?: MailosaurConfig;
-  ai: AIConfig;
-};
+const aiSchema = z
+  .object({
+    provider: z.literal("anthropic"),
+    apiKey: z.string().default(() => process.env.ANTHROPIC_API_KEY!),
+    model: z.enum(ANTHROPIC_MODELS).default(ANTHROPIC_MODELS[0]),
+  })
+  .strict();
+export type AIConfig = z.infer<typeof aiSchema>;
 
 export const configSchema = z
   .object({
-    headless: z.boolean(),
+    headless: z.boolean().default(true),
     baseUrl: z.string().url("must be a valid URL"),
     testPattern: z.string(),
-    ai: aiSchema.optional(),
     anthropicKey: z.string().optional(),
+    ai: aiSchema,
     mailosaur: mailosaurSchema.optional(),
   })
-  .transform(transformLegacyConfig)
-  .refine((config) => !!config.ai, {
-    message:
-      "No AI configuration provided. Please provide the 'ai' configuration.",
-  })
-  .refine((config) => !config.anthropicKey, {
-    message:
-      "Both 'ai' and legacy 'anthropicKey' are provided. Please remove the deprecated 'anthropicKey'.",
-  });
-// #endblock Config
+  .strict();
 
-function transformLegacyConfig(config: any) {
-  const legacyApiKey = process.env.ANTHROPIC_API_KEY ?? config.anthropicKey;
-  if (!config.ai && legacyApiKey) {
-    console.warn(
-      "'anthropicKey' is deprecated. Use the new 'ai' option structure instead.",
-    );
-    config.ai = {
-      provider: "anthropic",
-      apiKey: legacyApiKey,
-      model: "claude-3-5-sonnet",
-    };
-    delete config.anthropicKey;
-  }
-  return config;
-}
+export const userConfigSchema = configSchema.extend({
+  ai: aiSchema.strict().partial().optional(),
+});
+
+export type ShortestConfig = z.infer<typeof userConfigSchema>;
+export type ShortestStrictConfig = z.infer<typeof configSchema>;

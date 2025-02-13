@@ -14,8 +14,8 @@ import { z } from "zod";
 
 import { getConfig } from "..";
 import { SYSTEM_PROMPT } from "./prompts";
-import { createAIProvider } from "./provider";
 import { aiJSONResponseSchema, extractJsonPayload } from "./utils/json";
+import { createProvider } from "@/ai/provider";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BaseCache } from "@/cache/cache";
@@ -33,7 +33,7 @@ export class AIClient implements IAIClient {
   private log: Log;
 
   constructor({ browserTool, cache }: AIClientOptions) {
-    this.client = createAIProvider(getConfig().ai);
+    this.client = createProvider(getConfig().ai);
     this.browserTool = browserTool;
     this.cache = cache;
     this.log = getLogger();

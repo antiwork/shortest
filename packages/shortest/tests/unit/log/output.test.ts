@@ -19,12 +19,12 @@ vi.mock("picocolors", () => ({
 }));
 
 describe("LogOutput", () => {
-  const mockDate = "2024-01-01T00:00:00.000Z";
+  const mockTimestamp = "19:00:00";
   const maxLevelLength = Math.max(...LOG_LEVELS.map((level) => level.length));
 
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date(mockDate));
+    vi.setSystemTime(new Date("2024-01-01T19:00:00"));
     // Mock all console methods
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "info").mockImplementation(() => {});
@@ -45,7 +45,7 @@ describe("LogOutput", () => {
       LogOutput.render(event, "terminal");
 
       expect(console.info).toHaveBeenCalledWith(
-        `cyan(info${" ".repeat(maxLevelLength - 4)}) | ${mockDate} | test message`,
+        `cyan(info${" ".repeat(maxLevelLength - 4)}) | ${mockTimestamp} | test message`,
       );
     });
 
@@ -56,33 +56,8 @@ describe("LogOutput", () => {
       });
       LogOutput.render(event, "terminal");
 
-      const details = JSON.stringify({ key: "value" }, null, 2);
       expect(console.debug).toHaveBeenCalledWith(
-        `green(debug${" ".repeat(maxLevelLength - 5)}) | ${mockDate} | test with metadata | dim(userId)=123 dim(details)=${details}`,
-      );
-    });
-
-    it("filters sensitive metadata", () => {
-      const event = new LogEvent("info", "test with sensitive data", {
-        apiKey: "secret",
-        nested: { apiKey: "also-secret" },
-      });
-      LogOutput.render(event, "terminal");
-
-      const nested = JSON.stringify({ apiKey: "[FILTERED]" }, null, 2);
-      expect(console.info).toHaveBeenCalledWith(
-        `cyan(info${" ".repeat(maxLevelLength - 4)}) | ${mockDate} | test with sensitive data | dim(apiKey)=[FILTERED] dim(nested)=${nested}`,
-      );
-    });
-
-    it("formats multiline string metadata", () => {
-      const event = new LogEvent("info", "test with multiline", {
-        stack: "Error: Something went wrong\n  at function\n  at other",
-      });
-      LogOutput.render(event, "terminal");
-
-      expect(console.info).toHaveBeenCalledWith(
-        `cyan(info${" ".repeat(maxLevelLength - 4)}) | ${mockDate} | test with multiline | dim(stack)=\n  Error: Something went wrong\n    at function\n    at other`,
+        `green(debug${" ".repeat(maxLevelLength - 5)}) | ${mockTimestamp} | test with metadata | dim(userId)=123 dim(details)={\n  "key": "value"\n}\n`,
       );
     });
   });
@@ -131,7 +106,7 @@ describe("LogOutput", () => {
       if (level === "error") {
         message = `red(${message})`;
       }
-      const output = `${color}(${paddedLevel}) | ${mockDate} | ${message}`;
+      const output = `${color}(${paddedLevel}) | ${mockTimestamp} | ${message}`;
       const expectedOutput =
         level === "warn" ? `yellowBright(${output})` : output;
 

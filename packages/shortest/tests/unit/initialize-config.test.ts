@@ -1,30 +1,9 @@
 import fs from "fs/promises";
 import path from "path";
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { AnthropicConfig } from "@/types";
 
 describe("initializeConfig", () => {
   const tempDir = path.join(process.cwd(), "temp-test-config");
-
-  test("prefers env ANTHROPIC_API_KEY over config key", async () => {
-    process.env.ANTHROPIC_API_KEY = "env-key";
-
-    await fs.writeFile(
-      path.join(tempDir, "shortest.config.ts"),
-      `
-      export default {
-        headless: true,
-        baseUrl: 'https://example.com',
-        testPattern: '.*',
-        anthropicKey: 'test-key'
-      }
-      `,
-    );
-
-    const { initializeConfig } = await import("@/index");
-    const config = await initializeConfig(tempDir);
-    expect((config.ai as AnthropicConfig).apiKey).toBe("env-key");
-  });
 
   beforeEach(async () => {
     vi.resetModules();
@@ -47,7 +26,6 @@ describe("initializeConfig", () => {
         ai: {
           provider: "anthropic",
           apiKey: "test-key",
-          model: "claude-3-5-sonnet"
         }
     }
       `,
@@ -62,7 +40,7 @@ describe("initializeConfig", () => {
       ai: {
         provider: "anthropic",
         apiKey: "test-key",
-        model: "claude-3-5-sonnet",
+        model: "claude-3-5-sonnet-20241022",
       },
     });
   });
@@ -78,7 +56,7 @@ describe("initializeConfig", () => {
         ai: {
           provider: "anthropic",
           apiKey: "test-key",
-          model: "claude-3-5-sonnet"
+          model: "claude-3-5-sonnet-20241022"
         }
       }
       `,
@@ -93,7 +71,7 @@ describe("initializeConfig", () => {
       ai: {
         provider: "anthropic",
         apiKey: "test-key",
-        model: "claude-3-5-sonnet",
+        model: "claude-3-5-sonnet-20241022",
       },
     });
   });

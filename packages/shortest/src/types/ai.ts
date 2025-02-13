@@ -40,5 +40,3 @@ export interface IAIClient {
     test: TestFunction,
   ): Promise<AIProcessActionResult | void>;
 }
-
-export type AISupportedModels = "claude-3-5-sonnet";

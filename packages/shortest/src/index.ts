@@ -4,21 +4,20 @@ import { expect as jestExpect } from "expect";
 import { APIRequest } from "@/browser/core/api-request";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
 import { TestCompiler } from "@/core/compiler";
+import { getLogger } from "@/log";
 import {
   TestFunction,
   TestAPI,
   TestContext,
   TestChain,
-  ShortestPublicConfig,
-  ShortestConfig,
+  ShortestStrictConfig,
 } from "@/types";
 import { parseConfig } from "@/utils/config";
 import { ConfigError } from "@/utils/errors";
-
 // to include the global expect in the generated d.ts file
 import "./globals";
 
-let globalConfig: ShortestConfig | null = null;
+let globalConfig: ShortestStrictConfig | null = null;
 const compiler = new TestCompiler();
 
 // Initialize Shortest namespace and globals
@@ -49,10 +48,14 @@ if (!global.__shortest__) {
 }
 
 export async function initializeConfig(configDir?: string) {
-  if (globalConfig) return globalConfig;
+  const log = getLogger();
+  if (globalConfig) {
+    log.trace("Using globalConfig");
+    return globalConfig;
+  }
+  log.trace("Initializing config");
 
   configDir = configDir || process.cwd();
-
   dotenv.config({ path: join(configDir, ".env") });
   dotenv.config({ path: join(configDir, ENV_LOCAL_FILENAME) });
 
@@ -67,8 +70,8 @@ export async function initializeConfig(configDir?: string) {
     try {
       const module = await compiler.loadModule(file, configDir);
 
-      const config = module.default;
-      const parsedConfig = parseConfig(config);
+      const userConfig = module.default;
+      const parsedConfig = parseConfig(userConfig);
       configs.push({
         file,
         config: parsedConfig,
@@ -93,15 +96,15 @@ export async function initializeConfig(configDir?: string) {
       `Multiple config files found: ${configs.map((c) => c.file).join(", ")}. Please keep only one.`,
     );
   }
-
-  globalConfig = {
-    ...configs[0].config,
-  };
+  console.log("---configs----");
+  console.log("configs", configs[0].config);
+  globalConfig = configs[0].config;
+  log.trace("Initialized config", { globalConfig });
 
   return globalConfig;
 }
 
-export function getConfig(): ShortestConfig {
+export function getConfig(): ShortestStrictConfig {
   if (!globalConfig) {
     throw new Error("Config not initialized. Call initializeConfig() first");
   }
@@ -238,4 +241,4 @@ export const test: TestAPI = Object.assign(
 
 export const shortest: TestAPI = test;
 export { APIRequest };
-export type { ShortestPublicConfig as ShortestConfig };
+// export type { ShortestPublicConfig as ShortestConfig };

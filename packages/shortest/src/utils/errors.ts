@@ -17,7 +17,9 @@ export type AIErrorType =
   | "invalid-response"
   | "token-limit-exceeded"
   | "unsafe-content-detected"
+  | "unsupported-provider"
   | "unknown";
+
 export class AIError extends Error {
   type: AIErrorType;
 
