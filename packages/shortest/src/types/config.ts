@@ -18,7 +18,7 @@ const aiSchema = z
         () =>
           process.env[getShortestEnvName("ANTHROPIC_API_KEY")] ||
           process.env.ANTHROPIC_API_KEY!,
-    ),
+      ),
     model: z.enum(ANTHROPIC_MODELS).default(ANTHROPIC_MODELS[0]),
   })
   .strict();
