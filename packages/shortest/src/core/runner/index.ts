@@ -374,7 +374,6 @@ export class TestRunner {
 
           this.reporter.onTestStart(test);
           const testResult = await this.executeTest(test, context);
-          console.log("testResult", testResult);
           this.reporter.onTestEnd(testResult);
 
           // Execute afterEach hooks with shared context

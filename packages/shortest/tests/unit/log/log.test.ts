@@ -95,6 +95,54 @@ describe("Log", () => {
         undefined,
       );
     });
+
+    it("shows warnings even when below configured level", () => {
+      const log = new Log({ level: "error" });
+      const consoleSpy = vi.spyOn(console, "warn");
+
+      log.warn("important warning");
+
+      expect(LogOutput.render).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining(" WARN "),
+        expect.stringContaining("important warning"),
+      );
+    });
+
+    it("handles multiple arguments with metadata", () => {
+      log.info("User", "action", "completed", { userId: 123, action: "login" });
+      expect(LogOutput.render).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "User action completed",
+          metadata: { userId: 123, action: "login" },
+        }),
+        "terminal",
+        undefined,
+      );
+    });
+
+    it("handles undefined and null arguments", () => {
+      log.info(undefined, null, "message");
+      expect(LogOutput.render).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "undefined null message",
+        }),
+        "terminal",
+        undefined,
+      );
+    });
+
+    it("handles object-like arguments that aren't metadata", () => {
+      const date = new Date();
+      log.info("Time is", date);
+      expect(LogOutput.render).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `Time is ${date}`,
+        }),
+        "terminal",
+        undefined,
+      );
+    });
   });
 
   describe("groups", () => {

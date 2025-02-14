@@ -56,7 +56,7 @@ export class Log {
     } else {
       if (event.level === "warn") {
         console.warn(
-          pc.bgYellowBright(pc.black(" DEPRECATION WARNING ")),
+          pc.bgYellowBright(pc.black(" WARN ")),
           pc.yellow(event.message),
         );
       }
@@ -69,7 +69,7 @@ export class Log {
   log(level: LogLevel, ...args: any[]) {
     const metadata =
       args[args.length - 1]?.constructor === Object ? args.pop() : undefined;
-    const message = args.join(" ");
+    const message = args.map((arg) => String(arg)).join(" ");
     const event = new LogEvent(level, message, metadata);
     this.outputEvent(event);
   }
