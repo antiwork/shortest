@@ -19,10 +19,6 @@ vi.mock("ai", () => ({
   },
 }));
 
-vi.mock("@anthropic-ai/sdk/core", () => ({
-  sleep: vi.fn(),
-}));
-
 vi.mock("@/index", () => ({
   getConfig: () => ({
     ai: {

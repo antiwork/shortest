@@ -1,6 +1,5 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { LanguageModelV1FinishReason } from "@ai-sdk/provider";
-import { sleep } from "@anthropic-ai/sdk/core";
 import {
   CoreMessage,
   CoreTool,
@@ -24,6 +23,7 @@ import { TestFunction, ToolResult } from "@/types";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
 import { CacheEntry, CacheStep } from "@/types/cache";
 import { getErrorDetails, AIError, AIErrorType } from "@/utils/errors";
+import { sleep } from "@/utils/sleep";
 
 export class AIClient {
   private client: LanguageModelV1;
