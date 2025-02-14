@@ -1,5 +1,5 @@
 import { pathToFileURL } from "url";
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic from "@ai-sdk/anthropic";
 import { glob } from "glob";
 import { APIRequest, BrowserContext } from "playwright";
 import * as playwright from "playwright";
@@ -200,18 +200,18 @@ export class TestRunner {
     });
 
     // this may never happen as the config is initialized before this code is executed
-    if (!this.config.anthropicKey) {
+    if (!this.config.ai?.apiKey) {
       return {
         test: test,
         status: "failed",
-        reason: "ANTHROPIC_KEY is not set",
+        reason: "AI API key is not set",
         tokenUsage: { input: 0, output: 0 },
       };
     }
 
     const aiClient = new AIClient({
-      apiKey: this.config.anthropicKey,
-      model: "claude-3-5-sonnet-20241022",
+      apiKey: this.config.ai.apiKey,
+      model: this.config.ai?.model || "claude-3-5-sonnet-20241022",
       maxMessages: 10,
     });
 
@@ -312,7 +312,7 @@ export class TestRunner {
     const finalMessage = result.finalResponse.content.find(
       (block: any) =>
         block.type === "text" &&
-        (block as Anthropic.Beta.Messages.BetaTextBlock).text.includes(
+        (block as { type: string; text: string }).text.includes(
           '"status":',
         ),
     );
@@ -322,7 +322,7 @@ export class TestRunner {
     }
 
     const jsonMatch = (
-      finalMessage as Anthropic.Beta.Messages.BetaTextBlock
+      finalMessage as { type: string; text: string }
     ).text.match(/{[\s\S]*}/);
     if (!jsonMatch) {
       throw new Error("Invalid test result format");

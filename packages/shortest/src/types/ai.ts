@@ -1,6 +1,7 @@
 import { ActionInput } from "@/types/browser";
 export interface AIConfig {
-  apiKey: string;
+  provider?: string;
+  apiKey?: string;
   model?: string;
   maxMessages?: number;
 }

@@ -4,6 +4,7 @@ import { parseConfig } from "@/utils/config";
 describe("Config parsing", () => {
   beforeEach(() => {
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.SHORTEST_ANTHROPIC_API_KEY;
   });
 
   test("validates correct config", () => {
@@ -11,7 +12,10 @@ describe("Config parsing", () => {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
-      anthropicKey: "test-key",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+      },
     };
     expect(() => parseConfig(config)).not.toThrow();
   });
@@ -21,7 +25,10 @@ describe("Config parsing", () => {
       headless: true,
       baseUrl: "not-a-url",
       testPattern: ".*",
-      anthropicKey: "test",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+      },
     };
     expect(() => parseConfig(config)).toThrowError("must be a valid URL");
   });
@@ -31,7 +38,10 @@ describe("Config parsing", () => {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: null,
-      anthropicKey: "test",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+      },
     };
     expect(() => parseConfig(config)).toThrowError(
       "Expected string, received null",
@@ -43,30 +53,52 @@ describe("Config parsing", () => {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
-      anthropicKey: "test",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+      },
       mailosaur: { apiKey: "key" }, // missing serverId
     };
     expect(() => parseConfig(config)).toThrowError("Required");
   });
 
-  test("accepts config when anthropicKey is in env", () => {
+  test("accepts config when API key is in env", () => {
     process.env.ANTHROPIC_API_KEY = "test-key";
     const config = {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
+      ai: {
+        provider: "anthropic",
+      },
     };
     expect(() => parseConfig(config)).not.toThrow();
   });
 
-  test("throws when anthropicKey is missing from both config and env", () => {
+  test("accepts config when API key is in SHORTEST_ANTHROPIC_API_KEY", () => {
+    process.env.SHORTEST_ANTHROPIC_API_KEY = "test-key";
     const config = {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
+      ai: {
+        provider: "anthropic",
+      },
+    };
+    expect(() => parseConfig(config)).not.toThrow();
+  });
+
+  test("throws when API key is missing from both config and env", () => {
+    const config = {
+      headless: true,
+      baseUrl: "https://example.com",
+      testPattern: ".*",
+      ai: {
+        provider: "anthropic",
+      },
     };
     expect(() => parseConfig(config)).toThrowError(
-      "anthropicKey must be provided",
+      "For provider 'anthropic', an API key must be provided in config or via environment variables.",
     );
   });
 });

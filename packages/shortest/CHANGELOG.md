@@ -149,3 +149,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - esbuild ^0.20.1
 - expect ^29.7.0
 - dotenv ^16.4.5
+
+## [Unreleased]
+
+### Changed
+- Refactored codebase for Vercel migration
+  - Updated configuration handling
+  - Modified AI client implementation
+  - Improved test runner architecture
+  - Enhanced type definitions

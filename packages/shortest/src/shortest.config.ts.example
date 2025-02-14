@@ -1,8 +1,12 @@
 import type { ShortestConfig } from "@antiwork/shortest";
 
 export default {
-  headless: false,
+  headless: true,
   baseUrl: "http://localhost:3000",
-  testPattern: "**/*.test.ts",
-  anthropicKey: process.env.ANTHROPIC_API_KEY,
+  testPattern: "tests/**/*.test.ts",
+  ai: {
+    provider: "anthropic",
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    model: "claude-3-5-sonnet-20241022",
+  },
 } satisfies ShortestConfig;

@@ -93,11 +93,26 @@ export async function initializeConfig(configDir?: string) {
     );
   }
 
+  const config = configs[0].config;
+  if ((config as any).anthropicKey) {
+    console.warn("Warning: 'anthropicKey' is deprecated. Please use the nested 'ai' configuration with 'ai.apiKey'.");
+  }
+
   globalConfig = {
-    ...configs[0].config,
-    anthropicKey:
-      process.env.ANTHROPIC_API_KEY || configs[0].config.anthropicKey,
+    ...config,
+    ai: {
+      ...config.ai,
+      apiKey: process.env.SHORTEST_ANTHROPIC_API_KEY || 
+              process.env.ANTHROPIC_API_KEY || 
+              config.ai?.apiKey || 
+              (config as any).anthropicKey,
+    }
   };
+
+  // Clean up deprecated field
+  if ((globalConfig as any).anthropicKey) {
+    delete (globalConfig as any).anthropicKey;
+  }
 
   return globalConfig;
 }

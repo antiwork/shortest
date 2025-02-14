@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { Anthropic } from "@ai-sdk/anthropic";
 import { SYSTEM_PROMPT } from "@/ai/prompts";
 import { AITools } from "@/ai/tools";
 import { BashTool } from "@/browser/core/bash-tool";
@@ -10,8 +10,36 @@ import { AIConfig, RequestBash, RequestComputer } from "@/types/ai";
 import { CacheAction, CacheStep } from "@/types/cache";
 import { getErrorDetails } from "@/utils/errors";
 
+interface ContentBlock {
+  type: string;
+  text?: string;
+  name?: string;
+  input?: any;
+  id?: string;
+  tool_use_id?: string;
+  content?: ContentBlock[];
+  source?: {
+    type: string;
+    media_type: string;
+    data: string;
+  };
+}
+
+interface Message {
+  role: "user" | "assistant";
+  content: ContentBlock[] | string;
+}
+
+interface AnthropicClient extends InstanceType<typeof Anthropic> {
+  beta: {
+    messages: {
+      create: (params: any) => Promise<any>;
+    };
+  };
+}
+
 export class AIClient {
-  private client: Anthropic;
+  private client: any; // TODO: Update when SDK types are fixed
   private model: string;
   private maxMessages: number;
   private log: Log;
@@ -19,28 +47,32 @@ export class AIClient {
   constructor(config: AIConfig) {
     this.log = getLogger();
     this.log.trace("Initializing AIClient", { config });
-    if (!config.apiKey) {
-      this.log.error(
-        `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
-      );
-      throw new Error(
-        `Anthropic API key is required. Set it in ${CONFIG_FILENAME} or ANTHROPIC_API_KEY env var`,
-      );
+
+    if (config.provider !== "anthropic") {
+      throw new Error("This client only supports the 'anthropic' provider");
+    }
+
+    const apiKey = config.apiKey || 
+                  process.env.SHORTEST_ANTHROPIC_API_KEY || 
+                  process.env.ANTHROPIC_API_KEY;
+
+    if (!apiKey) {
+      const message = `For provider 'anthropic', an API key must be provided in the 'ai' section of the config or via SHORTEST_ANTHROPIC_API_KEY/ANTHROPIC_API_KEY environment variables.`;
+      this.log.error(message);
+      throw new Error(message);
     }
 
     this.client = new Anthropic({
-      apiKey: config.apiKey,
+      apiKey,
     });
-    this.model = "claude-3-5-sonnet-20241022";
-    this.maxMessages = 10;
+    this.model = config.model || "claude-3-5-sonnet-20241022";
+    this.maxMessages = config.maxMessages || 10;
   }
 
   async processAction(
     prompt: string,
     browserTool: BrowserTool,
-    outputCallback?: (
-      content: Anthropic.Beta.Messages.BetaContentBlockParam,
-    ) => void,
+    outputCallback?: (content: ContentBlock) => void,
     toolOutputCallback?: (name: string, input: any) => void,
   ): Promise<{
     finalResponse: any;
@@ -80,17 +112,15 @@ export class AIClient {
   async makeRequest(
     prompt: string,
     browserTool: BrowserTool,
-    _outputCallback?: (
-      content: Anthropic.Beta.Messages.BetaContentBlockParam,
-    ) => void,
+    _outputCallback?: (content: ContentBlock) => void,
     _toolOutputCallback?: (name: string, input: any) => void,
   ): Promise<{
-    messages: any;
+    messages: Message[];
     finalResponse: any;
     pendingCache: any;
     tokenUsage: { input: number; output: number };
   }> {
-    const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [];
+    const messages: Message[] = [];
     const pendingCache: Partial<{ steps?: CacheStep[] }> = {};
 
     let totalInputTokens = 0;
@@ -120,16 +150,15 @@ export class AIClient {
           output: totalOutputTokens,
         };
 
-        response.content.forEach((block) => {
+        response.content.forEach((block: ContentBlock) => {
           if (block.type === "text") {
             this.log.debug("Response", {
-              response: (block as any).text,
+              response: block.text,
             });
           } else if (block.type === "tool_use") {
-            const toolBlock = block as Anthropic.Beta.Messages.BetaToolUseBlock;
             this.log.debug("Tool request", {
-              tool: toolBlock.name,
-              input: toolBlock.input,
+              tool: block.name,
+              input: block.input,
             });
           }
         });
@@ -142,12 +171,12 @@ export class AIClient {
 
         // Collect executable tool actions
         const toolRequests = response.content.filter(
-          (block) => block.type === "tool_use",
-        ) as Anthropic.Beta.Messages.BetaToolUseBlock[];
+          (block: ContentBlock) => block.type === "tool_use",
+        );
 
         if (toolRequests.length > 0) {
           const toolResults = await Promise.all(
-            toolRequests.map(async (toolRequest) => {
+            toolRequests.map(async (toolRequest: ContentBlock) => {
               switch (toolRequest.name) {
                 case "bash":
                   try {
@@ -204,7 +233,7 @@ export class AIClient {
             }),
           );
 
-          toolResults.forEach((result) => {
+          toolResults.forEach((result: { toolRequest: ContentBlock; toolResult: any }) => {
             if (result) {
               const { toolRequest, toolResult } = result;
 
@@ -236,10 +265,10 @@ export class AIClient {
                         content: (toolResult as ToolResult).base64_image
                           ? [
                               {
-                                type: "image" as const,
+                                type: "image",
                                 source: {
-                                  type: "base64" as const,
-                                  media_type: "image/jpeg" as const,
+                                  type: "base64",
+                                  media_type: "image/jpeg",
                                   data: (toolResult as ToolResult)
                                     .base64_image!,
                                 },
@@ -247,7 +276,7 @@ export class AIClient {
                             ]
                           : [
                               {
-                                type: "text" as const,
+                                type: "text",
                                 text: (toolResult as ToolResult).output || "",
                               },
                             ],

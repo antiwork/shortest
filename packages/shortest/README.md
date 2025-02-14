@@ -35,7 +35,11 @@ export default {
   headless: false,
   baseUrl: "http://localhost:3000",
   testPattern: "**/*.test.ts",
-  anthropicKey: process.env.ANTHROPIC_API_KEY,
+  ai: {
+    provider: "anthropic",
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    model: "claude-3-5-sonnet-20241022",
+  },
 } satisfies ShortestConfig;
 ```
 

@@ -14,7 +14,7 @@ pnpm install
 2. Link CLI for local development
 ```bash
 cd packages/shortest && pnpm link --global
-cd ../.. && pnpm link --global shortest
+cd ../.. && pnpm link --global @antiwork/shortest
 ```
 
 3. Configure environment

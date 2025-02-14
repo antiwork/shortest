@@ -8,6 +8,7 @@ describe("initializeConfig", () => {
   beforeEach(async () => {
     vi.resetModules();
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.SHORTEST_ANTHROPIC_API_KEY;
     await fs.mkdir(tempDir, { recursive: true });
   });
 
@@ -23,7 +24,10 @@ describe("initializeConfig", () => {
         headless: true,
         baseUrl: "https://example.com",
         testPattern: ".*",
-        anthropicKey: "test-key",
+        ai: {
+          provider: "anthropic",
+          apiKey: "test-key",
+        },
       }
       `,
     );
@@ -34,7 +38,10 @@ describe("initializeConfig", () => {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
-      anthropicKey: "test-key",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+      },
     });
   });
 
@@ -46,7 +53,10 @@ describe("initializeConfig", () => {
         headless: true,
         baseUrl: 'https://example.com',
         testPattern: '.*',
-        anthropicKey: 'test-key'
+        ai: {
+          provider: 'anthropic',
+          apiKey: 'test-key',
+        },
       }
       `,
     );
@@ -57,12 +67,15 @@ describe("initializeConfig", () => {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
-      anthropicKey: "test-key",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+      },
     });
   });
 
-  test("prefers env ANTHROPIC_API_KEY over config key", async () => {
-    process.env.ANTHROPIC_API_KEY = "env-key";
+  test("prefers env SHORTEST_ANTHROPIC_API_KEY over config key", async () => {
+    process.env.SHORTEST_ANTHROPIC_API_KEY = "env-key";
 
     await fs.writeFile(
       path.join(tempDir, "shortest.config.ts"),
@@ -71,14 +84,40 @@ describe("initializeConfig", () => {
         headless: true,
         baseUrl: 'https://example.com',
         testPattern: '.*',
-        anthropicKey: 'config-key'
+        ai: {
+          provider: 'anthropic',
+          apiKey: 'config-key',
+        },
       }
       `,
     );
 
     const { initializeConfig } = await import("@/index");
     const config = await initializeConfig(tempDir);
-    expect(config?.anthropicKey).toBe("env-key");
+    expect(config?.ai?.apiKey).toBe("env-key");
+  });
+
+  test("prefers SHORTEST_ANTHROPIC_API_KEY over ANTHROPIC_API_KEY", async () => {
+    process.env.SHORTEST_ANTHROPIC_API_KEY = "shortest-key";
+    process.env.ANTHROPIC_API_KEY = "anthropic-key";
+
+    await fs.writeFile(
+      path.join(tempDir, "shortest.config.ts"),
+      `
+      export default {
+        headless: true,
+        baseUrl: 'https://example.com',
+        testPattern: '.*',
+        ai: {
+          provider: 'anthropic',
+        },
+      }
+      `,
+    );
+
+    const { initializeConfig } = await import("@/index");
+    const config = await initializeConfig(tempDir);
+    expect(config?.ai?.apiKey).toBe("shortest-key");
   });
 
   test("throws when multiple config files exist", async () => {
@@ -89,7 +128,10 @@ describe("initializeConfig", () => {
         headless: true,
         baseUrl: "https://example.com",
         testPattern: ".*",
-        anthropicKey: "test-key",
+        ai: {
+          provider: "anthropic",
+          apiKey: "test-key",
+        },
       }
       `,
     );
@@ -101,14 +143,17 @@ describe("initializeConfig", () => {
         headless: true,
         baseUrl: "https://example.com",
         testPattern: ".*",
-        anthropicKey: "test-key",
+        ai: {
+          provider: "anthropic",
+          apiKey: "test-key",
+        },
       }
       `,
     );
 
     const { initializeConfig } = await import("@/index");
     await expect(initializeConfig(tempDir)).rejects.toThrow(
-      "Multiple config files found",
+      "Multiple config files found"
     );
   });
 
