@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { extractJsonPayload } from "@/ai/utils/json";
-import { AIError } from "@/utils/errors";
 
 describe("extractJsonPayload", () => {
   const validResponse = '{"status": "passed", "reason": "test passed"}';
