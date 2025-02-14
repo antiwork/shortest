@@ -60,7 +60,8 @@ describe("extractJsonPayload", () => {
   });
 
   it("handles JSON within other text", () => {
-    const mixedContent = 'Some text before {"status": "passed", "reason": "test"} and after';
+    const mixedContent =
+      'Some text before {"status": "passed", "reason": "test"} and after';
     const result = extractJsonPayload(mixedContent);
     expect(result).toEqual({
       status: "passed",
