@@ -19,6 +19,10 @@ vi.mock("ai", () => ({
   },
 }));
 
+vi.mock("@/utils/sleep", () => ({
+  sleep: () => Promise.resolve(),
+}));
+
 vi.mock("@/index", () => ({
   getConfig: () => ({
     ai: {
