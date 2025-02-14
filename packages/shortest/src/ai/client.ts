@@ -1,10 +1,10 @@
 import { anthropic } from "@ai-sdk/anthropic";
+import { LanguageModelV1FinishReason } from "@ai-sdk/provider";
 import { sleep } from "@anthropic-ai/sdk/core";
 import {
   CoreMessage,
   CoreTool,
   generateText,
-  GenerateTextResult,
   InvalidToolArgumentsError,
   LanguageModelV1,
   NoSuchToolError,
@@ -23,7 +23,7 @@ import { getLogger, Log } from "@/log";
 import { TestFunction, ToolResult } from "@/types";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
 import { CacheEntry, CacheStep } from "@/types/cache";
-import { getErrorDetails, AIError } from "@/utils/errors";
+import { getErrorDetails, AIError, AIErrorType } from "@/utils/errors";
 
 export class AIClient {
   private client: LanguageModelV1;
@@ -59,6 +59,7 @@ export class AIClient {
   }> {
     const MAX_RETRIES = 3;
     let retries = 0;
+
     while (retries < MAX_RETRIES) {
       try {
         const result = await this.makeRequest(prompt, test);
@@ -170,26 +171,36 @@ export class AIClient {
 
       this.updateUsage(resp.usage);
       this.conversationHistory.push(...resp.response.messages);
+
+      this.throwOnErrorFinishReason(resp.finishReason);
+
       if (resp.finishReason === "tool-calls") {
         this.log.resetGroup();
         continue;
       }
-      this.processError(resp);
 
       // At this point, response reason is not a tool call, and it's not errored
-      const json = extractJsonPayload(resp.text);
-      this.log.trace("Response", { ...json });
+      try {
+        const json = extractJsonPayload(resp.text);
+        this.log.trace("Response", { ...json });
 
-      if (json.status === "passed") {
-        this.cache.set(test, this.pendingCache);
+        if (json.status === "passed") {
+          this.cache.set(test, this.pendingCache);
+        }
+        this.log.resetGroup();
+        return {
+          response: json,
+          metadata: {
+            usage: this.usage,
+          },
+        };
+      } catch {
+        this.log.resetGroup();
+        throw new AIError(
+          "invalid-response",
+          "AI didn't return the expected JSON payload",
+        );
       }
-      this.log.resetGroup();
-      return {
-        response: json,
-        metadata: {
-          usage: this.usage,
-        },
-      };
     }
   }
 
@@ -286,29 +297,39 @@ export class AIClient {
         ];
   }
 
-  private processError(
-    resp: GenerateTextResult<Record<string, CoreTool>>,
-  ): void {
-    const reason = resp.finishReason;
-    switch (reason) {
-      case "length":
-        this.log.resetGroup();
-        throw new AIError(
-          "token-limit-exceeded",
+  private throwOnErrorFinishReason(reason: LanguageModelV1FinishReason): void {
+    const errorMap: Partial<
+      Record<
+        LanguageModelV1FinishReason,
+        {
+          error: AIErrorType;
+          message: string;
+        }
+      >
+    > = {
+      length: {
+        message:
           "Generation stopped because the maximum token length was reached.",
-        );
-      case "content-filter":
-        this.log.resetGroup();
-        throw new AIError(
-          "unsafe-content-detected",
-          "Content filter violation: generation aborted.",
-        );
-      case "error":
-        this.log.resetGroup();
-        throw new AIError("unknown", "An error occurred during generation.");
-      case "other":
-        this.log.resetGroup();
-        throw new AIError("unknown", "An error occurred during generation.");
+        error: "token-limit-exceeded",
+      },
+      "content-filter": {
+        message: "Content filter violation: generation aborted.",
+        error: "unsafe-content-detected",
+      },
+      error: {
+        message: "An error occurred during generation.",
+        error: "unknown",
+      },
+      other: {
+        message: "Generation stopped for an unknown reason.",
+        error: "unknown",
+      },
+    };
+    const errorInfo = errorMap[reason];
+
+    if (errorInfo) {
+      this.log.resetGroup();
+      throw new AIError(errorInfo.error, errorInfo.message);
     }
   }
 

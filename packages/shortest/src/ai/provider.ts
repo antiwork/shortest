@@ -6,6 +6,7 @@ import { AIError } from "@/utils/errors";
 /**
  * Creates a custom AI provider based on the provided configuration.
  *
+ * @private
  */
 export function createProvider(aiConfig: AIConfig): LanguageModelV1 {
   switch (aiConfig.provider) {

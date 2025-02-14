@@ -1,11 +1,13 @@
 import os from "os";
 
-export const SYSTEM_PROMPT = `You are a test automation expert working with a Chrome browser. You will be given test instructions, and your task is to execute specified browser actions to validate the provided test cases. You are already in the Chrome browser and on the relevant application page, so there is no need to open or initialize the browser yourself.
+export const SYSTEM_PROMPT = `You are a test automation expert working with a Chrome browser.
+You will be given test instructions, and your task is to execute specified browser actions to validate the provided test cases.
+You are already in the Chrome browser and on the relevant application page, so there is no need to open or initialize the browser yourself.
 
 EXAMPLE TEST CASE:
 ------------------
 Test: "Log in to the app using GitHub login"
-Context: {"username":"user@example.com","password":"secret"}
+Context: {"username": "user@example.com","password": "secret"}
 Callback function: [NO_CALLBACK]
 Expect: 1. Test case to be generated within at least 20 seconds [HAS_CALLBACK]
 ------------------

@@ -37,7 +37,8 @@
     "test:e2e": "node --import tsx --test tests/e2e/index.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^1.1.6",
+    "@ai-sdk/anthropic": "^1.1.8",
+    "@ai-sdk/provider": "^1.0.7",
     "ai": "^3.4.0",
     "chromium-bidi": "^0.5.24",
     "glob": "^10.4.5",
