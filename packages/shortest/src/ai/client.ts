@@ -201,17 +201,6 @@ export class AIClient {
         // })),
       });
 
-      // for (const toolCall of resp.toolCalls) {
-      //   this.log.trace("ToolCall details", {
-      //     name: toolCall.toolName,
-      //     args: toolCall.args,
-      //   });
-      // }
-
-      // for (const { toolName, result } of resp.toolResults as any) {
-      //   this.log.trace("Tool response", { name: toolName, ...result });
-      // }
-
       this.updateUsage(resp.usage);
       this.conversationHistory.push(...resp.response.messages);
 

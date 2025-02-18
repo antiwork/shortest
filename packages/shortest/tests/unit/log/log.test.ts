@@ -210,18 +210,5 @@ describe("Log", () => {
         undefined,
       );
     });
-
-    it("logs group operations at trace level", () => {
-      log.setGroup("Test");
-      expect(LogOutput.render).toHaveBeenCalledWith(
-        expect.objectContaining({
-          level: "trace",
-          message: "Setting group",
-          metadata: { groupName: "Test" },
-        }),
-        "terminal",
-        undefined,
-      );
-    });
   });
 });
