@@ -75,7 +75,7 @@ export class LogEvent {
    * @private
    */
   private static filterValue(key: string, value: any, depth: number): any {
-    const MAX_METADATA_DEPTH = 10;
+    const MAX_METADATA_DEPTH = 4;
 
     if (depth > MAX_METADATA_DEPTH) {
       return LogEvent.TRUNCATED_PLACEHOLDER;

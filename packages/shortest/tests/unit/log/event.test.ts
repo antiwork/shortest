@@ -94,9 +94,16 @@ describe("LogEvent", () => {
     });
 
     LogEvent.TRUNCATED_METADATA_KEYS.forEach((key) => {
-      it(`truncates ${key} value`, () => {
+      it(`truncates ${key} string value`, () => {
         const event = new LogEvent("info", "test", {
           [key]: "longstring",
+        });
+        expect(event.parsedMetadata?.[key]).toEqual("longstri...");
+      });
+
+      it(`truncates ${key} non-string value`, () => {
+        const event = new LogEvent("info", "test", {
+          [key]: { some: "object" },
         });
         expect(event.parsedMetadata?.[key]).toEqual(
           LogEvent.TRUNCATED_PLACEHOLDER,
