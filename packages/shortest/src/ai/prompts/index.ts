@@ -22,6 +22,7 @@ IMPORTANT GLOBAL RULES:
    - After invoking a tool, wait until the tool finishes its execution and you receive a success/failure result.
    - You will also receive metadata about the tool's execution to help you interpret its outcome.
    - Only after the tool finishes and you know the result should you request any screenshots or proceed to the next action.
+   - Always include the "action" field matching the tool name in your tool calls (e.g. for "navigate" tool, include 'action: "navigate"').
 
 3. **Screenshot Rule**:
    - Do not request screenshots until after a tool has completely finished its execution.

@@ -106,7 +106,7 @@ describe("AIClient", () => {
     };
   });
 
-  describe("processAction", () => {
+  describe("runAction", () => {
     it("successfully processes an action with valid response", async () => {
       const mockResponse = createMockResponse(
         '{"status": "passed", "reason": "test passed"}',
@@ -115,7 +115,7 @@ describe("AIClient", () => {
 
       (generateText as any).mockResolvedValue(mockResponse);
 
-      const result = await client.processAction("test prompt", mockTest);
+      const result = await client.runAction("test prompt", mockTest);
 
       expect(result).toEqual({
         response: {
@@ -156,7 +156,7 @@ describe("AIClient", () => {
         .mockResolvedValueOnce(toolCallResponse)
         .mockResolvedValueOnce(finalResponse);
 
-      const result = await client.processAction("test prompt", mockTest);
+      const result = await client.runAction("test prompt", mockTest);
 
       expect(result.response).toEqual({
         status: "passed",
@@ -177,7 +177,7 @@ describe("AIClient", () => {
           .mockRejectedValueOnce(error)
           .mockResolvedValue(successResponse);
 
-        const result = await client.processAction("test prompt", mockTest);
+        const result = await client.runAction("test prompt", mockTest);
 
         expect(result.response).toEqual({
           status: "passed",
@@ -204,7 +204,7 @@ describe("AIClient", () => {
           (generateText as any).mockRejectedValue(error);
 
           await expect(async () => {
-            await client.processAction("test prompt", mockTest);
+            await client.runAction("test prompt", mockTest);
           }).rejects.toSatisfy((value: unknown) => {
             const e = value as Error;
             expect(e).toBeInstanceOf(expectedInstance);
@@ -241,7 +241,7 @@ describe("AIClient", () => {
           (generateText as any).mockResolvedValue(response);
 
           await expect(
-            client.processAction("test prompt", mockTest),
+            client.runAction("test prompt", mockTest),
           ).rejects.toMatchObject({
             message: expectedMessage,
             name: "AIError",
@@ -258,7 +258,7 @@ describe("AIClient", () => {
           .mockRejectedValueOnce(error);
 
         await expect(
-          client.processAction("test prompt", mockTest),
+          client.runAction("test prompt", mockTest),
         ).rejects.toMatchObject({
           message: "Max retries reached",
           name: "AIError",

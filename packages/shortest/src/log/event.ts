@@ -21,7 +21,7 @@ import { LogLevel } from "./config";
 export class LogEvent {
   static readonly FILTERED_METADATA_KEYS = ["anthropicKey", "apiKey"];
   static readonly FILTERED_PLACEHOLDER = "[FILTERED]";
-  static readonly TRUNCATED_METADATA_KEYS = ["base64_image"];
+  static readonly TRUNCATED_METADATA_KEYS = ["base64_image", "data"];
   static readonly TRUNCATED_PLACEHOLDER = "[TRUNCATED]";
 
   readonly timestamp: Date;
@@ -75,14 +75,16 @@ export class LogEvent {
    * @private
    */
   private static filterValue(key: string, value: any, depth: number): any {
-    const MAX_METADATA_DEPTH = 4;
+    const MAX_METADATA_DEPTH = 10;
 
     if (depth > MAX_METADATA_DEPTH) {
       return LogEvent.TRUNCATED_PLACEHOLDER;
     }
 
     if (LogEvent.TRUNCATED_METADATA_KEYS.includes(key)) {
-      return LogEvent.TRUNCATED_PLACEHOLDER;
+      return typeof value === "string"
+        ? `${value.slice(0, 8)}...`
+        : LogEvent.TRUNCATED_PLACEHOLDER;
     }
 
     if (LogEvent.FILTERED_METADATA_KEYS.includes(key)) {

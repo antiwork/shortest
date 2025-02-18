@@ -215,6 +215,7 @@ export class BrowserTool extends BaseBrowserTool {
 
   async execute(input: ActionInput): Promise<ToolResult> {
     try {
+      this.log.setGroup(`🛠️ ${input.action}`);
       let output = "";
       let metadata = {};
 
@@ -403,11 +404,13 @@ export class BrowserTool extends BaseBrowserTool {
           }
 
           // Create new tab
+          this.log.trace("Creating new tab");
           const newPage = await this.page.context().newPage();
 
           try {
             const navigationTimeout = 30000;
 
+            this.log.trace("Navigating to", { url: input.url });
             await newPage.goto(input.url, {
               timeout: navigationTimeout,
               waitUntil: "domcontentloaded",
@@ -437,6 +440,7 @@ export class BrowserTool extends BaseBrowserTool {
                 },
               },
             };
+            this.log.trace("Navigation completed", metadata);
 
             break;
           } catch (error) {
@@ -607,6 +611,8 @@ export class BrowserTool extends BaseBrowserTool {
         };
       }
       throw new ToolError(`Action failed: ${error}`);
+    } finally {
+      this.log.resetGroup();
     }
   }
 
@@ -691,11 +697,13 @@ export class BrowserTool extends BaseBrowserTool {
     const filePathWithoutCwd = filePath.replace(process.cwd() + "/", "");
     this.log.debug("📺", "Screenshot saved", { filePath: filePathWithoutCwd });
 
-    return {
+    const metadata = {
       output: "Screenshot taken",
       base64_image: buffer.toString("base64"),
       metadata: await this.getMetadata(),
     };
+    this.log.trace("Screenshot details", metadata);
+    return metadata;
   }
 
   toToolParameters() {

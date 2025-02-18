@@ -18,7 +18,7 @@ import { CacheEntry } from "../../types/cache";
 import { hashData } from "../../utils/crypto";
 import { TestCompiler } from "../compiler";
 import { TestReporter } from "./test-reporter";
-import { AIClient } from "@/ai/client";
+import { AIClient, AIClientResponse } from "@/ai/client";
 import { getLogger, Log } from "@/log";
 import { TokenUsageSchema } from "@/types/ai";
 import { getErrorDetails } from "@/utils/errors";
@@ -193,11 +193,6 @@ export class TestRunner {
       },
     });
 
-    const aiClient = new AIClient({
-      browserTool,
-      cache: this.cache,
-    });
-
     const initialState = await browserTool.execute({
       action: "screenshot",
     });
@@ -293,10 +288,19 @@ export class TestRunner {
       }
     }
 
-    this.log.setGroup("🤖");
-    const aiResponse = await aiClient.processAction(prompt, test);
-    this.log.resetGroup();
-    const { response, metadata } = aiResponse!;
+    let aiResponse: AIClientResponse;
+    try {
+      this.log.setGroup("🤖");
+      const aiClient = new AIClient({
+        browserTool,
+        cache: this.cache,
+      });
+      aiResponse = await aiClient.runAction(prompt, test);
+    } finally {
+      this.log.resetGroup();
+    }
+
+    const { response, metadata } = aiResponse;
 
     // Execute after function if present
     if (test.afterFn) {
@@ -443,75 +447,78 @@ export class TestRunner {
     test: TestFunction,
     browserTool: BrowserTool,
   ): Promise<TestResult> {
-    const cachedTest = await this.cache.get(test);
-    this.log.setGroup("💾");
-    this.log.debug("Executing cached test", { hash: hashData(test) });
+    try {
+      this.log.setGroup("💾");
 
-    const steps = cachedTest?.data.steps
-      // do not take screenshots in cached mode
-      ?.filter(
-        (step) =>
-          step.action?.input.action !== BrowserActionEnum.Screenshot.toString(),
-      );
+      const cachedTest = await this.cache.get(test);
 
-    if (!steps) {
-      this.log.debug("No steps to execute, running test in normal mode");
-      this.log.resetGroup();
+      this.log.debug("Executing cached test", { hash: hashData(test) });
+
+      const steps = cachedTest?.data.steps
+        // do not take screenshots in cached mode
+        ?.filter(
+          (step) =>
+            step.action?.input.action !==
+            BrowserActionEnum.Screenshot.toString(),
+        );
+
+      if (!steps) {
+        this.log.debug("No steps to execute, running test in normal mode");
+        return {
+          test: test,
+          status: "failed",
+          reason: "No steps to execute, running test in normal mode",
+          tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
+        };
+      }
+      for (const step of steps) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (
+          step.action?.input.action === BrowserActionEnum.MouseMove &&
+          // @ts-expect-error Interface and actual values differ
+          step.action.input.coordinate
+        ) {
+          // @ts-expect-error
+          const [x, y] = step.action.input.coordinate;
+
+          const componentStr =
+            await browserTool.getNormalizedComponentStringByCoords(x, y);
+
+          if (componentStr !== step.extras.componentStr) {
+            return {
+              test: test,
+              status: "failed",
+              reason:
+                "Component UI elements are different, running test in normal mode",
+              tokenUsage: {
+                completionTokens: 0,
+                promptTokens: 0,
+                totalTokens: 0,
+              },
+            };
+          }
+        }
+        if (step.action?.input) {
+          try {
+            await browserTool.execute(step.action.input);
+          } catch (error) {
+            this.log.error("Failed to execute step", {
+              input: step.action.input,
+              ...getErrorDetails(error),
+            });
+          }
+        }
+      }
+
+      this.log.debug("All actions successfully replayed from cache");
       return {
         test: test,
-        status: "failed",
-        reason: "No steps to execute, running test in normal mode",
+        status: "passed",
+        reason: "All actions successfully replayed from cache",
         tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
       };
+    } finally {
+      this.log.resetGroup();
     }
-    for (const step of steps) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (
-        step.action?.input.action === BrowserActionEnum.MouseMove &&
-        // @ts-expect-error Interface and actual values differ
-        step.action.input.coordinate
-      ) {
-        // @ts-expect-error
-        const [x, y] = step.action.input.coordinate;
-
-        const componentStr =
-          await browserTool.getNormalizedComponentStringByCoords(x, y);
-
-        if (componentStr !== step.extras.componentStr) {
-          this.log.resetGroup();
-          return {
-            test: test,
-            status: "failed",
-            reason:
-              "Component UI elements are different, running test in normal mode",
-            tokenUsage: {
-              completionTokens: 0,
-              promptTokens: 0,
-              totalTokens: 0,
-            },
-          };
-        }
-      }
-      if (step.action?.input) {
-        try {
-          await browserTool.execute(step.action.input);
-        } catch (error) {
-          this.log.error("Failed to execute step", {
-            input: step.action.input,
-            ...getErrorDetails(error),
-          });
-          this.log.resetGroup();
-        }
-      }
-    }
-
-    this.log.debug("All actions successfully replayed from cache");
-    this.log.resetGroup();
-    return {
-      test: test,
-      status: "passed",
-      reason: "All actions successfully replayed from cache",
-      tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
-    };
   }
 }

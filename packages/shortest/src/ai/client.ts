@@ -25,6 +25,13 @@ import { CacheEntry, CacheStep } from "@/types/cache";
 import { getErrorDetails, AIError, AIErrorType } from "@/utils/errors";
 import { sleep } from "@/utils/sleep";
 
+export type AIClientResponse = {
+  response: AIJSONResponse;
+  metadata: {
+    usage: TokenUsage;
+  };
+};
+
 export class AIClient {
   private client: LanguageModelV1;
   private browserTool: BrowserTool;
@@ -33,6 +40,7 @@ export class AIClient {
   private cache: BaseCache<CacheEntry>;
   private log: Log;
   private usage: TokenUsage;
+  private apiRequestCount: number = 0;
 
   constructor({
     browserTool,
@@ -46,24 +54,28 @@ export class AIClient {
     this.cache = cache;
     this.usage = TokenUsageSchema.parse({});
     this.log = getLogger();
-    this.log.trace("AIClient initialized", this);
+    this.log.trace("AIClient initialized");
+    this.log.trace(
+      "Available tools",
+      Object.fromEntries(
+        Object.entries(this.tools).map(([name, tool]) => [
+          name,
+          (tool as any).description || "No description",
+        ]),
+      ),
+    );
   }
 
-  async processAction(
+  async runAction(
     prompt: string,
     test: TestFunction,
-  ): Promise<{
-    response: AIJSONResponse;
-    metadata: {
-      usage: TokenUsage;
-    };
-  }> {
+  ): Promise<AIClientResponse> {
     const MAX_RETRIES = 3;
     let retries = 0;
 
     while (retries < MAX_RETRIES) {
       try {
-        const result = await this.makeRequest(prompt, test);
+        const result = await this.runConversation(prompt, test);
         if (!result) {
           throw new AIError("invalid-response", "No response received from AI");
         }
@@ -84,30 +96,22 @@ export class AIClient {
     throw new AIError("max-retries-reached", "Max retries reached");
   }
 
-  private async makeRequest(prompt: string, test: TestFunction) {
-    // Push initial user prompt
+  private async runConversation(prompt: string, test: TestFunction) {
     this.conversationHistory.push({
       role: "user",
       content: prompt,
     });
-    let requestCount = 0;
 
     while (true) {
+      this.apiRequestCount++;
+      this.log.setGroup(`${this.apiRequestCount}`);
       let resp;
       try {
         await sleep(1000);
-        requestCount++;
-        this.log.setGroup(`${requestCount}`);
         this.log.trace("Generating text", {
-          currentPrompt: prompt,
           messageCount: this.conversationHistory.length,
-          tools: Object.keys(this.tools),
-          toolsDetails: Object.entries(this.tools).map(([name, tool]) => ({
-            name,
-            description: (tool as any).description,
-            parameters: (tool as any).parameters?.shape || {},
-          })),
-          messages: this.conversationHistory,
+          lastMessage:
+            this.conversationHistory[this.conversationHistory.length - 1],
         });
 
         resp = await generateText({
@@ -116,12 +120,32 @@ export class AIClient {
           maxTokens: 1024,
           tools: this.tools,
           messages: this.conversationHistory,
-          onStepFinish: async (event) => {
+          onStepFinish: async ({
+            // stepType,
+            text,
+            // toolCalls,
+            toolResults,
+            // finishReason,
+            // usage,
+            // isContinued,
+          }) => {
+            // this.log.trace("onStepFinish", {
+            //   stepType,
+            //   text,
+            //   toolCalls,
+            //   toolResults,
+            //   finishReason,
+            //   isContinued,
+            //   usage,
+            // });
             function isMouseMove(args: any) {
               return args.action === "mouse_move" && args.coordinate.length;
             }
 
-            for (const toolResult of event.toolResults as any[]) {
+            for (const toolResult of toolResults as any[]) {
+              // this.log.trace("Tool result", {
+              //   toolResult,
+              // });
               let extras: Record<string, unknown> = {};
               if (isMouseMove(toolResult.args)) {
                 const [x, y] = (toolResult.args as any).coordinate;
@@ -133,7 +157,7 @@ export class AIClient {
               }
 
               this.addToPendingCache({
-                reasoning: event.text,
+                reasoning: text,
                 action: {
                   name: toolResult.args.action,
                   input: toolResult.args,
@@ -148,14 +172,22 @@ export class AIClient {
         });
       } catch (error) {
         this.log.error("Error making request", {
-          ...getErrorDetails(error),
+          error: error as Error,
+          fullError: JSON.stringify(error, null, 2),
+          errorDetails: getErrorDetails(error),
+          stack: (error as Error).stack,
         });
         if (NoSuchToolError.isInstance(error)) {
           this.log.error("Tool is not supported");
         } else if (InvalidToolArgumentsError.isInstance(error)) {
-          this.log.error("Invalid arguments for a tool were provided");
+          console.log("👻 InvalidToolArgumentsError");
+          this.log.error("Invalid tool arguments", {
+            error: error.message,
+            toolName: error.toolName,
+            toolArgs: error.toolArgs,
+            cause: error.cause,
+          });
         }
-        this.log.resetGroup();
         throw error;
       }
 
@@ -163,27 +195,22 @@ export class AIClient {
         text: resp.text,
         finishReason: resp.finishReason,
         // usage: resp.usage,
-        // warnings: resp.warnings,
+        warnings: resp.warnings,
         // responseMessages: resp.response.messages.map((m) => ({
         //   role: m.role,
         // })),
       });
 
-      for (const toolCall of resp.toolCalls) {
-        this.log.trace("Tool call details", {
-          name: toolCall.toolName,
-          rawArgs: toolCall.args,
-          processedArgs: {
-            action: toolCall.args.action,
-            ...toolCall.args,
-          },
-          toolSchema: this.tools[toolCall.toolName]?.parameters?.shape || {},
-        });
-      }
+      // for (const toolCall of resp.toolCalls) {
+      //   this.log.trace("ToolCall details", {
+      //     name: toolCall.toolName,
+      //     args: toolCall.args,
+      //   });
+      // }
 
-      for (const { toolName, result } of resp.toolResults as any) {
-        this.log.trace("Tool response", { name: toolName, ...result });
-      }
+      // for (const { toolName, result } of resp.toolResults as any) {
+      //   this.log.trace("Tool response", { name: toolName, ...result });
+      // }
 
       this.updateUsage(resp.usage);
       this.conversationHistory.push(...resp.response.messages);
@@ -203,7 +230,6 @@ export class AIClient {
         if (json.status === "passed") {
           this.cache.set(test, this.pendingCache);
         }
-        this.log.resetGroup();
         return {
           response: json,
           metadata: {
@@ -211,11 +237,12 @@ export class AIClient {
           },
         };
       } catch {
-        this.log.resetGroup();
         throw new AIError(
           "invalid-response",
           "AI didn't return the expected JSON payload",
         );
+      } finally {
+        this.log.resetGroup();
       }
     }
   }
@@ -344,14 +371,18 @@ export class AIClient {
     const errorInfo = errorMap[reason];
 
     if (errorInfo) {
-      this.log.resetGroup();
       throw new AIError(errorInfo.error, errorInfo.message);
     }
   }
 
   private addToPendingCache(cacheStep: CacheStep) {
-    this.log.trace("Adding to pending cache");
-    this.pendingCache.steps = [...(this.pendingCache.steps || []), cacheStep];
+    try {
+      this.log.setGroup("💾");
+      this.log.debug("Adding step to cache");
+      this.pendingCache.steps = [...(this.pendingCache.steps || []), cacheStep];
+    } finally {
+      this.log.resetGroup();
+    }
   }
 
   private isNonRetryableError(error: any) {
