@@ -41,6 +41,7 @@ export class AIClient {
   private log: Log;
   private usage: TokenUsage;
   private apiRequestCount: number = 0;
+  private _tools: Record<string, CoreTool> | null = null;
 
   constructor({
     browserTool,
@@ -237,7 +238,9 @@ export class AIClient {
   }
 
   private get tools(): Record<string, CoreTool> {
-    return {
+    if (this._tools) return this._tools;
+
+    this._tools = {
       computer: anthropic.tools.computer_20241022({
         displayWidthPx: 1920,
         displayHeightPx: 1080,
@@ -310,6 +313,8 @@ export class AIClient {
           this.browserToolResultToToolResultContent,
       }),
     };
+
+    return this._tools;
   }
 
   private browserToolResultToToolResultContent(result: ToolResult) {
