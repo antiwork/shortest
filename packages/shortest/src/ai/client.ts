@@ -11,13 +11,13 @@ import {
 } from "ai";
 import { z } from "zod";
 
-import { getConfig } from "..";
-import { SYSTEM_PROMPT } from "./prompts";
-import { AIJSONResponse, extractJsonPayload } from "./utils/json";
+import { SYSTEM_PROMPT } from "@/ai/prompts";
 import { createProvider } from "@/ai/provider";
+import { AIJSONResponse, extractJsonPayload } from "@/ai/utils/json";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BaseCache } from "@/cache/cache";
+import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import { TestFunction, ToolResult } from "@/types";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
