@@ -46,6 +46,7 @@ export class AIClient {
     this.cache = cache;
     this.usage = TokenUsageSchema.parse({});
     this.log = getLogger();
+    this.log.trace("AIClient initialized", this);
   }
 
   async processAction(
@@ -100,8 +101,15 @@ export class AIClient {
         this.log.trace("Generating text", {
           currentPrompt: prompt,
           messageCount: this.conversationHistory.length,
-          // tools: Object.keys(this.tools),
+          tools: Object.keys(this.tools),
+          toolsDetails: Object.entries(this.tools).map(([name, tool]) => ({
+            name,
+            description: (tool as any).description,
+            parameters: (tool as any).parameters?.shape || {},
+          })),
+          messages: this.conversationHistory,
         });
+
         resp = await generateText({
           system: SYSTEM_PROMPT,
           model: this.client,
@@ -154,15 +162,23 @@ export class AIClient {
       this.log.trace("Request completed", {
         text: resp.text,
         finishReason: resp.finishReason,
-        usage: resp.usage,
-        warnings: resp.warnings,
-        responseMessages: resp.response.messages.map((m) => ({
-          role: m.role,
-        })),
+        // usage: resp.usage,
+        // warnings: resp.warnings,
+        // responseMessages: resp.response.messages.map((m) => ({
+        //   role: m.role,
+        // })),
       });
 
-      for (const { toolName, args } of resp.toolCalls) {
-        this.log.trace("Tool call", { name: toolName, ...args });
+      for (const toolCall of resp.toolCalls) {
+        this.log.trace("Tool call details", {
+          name: toolCall.toolName,
+          rawArgs: toolCall.args,
+          processedArgs: {
+            action: toolCall.args.action,
+            ...toolCall.args,
+          },
+          toolSchema: this.tools[toolCall.toolName]?.parameters?.shape || {},
+        });
       }
 
       for (const { toolName, result } of resp.toolResults as any) {

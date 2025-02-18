@@ -198,7 +198,6 @@ export class TestRunner {
       cache: this.cache,
     });
 
-    this.log.trace("Getting initial page state");
     const initialState = await browserTool.execute({
       action: "screenshot",
     });
@@ -348,7 +347,7 @@ export class TestRunner {
         context = await this.browserManager.launch();
       } catch (error) {
         this.log.error("Browser initialization failed", getErrorDetails(error));
-        return;
+        throw error;
       }
       this.log.trace("Creating test context");
       const testContext = await this.createTestContext(context);
@@ -445,10 +444,8 @@ export class TestRunner {
     browserTool: BrowserTool,
   ): Promise<TestResult> {
     const cachedTest = await this.cache.get(test);
-    this.log.debug("Running cached test", {
-      hash: hashData(test),
-    });
-    this.log.debug("💾", "Executing cached test", { hash: hashData(test) });
+    this.log.setGroup("💾");
+    this.log.debug("Executing cached test", { hash: hashData(test) });
 
     const steps = cachedTest?.data.steps
       // do not take screenshots in cached mode
@@ -458,6 +455,8 @@ export class TestRunner {
       );
 
     if (!steps) {
+      this.log.debug("No steps to execute, running test in normal mode");
+      this.log.resetGroup();
       return {
         test: test,
         status: "failed",
@@ -479,6 +478,7 @@ export class TestRunner {
           await browserTool.getNormalizedComponentStringByCoords(x, y);
 
         if (componentStr !== step.extras.componentStr) {
+          this.log.resetGroup();
           return {
             test: test,
             status: "failed",
@@ -500,10 +500,13 @@ export class TestRunner {
             input: step.action.input,
             ...getErrorDetails(error),
           });
+          this.log.resetGroup();
         }
       }
     }
 
+    this.log.debug("All actions successfully replayed from cache");
+    this.log.resetGroup();
     return {
       test: test,
       status: "passed",

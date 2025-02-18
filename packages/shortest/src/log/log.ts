@@ -78,7 +78,7 @@ export class Log {
    * Creates a new log group for organizing related logs
    */
   setGroup(name: string): void {
-    this.log("trace", "Setting group", { groupName: name });
+    // this.log("trace", "Setting group", { groupName: name });
     this.currentGroup = new LogGroup(this, name, this.currentGroup);
   }
 
@@ -87,9 +87,9 @@ export class Log {
    */
   resetGroup(): void {
     if (this.currentGroup) {
-      this.log("trace", "Resetting group", {
-        groupName: this.currentGroup.name,
-      });
+      // this.log("trace", "Resetting group", {
+      //   groupName: this.currentGroup.name,
+      // });
       this.currentGroup = this.currentGroup?.parent;
     } else {
       this.log("trace", "No group to reset");
