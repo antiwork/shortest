@@ -1,5 +1,6 @@
 import { Page } from "playwright";
-import { ToolError } from "../core";
+
+import { ToolError } from "@/browser/core";
 
 export const keyboardShortcuts: Record<string, string | string[]> = {
   "ctrl+l": ["Control", "l"],

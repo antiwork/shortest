@@ -1,5 +1,5 @@
 import Mailosaur from "mailosaur";
-import { ToolError } from "../core";
+import { ToolError } from "@/browser/core";
 
 export class MailosaurTool {
   private client: Mailosaur;

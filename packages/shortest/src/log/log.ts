@@ -1,8 +1,8 @@
 import pc from "picocolors";
-import { LOG_LEVELS, LogLevel, LogConfig, LogConfigSchema } from "./config";
-import { LogEvent } from "./event";
-import { LogGroup } from "./group";
-import { LogOutput } from "./output";
+import { LOG_LEVELS, LogLevel, LogConfig, LogConfigSchema } from "@/log/config";
+import { LogEvent } from "@/log/event";
+import { LogGroup } from "@/log/group";
+import { LogOutput } from "@/log/output";
 
 /**
  * Core logging class that handles log filtering, grouping, and output rendering.

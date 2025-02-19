@@ -1,4 +1,4 @@
-import { TestContext, Page } from "./test";
+import { TestContext, Page } from "@/types/test";
 
 export interface BrowserToolInterface {
   waitForSelector(

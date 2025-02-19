@@ -1,7 +1,7 @@
 import pc from "picocolors";
-import { LOG_LEVELS, LogFormat } from "./config";
-import { LogEvent } from "./event";
-import { LogGroup } from "./group";
+import { LogFormat, LOG_LEVELS } from "@/log/config";
+import { LogEvent } from "@/log/event";
+import { LogGroup } from "@/log/group";
 
 /**
  * Internal class for log output formatting and rendering.

@@ -1,4 +1,4 @@
-import { LogLevel } from "./config";
+import { LogLevel } from "@/log/config";
 
 /**
  * Represents a log event in the logging system.

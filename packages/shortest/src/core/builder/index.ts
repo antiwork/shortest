@@ -1,4 +1,4 @@
-import type { TestFunction } from "../../types";
+import type { TestFunction } from "@/types";
 
 export class TestBuilder {
   static generatePrompt(test: TestFunction): string {

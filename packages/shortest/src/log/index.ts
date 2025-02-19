@@ -18,10 +18,10 @@
  * @private
  */
 
-import { LogConfig } from "./config";
-import { Log } from "./log";
+import { LogConfig } from "@/log/config";
+import { Log } from "@/log/log";
 export { Log };
-export { LogGroup } from "./group";
+export { LogGroup } from "@/log/group";
 
 let instance: Log | null = null;
 

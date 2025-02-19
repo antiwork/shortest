@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { authenticator } from "otplib";
-import { ENV_LOCAL_FILENAME } from "../../constants";
-import { BrowserToolInterface } from "../../types/browser";
+import { ENV_LOCAL_FILENAME } from "@/constants";
+import { BrowserToolInterface } from "@/types/browser";
 
 export class GitHubTool {
   private totpSecret: string;

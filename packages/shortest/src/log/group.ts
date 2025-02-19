@@ -1,5 +1,5 @@
-import { LogEvent } from "./event";
-import { Log } from "./log";
+import { Log } from "@/log";
+import { LogEvent } from "@/log/event";
 
 /**
  * Represents a hierarchical group of log messages.
