@@ -9,13 +9,13 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20",
 });
 
-export async function createCheckoutSession({
+export const createCheckoutSession = async ({
   user,
   priceId,
 }: {
   user: User | null;
   priceId: string;
-}) {
+}) => {
   if (!user) {
     redirect(`/sign-up?redirect=checkout&priceId=${priceId}`);
     return;
@@ -41,9 +41,9 @@ export async function createCheckoutSession({
   });
 
   redirect(session.url!);
-}
+};
 
-export async function createCustomerPortalSession(user: User) {
+export const createCustomerPortalSession = async (user: User) => {
   if (!user.stripeCustomerId || !user.stripeProductId) {
     redirect("/pricing");
   }
@@ -106,11 +106,11 @@ export async function createCustomerPortalSession(user: User) {
     return_url: `${baseUrl()}/dashboard`,
     configuration: configuration.id,
   });
-}
+};
 
-export async function handleSubscriptionChange(
+export const handleSubscriptionChange = async (
   subscription: Stripe.Subscription,
-) {
+) => {
   const customerId = subscription.customer as string;
   const subscriptionId = subscription.id;
   const status = subscription.status;
@@ -143,9 +143,9 @@ export async function handleSubscriptionChange(
       subscriptionStatus: status,
     });
   }
-}
+};
 
-export async function getStripePrices() {
+export const getStripePrices = async () => {
   const prices = await stripe.prices.list({
     expand: ["data.product"],
     active: true,
@@ -161,9 +161,9 @@ export async function getStripePrices() {
     interval: price.recurring?.interval,
     trialPeriodDays: price.recurring?.trial_period_days,
   }));
-}
+};
 
-export async function getStripeProducts() {
+export const getStripeProducts = async () => {
   const products = await stripe.products.list({
     active: true,
     expand: ["data.default_price"],
@@ -178,4 +178,4 @@ export async function getStripeProducts() {
         ? product.default_price
         : product.default_price?.id,
   }));
-}
+};
