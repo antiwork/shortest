@@ -36,10 +36,10 @@ let instance: Log | null = null;
  * const log = getLogger({ level: "debug", format: "terminal" });
  * ```
  */
-export function getLogger(config?: Partial<LogConfig>): Log {
+export const getLogger = (config?: Partial<LogConfig>): Log => {
   if (instance) {
     return instance;
   }
   instance = new Log(config);
   return instance;
-}
+};
