@@ -33,7 +33,7 @@ export class AIError extends Error {
   }
 }
 
-export function getErrorDetails(error: any) {
+export const getErrorDetails = (error: any) => {
   return {
     message: error instanceof Error ? error.message : String(error),
     name: error instanceof Error ? error.name : "Unknown",
@@ -42,7 +42,7 @@ export function getErrorDetails(error: any) {
         ? error.stack?.split("\n").slice(1, 4).join("\n")
         : undefined,
   };
-}
+};
 
 export const formatZodError = <T>(
   error: ZodError<T>,
