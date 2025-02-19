@@ -78,6 +78,14 @@ export class Log {
    * Creates a new log group for organizing related logs
    */
   setGroup(name: string): void {
+    // Useful for additional logging
+    // const callerMatch = new Error().stack
+    //   ?.split("\n")[2]
+    //   ?.match(/at\s+(\S+)\s+/);
+    // this.log("trace", "Setting group", {
+    //   groupName: name,
+    //   calledBy: callerMatch?.[1] || "unknown",
+    // });
     this.currentGroup = new LogGroup(this, name, this.currentGroup);
   }
 
@@ -85,10 +93,20 @@ export class Log {
    * Resets to parent group or removes grouping if at root
    */
   resetGroup(): void {
+    const callerMatch = new Error().stack
+      ?.split("\n")[2]
+      ?.match(/at\s+(\S+)\s+/);
     if (this.currentGroup) {
+      // Useful for additional logging
+      // this.log("trace", "Resetting group", {
+      //   groupName: this.currentGroup.name,
+      //   calledBy: callerMatch?.[1] || "unknown",
+      // });
       this.currentGroup = this.currentGroup?.parent;
     } else {
-      this.log("trace", "No group to reset");
+      this.log("trace", "No group to reset", {
+        calledBy: callerMatch?.[1] || "unknown",
+      });
     }
   }
 

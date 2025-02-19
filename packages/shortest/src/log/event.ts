@@ -65,7 +65,7 @@ export class LogEvent {
 
   /**
    * Recursively processes and filters values in metadata:
-   * - Truncates nested objects beyond depth 4
+   * - Truncates nested objects beyond certain depth
    * - Masks sensitive keys (e.g., API keys) with [FILTERED] or partial value
    * - Truncates specified large fields with [TRUNCATED]
    * - Formats multiline strings with indentation
@@ -79,7 +79,7 @@ export class LogEvent {
    * @private
    */
   private static filterValue(key: string, value: any, depth: number): any {
-    const MAX_METADATA_DEPTH = 4;
+    const MAX_METADATA_DEPTH = 5;
 
     if (depth > MAX_METADATA_DEPTH) {
       return LogEvent.TRUNCATED_PLACEHOLDER;

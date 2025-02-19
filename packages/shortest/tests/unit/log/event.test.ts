@@ -113,9 +113,10 @@ describe("LogEvent", () => {
 
     describe("when metadata contains nested objects", () => {
       it("truncates values at max depth", () => {
-        const deepObj = { a: { b: { c: { d: { e: "too deep" } } } } };
+        const deepObj = { a: { b: { c: { d: { e: { f: "too deep" } } } } } };
         const event = new LogEvent("info", "test", { deep: deepObj });
-        expect(event.parsedMetadata?.deep.a.b.c.d.e).toBe("[TRUNCATED]");
+        const metadata = event.parsedMetadata as { deep: typeof deepObj };
+        expect(metadata.deep.a.b.c.d.e.f).toBe("[TRUNCATED]");
       });
 
       it("handles null values", () => {

@@ -116,7 +116,6 @@ export class AIClient {
           await sleep(1000);
           this.log.trace("Calling generateText", {
             conversationMessageCount: this.conversationHistory.length,
-            messages: this.conversationHistory,
           });
 
           resp = await generateText({
@@ -125,29 +124,22 @@ export class AIClient {
             maxTokens: 1024,
             tools: this.tools,
             messages: this.conversationHistory,
-            onStepFinish: async ({
-              // stepType,
-              text,
-              // toolCalls,
-              toolResults,
-              // finishReason,
-              // usage,
-              // isContinued,
-            }) => {
+            onStepFinish: async (result) => {
+              // Useful for additional logging
               // this.log.trace("onStepFinish", {
-              //   stepType,
-              //   text,
-              //   toolCalls,
-              //   toolResults,
-              //   finishReason,
-              //   isContinued,
-              //   usage,
+              //   stepType: result.stepType,
+              //   text: result.text,
+              //   toolCalls: result.toolCalls,
+              //   toolResults: result.toolResults,
+              //   finishReason: result.finishReason,
+              //   isContinued: result.isContinued,
+              //   usage: result.usage,
               // });
               function isMouseMove(args: any) {
                 return args.action === "mouse_move" && args.coordinate.length;
               }
 
-              for (const toolResult of toolResults as any[]) {
+              for (const toolResult of result.toolResults as any[]) {
                 let extras: Record<string, unknown> = {};
                 if (isMouseMove(toolResult.args)) {
                   const [x, y] = (toolResult.args as any).coordinate;
@@ -159,7 +151,7 @@ export class AIClient {
                 }
 
                 this.addToPendingCache({
-                  reasoning: text,
+                  reasoning: result.text,
                   action: {
                     name: toolResult.args.action,
                     input: toolResult.args,
@@ -187,8 +179,8 @@ export class AIClient {
         this.log.trace("Request completed", {
           text: resp.text,
           finishReason: resp.finishReason,
-          // usage: resp.usage,
           warnings: resp.warnings,
+          // usage: resp.usage,
           // responseMessages: resp.response.messages.map((m) => ({
           //   role: m.role,
           // })),
@@ -210,7 +202,7 @@ export class AIClient {
         this.throwOnErrorFinishReason(resp.finishReason);
 
         if (resp.finishReason === "tool-calls") {
-          this.log.resetGroup();
+          this.log.trace("tool-calls received as finish reason");
           continue;
         }
 
