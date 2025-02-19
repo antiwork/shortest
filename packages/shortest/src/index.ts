@@ -50,7 +50,6 @@ if (!global.__shortest__) {
 export async function initializeConfig(configDir?: string) {
   const log = getLogger();
   if (globalConfig) {
-    // log.trace("Using globalConfig");
     return globalConfig;
   }
   log.trace("Initializing config");

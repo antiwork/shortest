@@ -1,3 +1,4 @@
+// TODO: Update to use Vercel AI SDK
 // import Anthropic from "@anthropic-ai/sdk";
 // import { SYSTEM_PROMPT } from "@/ai/prompts";
 // import { BrowserTool } from "@/browser/core/browser-tool";

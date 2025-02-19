@@ -5,9 +5,17 @@ import {
   ShortestConfig,
   ShortestStrictConfig,
 } from "@/types/config";
-import { ConfigError } from "@/utils/errors";
-import { formatZodError } from "@/utils/zod";
+import { formatZodError, ConfigError } from "@/utils/errors";
 
+/**
+ * Parses and validates user configuration against the schema.
+ *
+ * @param {ShortestConfig} userConfig - Raw user configuration object
+ * @returns {ShortestStrictConfig} - Validated configuration object
+ * @throws {ConfigError} - When configuration is invalid
+ *
+ * @private
+ */
 export const parseConfig = (
   userConfig: ShortestConfig,
 ): ShortestStrictConfig => {
@@ -27,6 +35,15 @@ export const parseConfig = (
   }
 };
 
+/**
+ * Handles deprecated configuration options by transforming them to their new format.
+ *
+ * @param {ShortestConfig} userConfig - Raw user configuration object
+ * @returns {ShortestConfig} - Transformed configuration object
+ * @throws {ConfigError} - When conflicting configuration options are found
+ *
+ * @private
+ */
 const handleDeprecatedConfigOptions = (
   userConfig: ShortestConfig,
 ): ShortestConfig => {

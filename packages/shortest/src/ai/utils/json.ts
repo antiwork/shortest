@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { AIError } from "@/utils/errors";
-import { formatZodError } from "@/utils/zod";
+import { formatZodError, AIError } from "@/utils/errors";
 
 const JSON_REGEX = /{[\s\S]*?}/g;
 

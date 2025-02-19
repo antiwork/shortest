@@ -118,6 +118,7 @@ export class LogOutput {
     outputParts.push(...groupIdentifiers.map((name) => pc.dim(name)));
     outputParts.push(message);
     if (parsedMetadata) {
+      // Format metadata as "key=value" pairs, handling strings, null values, and nested objects
       const formattedMetadata =
         typeof parsedMetadata === "string"
           ? parsedMetadata

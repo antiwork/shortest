@@ -24,6 +24,22 @@ import { CacheEntry, CacheStep } from "@/types/cache";
 import { getErrorDetails, AIError, AIErrorType } from "@/utils/errors";
 import { sleep } from "@/utils/sleep";
 
+/**
+ * Response type for AI client operations.
+ *
+ * @example
+ * ```typescript
+ * const response: AIClientResponse = {
+ *   response: { status: "passed", message: "Test completed" },
+ *   metadata: { usage: { completionTokens: 150, promptTokens: 50, totalTokens: 200 } }
+ * };
+ * ```
+ *
+ * @see {@link AIClient} for client implementation
+ * @see {@link TokenUsage} for usage tracking
+ *
+ * @private
+ */
 export type AIClientResponse = {
   response: AIJSONResponse;
   metadata: {
@@ -31,6 +47,32 @@ export type AIClientResponse = {
   };
 };
 
+/**
+ * Client for handling AI interactions and managing conversation state.
+ * Handles retries, caching, and tool execution for AI-driven testing.
+ *
+ * @class
+ * @example
+ * ```typescript
+ * const client = new AIClient({
+ *   browserTool: new BrowserTool(),
+ *   cache: new TestCache()
+ * });
+ *
+ * const response = await client.runAction(
+ *   "Navigate to login page",
+ *   testFunction
+ * );
+ * ```
+ *
+ * @param {BrowserTool} browserTool - Browser automation tool
+ * @param {BaseCache<CacheEntry>} cache - Cache for storing test results
+ *
+ * @see {@link BrowserTool} for web automation
+ * @see {@link BaseCache} for caching implementation
+ *
+ * @private
+ */
 export class AIClient {
   private client: LanguageModelV1;
   private browserTool: BrowserTool;
@@ -66,6 +108,25 @@ export class AIClient {
     );
   }
 
+  /**
+   * Executes an AI action with retry logic and error handling.
+   * Manages conversation flow and caches results for successful tests.
+   *
+   * @param {string} prompt - Input prompt for the AI
+   * @param {TestFunction} test - Test function to execute
+   * @returns {Promise<AIClientResponse>} Response with results and metadata
+   * @throws {AIError} When max retries reached or non-retryable error occurs
+   *
+   * @example
+   * ```typescript
+   * const response = await client.runAction(
+   *   "Click login button and verify redirect",
+   *   testFunction
+   * );
+   * ```
+   *
+   * @private
+   */
   async runAction(
     prompt: string,
     test: TestFunction,
@@ -96,6 +157,17 @@ export class AIClient {
     throw new AIError("max-retries-reached", "Max retries reached");
   }
 
+  /**
+   * Manages conversation flow with the AI including tool execution and response handling.
+   * Processes tool calls, updates conversation history, and validates responses.
+   *
+   * @param {string} prompt - Input prompt to start conversation
+   * @param {TestFunction} test - Test function context
+   * @returns {Promise<AIClientResponse | undefined>} Processed response
+   * @throws {AIError} For invalid responses or tool execution failures
+   *
+   * @private
+   */
   private async runConversation(prompt: string, test: TestFunction) {
     const initialMessageOptions = {
       role: "user" as const,
@@ -180,10 +252,6 @@ export class AIClient {
           text: resp.text,
           finishReason: resp.finishReason,
           warnings: resp.warnings,
-          // usage: resp.usage,
-          // responseMessages: resp.response.messages.map((m) => ({
-          //   role: m.role,
-          // })),
         });
 
         this.updateUsage(resp.usage);
@@ -232,6 +300,17 @@ export class AIClient {
     }
   }
 
+  /**
+   * Retrieves or initializes the set of available tools for AI interactions.
+   * Includes browser automation, bash execution, and specialized testing tools.
+   *
+   * @returns {Record<string, CoreTool>} Map of available tools
+   *
+   * @see {@link BrowserTool} for web automation tools
+   * @see {@link BashTool} for shell command execution
+   *
+   * @private
+   */
   private get tools(): Record<string, CoreTool> {
     if (this._tools) return this._tools;
 
@@ -312,6 +391,15 @@ export class AIClient {
     return this._tools;
   }
 
+  /**
+   * Converts browser tool execution results to standardized content format.
+   * Handles image data and text output formatting.
+   *
+   * @param {ToolResult} result - Raw tool execution result
+   * @returns {Array<{type: string, data?: string, text?: string, mimeType?: string}>} Formatted content
+   *
+   * @private
+   */
   private browserToolResultToToolResultContent(result: ToolResult) {
     return result.base64_image
       ? [
@@ -329,6 +417,15 @@ export class AIClient {
         ];
   }
 
+  /**
+   * Validates finish reason from language model and throws appropriate errors.
+   * Handles token limits, content filtering, and other completion states.
+   *
+   * @param {LanguageModelV1FinishReason} reason - Completion finish reason
+   * @throws {AIError} For invalid or error finish reasons
+   *
+   * @private
+   */
   private throwOnErrorFinishReason(reason: LanguageModelV1FinishReason): void {
     const errorMap: Partial<
       Record<
@@ -364,6 +461,14 @@ export class AIClient {
     }
   }
 
+  /**
+   * Adds a step to the pending cache for successful test runs.
+   * Includes reasoning, action details, and results.
+   *
+   * @param {CacheStep} cacheStep - Step data to cache
+   *
+   * @private
+   */
   private addToPendingCache(cacheStep: CacheStep) {
     try {
       this.log.setGroup("💾");
@@ -374,10 +479,27 @@ export class AIClient {
     }
   }
 
+  /**
+   * Determines if an error should not be retried based on its status code.
+   * Non-retryable errors include authentication, authorization, and server errors.
+   *
+   * @param {any} error - Error to evaluate
+   * @returns {boolean} True if error should not be retried
+   *
+   * @private
+   */
   private isNonRetryableError(error: any) {
     return [401, 403, 500].includes(error.status);
   }
 
+  /**
+   * Updates token usage statistics with new usage data.
+   * Tracks completion, prompt, and total token counts.
+   *
+   * @param {TokenUsage} usage - New usage data to add
+   *
+   * @private
+   */
   private updateUsage(usage: TokenUsage) {
     this.usage.completionTokens += usage.completionTokens;
     this.usage.promptTokens += usage.promptTokens;

@@ -4,23 +4,23 @@ import { APIRequest, BrowserContext } from "playwright";
 import * as playwright from "playwright";
 import { request, APIRequestContext } from "playwright";
 import { z } from "zod";
-import { BrowserTool } from "../../browser/core/browser-tool";
-import { BrowserManager } from "../../browser/manager";
-import { BaseCache } from "../../cache/cache";
-import { initializeConfig, getConfig } from "../../index";
+import { AIClient, AIClientResponse } from "@/ai/client";
+import { BrowserTool } from "@/browser/core/browser-tool";
+import { BrowserManager } from "@/browser/manager";
+import { BaseCache } from "@/cache/cache";
+import { TestCompiler } from "@/core/compiler";
+import { TestReporter } from "@/core/runner/test-reporter";
+import { initializeConfig, getConfig } from "@/index";
+import { getLogger, Log } from "@/log";
 import {
   TestFunction,
   TestContext,
   BrowserActionEnum,
   ShortestConfig,
-} from "../../types";
-import { CacheEntry } from "../../types/cache";
-import { hashData } from "../../utils/crypto";
-import { TestCompiler } from "../compiler";
-import { TestReporter } from "./test-reporter";
-import { AIClient, AIClientResponse } from "@/ai/client";
-import { getLogger, Log } from "@/log";
+} from "@/types";
 import { TokenUsageSchema } from "@/types/ai";
+import { CacheEntry } from "@/types/cache";
+import { hashData } from "@/utils/crypto";
 import { getErrorDetails } from "@/utils/errors";
 
 const STATUSES = ["pending", "running", "passed", "failed"] as const;

@@ -11,6 +11,13 @@ const CONFIG_FILE_PATH = "shortest.yml";
 
 let config: Readonly<Config> = Object.freeze({});
 
+/**
+ * Loads configuration file.
+ *
+ * @throws {Error} When configuration file cannot be parsed
+ *
+ * @private
+ */
 async function loadConfig(): Promise<void> {
   try {
     const fileContents = await fs.readFile(CONFIG_FILE_PATH, "utf8");
@@ -37,14 +44,32 @@ async function loadConfig(): Promise<void> {
   }
 }
 
-async function getConfig(): Promise<Readonly<Config>> {
+/**
+ * Returns the current configuration, loading it if necessary.
+ *
+ * @returns {Promise<Readonly<Config>>} Frozen configuration object
+ * @throws {Error} When configuration cannot be loaded
+ *
+ * @private
+ */
+export async function getConfig(): Promise<Readonly<Config>> {
   if (Object.keys(config).length === 0) {
     await loadConfig();
   }
   return config;
 }
 
-async function getRepoConfig({
+/**
+ * Gets repository-specific configuration.
+ *
+ * @param {Object} params - Repository parameters
+ * @param {string} params.owner - Repository owner
+ * @param {string} params.repo - Repository name
+ * @returns {Promise<RepositoryConfig>} Repository configuration
+ *
+ * @private
+ */
+export async function getRepoConfig({
   owner,
   repo,
 }: {
@@ -58,7 +83,17 @@ async function getRepoConfig({
   );
 }
 
-async function getTestPatternsConfig({
+/**
+ * Gets test patterns configuration for a repository.
+ *
+ * @param {Object} params - Repository parameters
+ * @param {string} params.owner - Repository owner
+ * @param {string} params.repo - Repository name
+ * @returns {Promise<RepositoryConfig["test_patterns"]>} Test patterns configuration
+ *
+ * @private
+ */
+export async function getTestPatternsConfig({
   owner,
   repo,
 }: {
@@ -67,11 +102,4 @@ async function getTestPatternsConfig({
 }): Promise<RepositoryConfig["test_patterns"]> {
   const repoConfig = await getRepoConfig({ owner, repo });
   return repoConfig.test_patterns;
-}
-
-export { getConfig, getRepoConfig, getTestPatternsConfig };
-
-// Add this export for testing
-export function _resetConfigForTesting(): void {
-  config = Object.freeze({});
 }

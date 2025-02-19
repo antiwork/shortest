@@ -45,5 +45,10 @@ const getShortestEnvName = (key: string) => {
   return `${SHORTEST_ENV_PREFIX}${key}`;
 };
 
+// User-provided config type - allows partial/optional AI settings
+// Used when reading config from shortest.config.ts
 export type ShortestConfig = z.infer<typeof userConfigSchema>;
+
+// Internal fully-validated config type with required fields
+// Used after config validation and defaults are applied
 export type ShortestStrictConfig = z.infer<typeof configSchema>;
