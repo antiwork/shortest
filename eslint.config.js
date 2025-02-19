@@ -41,7 +41,7 @@ export default [
       "func-style": ["error", "expression", {
         "allowArrowFunctions": true
       }],
-      "prefer-arrow-functions": "error",
+      "prefer-arrow-callback": "error",
       "import/order": ["error", { alphabetize: { order: "asc" } }],
       "prettier/prettier": [
         "error",
