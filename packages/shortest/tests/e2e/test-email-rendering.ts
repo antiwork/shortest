@@ -5,7 +5,7 @@ import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
 import { getConfig, initializeConfig } from "@/index";
 
-export async function main() {
+export const main = async () => {
   console.log(pc.cyan("\n📧 Testing Email"));
 
   await initializeConfig();
@@ -64,4 +64,4 @@ export async function main() {
     console.error(pc.red("❌ Email test failed:"), error);
     throw error;
   }
-}
+};
