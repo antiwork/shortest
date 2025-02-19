@@ -188,7 +188,7 @@ const main = async () => {
   }
 };
 
-main().catch((error) => {
+main().catch(async (error) => {
   console.error(error);
   process.exit(1);
 });
