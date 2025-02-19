@@ -110,9 +110,7 @@ export class BrowserTool extends BaseBrowserTool {
 
       // Add styles only if they don't exist
       const hasStyles = await this.page
-        .evaluate(() => {
-          return !!document.querySelector("style[data-shortest-cursor]");
-        })
+        .evaluate(() => !!document.querySelector("style[data-shortest-cursor]"))
         .catch(() => false);
 
       if (!hasStyles) {
@@ -669,13 +667,12 @@ export class BrowserTool extends BaseBrowserTool {
     try {
       // Quick check if page is in a stable state
       return await this.page
-        .evaluate(() => {
-          return (
+        .evaluate(
+          () =>
             document.readyState === "complete" &&
             !document.querySelector(".loading") &&
-            !document.querySelector(".cl-loading")
-          );
-        })
+            !document.querySelector(".cl-loading"),
+        )
         .catch(() => false);
     } catch {
       return false;

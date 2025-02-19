@@ -22,17 +22,19 @@ export default function DashboardPage() {
     [pullRequests],
   );
 
-  const filteredPullRequests = useMemo(() => {
-    return pullRequests.filter((pr) => {
-      const repoMatch =
-        selectedRepoFilters.length === 0 ||
-        selectedRepoFilters.includes(pr.repository.full_name);
-      const statusMatch =
-        buildStatusFilter.length === 0 ||
-        buildStatusFilter.includes(pr.buildStatus.toLowerCase());
-      return repoMatch && statusMatch;
-    });
-  }, [pullRequests, selectedRepoFilters, buildStatusFilter]);
+  const filteredPullRequests = useMemo(
+    () =>
+      pullRequests.filter((pr) => {
+        const repoMatch =
+          selectedRepoFilters.length === 0 ||
+          selectedRepoFilters.includes(pr.repository.full_name);
+        const statusMatch =
+          buildStatusFilter.length === 0 ||
+          buildStatusFilter.includes(pr.buildStatus.toLowerCase());
+        return repoMatch && statusMatch;
+      }),
+    [pullRequests, selectedRepoFilters, buildStatusFilter],
+  );
 
   const handleRepoFilterChange = (value: string) => {
     setSelectedRepoFilters((prev) =>

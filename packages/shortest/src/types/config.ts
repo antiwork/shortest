@@ -41,9 +41,7 @@ export const userConfigSchema = configSchema.extend({
 
 const SHORTEST_ENV_PREFIX = "SHORTTEST_";
 
-const getShortestEnvName = (key: string) => {
-  return `${SHORTEST_ENV_PREFIX}${key}`;
-};
+const getShortestEnvName = (key: string) => `${SHORTEST_ENV_PREFIX}${key}`;
 
 // User-provided config type - allows partial/optional AI settings
 // Used when reading config from shortest.config.ts

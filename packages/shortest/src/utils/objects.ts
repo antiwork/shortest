@@ -1,6 +1,5 @@
-export const isObject = (item: Record<string, any>) => {
-  return item && typeof item === "object" && !Array.isArray(item);
-};
+export const isObject = (item: Record<string, any>) =>
+  item && typeof item === "object" && !Array.isArray(item);
 
 export const mergeDeep = (
   target: Record<string, any>,

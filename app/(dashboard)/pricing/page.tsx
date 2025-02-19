@@ -74,39 +74,37 @@ const PricingCard = ({
   trialDays?: number;
   features: string[];
   priceId?: string;
-}) => {
-  return (
-    <div className="border rounded-lg p-6 shadow-sm">
-      <h2 className="text-2xl font-medium text-gray-900 mb-2">{name}</h2>
-      {trialDays && (
-        <p className="text-sm text-gray-600 mb-4">
-          with {trialDays} day free trial
-        </p>
-      )}
-      <p className="text-4xl font-medium text-gray-900 mb-6">
-        ${price / 100}{" "}
-        <span className="text-xl font-normal text-gray-600">
-          /user/{interval}
-        </span>
+}) => (
+  <div className="border rounded-lg p-6 shadow-sm">
+    <h2 className="text-2xl font-medium text-gray-900 mb-2">{name}</h2>
+    {trialDays && (
+      <p className="text-sm text-gray-600 mb-4">
+        with {trialDays} day free trial
       </p>
-      <ul className="space-y-4 mb-8">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-start">
-            <Check className="h-5 w-5 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
-            <span className="text-gray-700">{feature}</span>
-          </li>
-        ))}
-      </ul>
-      {priceId ? (
-        <form action={checkoutAction}>
-          <input type="hidden" name="priceId" value={priceId} />
-          <SubmitButton />
-        </form>
-      ) : (
-        <button className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors">
-          Get Started
-        </button>
-      )}
-    </div>
-  );
-};
+    )}
+    <p className="text-4xl font-medium text-gray-900 mb-6">
+      ${price / 100}{" "}
+      <span className="text-xl font-normal text-gray-600">
+        /user/{interval}
+      </span>
+    </p>
+    <ul className="space-y-4 mb-8">
+      {features.map((feature, index) => (
+        <li key={index} className="flex items-start">
+          <Check className="h-5 w-5 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+          <span className="text-gray-700">{feature}</span>
+        </li>
+      ))}
+    </ul>
+    {priceId ? (
+      <form action={checkoutAction}>
+        <input type="hidden" name="priceId" value={priceId} />
+        <SubmitButton />
+      </form>
+    ) : (
+      <button className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors">
+        Get Started
+      </button>
+    )}
+  </div>
+);

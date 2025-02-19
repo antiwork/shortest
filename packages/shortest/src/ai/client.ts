@@ -207,9 +207,8 @@ export class AIClient {
               //   isContinued: result.isContinued,
               //   usage: result.usage,
               // });
-              const isMouseMove = (args: any) => {
-                return args.action === "mouse_move" && args.coordinate.length;
-              };
+              const isMouseMove = (args: any) =>
+                args.action === "mouse_move" && args.coordinate.length;
 
               for (const toolResult of result.toolResults as any[]) {
                 let extras: Record<string, unknown> = {};
@@ -324,9 +323,7 @@ export class AIClient {
           this.browserToolResultToToolResultContent,
       }),
       bash: anthropic.tools.bash_20241022({
-        execute: async ({ command }) => {
-          return await new BashTool().execute(command);
-        },
+        execute: async ({ command }) => await new BashTool().execute(command),
         experimental_toToolResultContent(result) {
           return [
             {

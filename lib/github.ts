@@ -7,11 +7,10 @@ import { minimatch } from "minimatch";
 import { TestFile, PullRequest } from "../app/(dashboard)/dashboard/types";
 import { getTestPatternsConfig } from "./config";
 
-const matchTestPatterns = (testPatterns: string[], filePath: string) => {
-  return testPatterns.some((pattern) =>
+const matchTestPatterns = (testPatterns: string[], filePath: string) =>
+  testPatterns.some((pattern) =>
     minimatch(filePath, pattern, { dot: true, matchBase: true }),
   );
-};
 
 export const getOctokit = async () => {
   const { userId } = auth();

@@ -124,8 +124,8 @@ export const showClickAnimation = async (
 export const getCursorPosition = async (
   page: Page,
 ): Promise<[number, number]> => {
-  const position = await page.evaluate(() => {
-    return window.cursorPosition || { x: 0, y: 0 };
-  });
+  const position = await page.evaluate(
+    () => window.cursorPosition || { x: 0, y: 0 },
+  );
   return [position.x, position.y];
 };

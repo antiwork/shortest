@@ -33,16 +33,14 @@ export class AIError extends Error {
   }
 }
 
-export const getErrorDetails = (error: any) => {
-  return {
-    message: error instanceof Error ? error.message : String(error),
-    name: error instanceof Error ? error.name : "Unknown",
-    stack:
-      error instanceof Error
-        ? error.stack?.split("\n").slice(1, 4).join("\n")
-        : undefined,
-  };
-};
+export const getErrorDetails = (error: any) => ({
+  message: error instanceof Error ? error.message : String(error),
+  name: error instanceof Error ? error.name : "Unknown",
+  stack:
+    error instanceof Error
+      ? error.stack?.split("\n").slice(1, 4).join("\n")
+      : undefined,
+});
 
 export const formatZodError = <T>(
   error: ZodError<T>,

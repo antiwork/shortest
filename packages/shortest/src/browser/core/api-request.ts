@@ -7,8 +7,7 @@ import {
 const generatePrompt = (
   request: APIRequestType,
   config: Partial<APIRequestConfig>,
-) => {
-  return `
+) => `
         You are about to process an API request. Your goal is to dynamically populate variables (like <Bearer API KEY>) with actual values, either inferred or retrieved. Follow these steps:
         - Analyze the REQUEST OBJECT: extract all necessary values (e.g., HTTP method, headers, authorization tokens).
         - Use the CONFIG OBJECT for the base URL, timeout, headers, storageState (used for cookies) or other reusable settings.
@@ -27,7 +26,6 @@ const generatePrompt = (
           - Every single field in the config object MUST be accounted for in the final bash command.
           - DO NOT add any extra flags or arguments or flags unless they are explicitly state in REQUEST OBJECT or CONFIG OBJECT.
         `;
-};
 
 export class APIRequest {
   private config: Partial<APIRequestConfig>;
