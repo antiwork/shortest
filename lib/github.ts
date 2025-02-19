@@ -7,13 +7,13 @@ import { minimatch } from "minimatch";
 import { TestFile, PullRequest } from "../app/(dashboard)/dashboard/types";
 import { getTestPatternsConfig } from "./config";
 
-function matchTestPatterns(testPatterns: string[], filePath: string) {
+const matchTestPatterns = (testPatterns: string[], filePath: string) => {
   return testPatterns.some((pattern) =>
     minimatch(filePath, pattern, { dot: true, matchBase: true }),
   );
-}
+};
 
-export async function getOctokit() {
+export const getOctokit = async () => {
   const { userId } = auth();
   if (!userId) throw new Error("Clerk: User not authenticated");
 
@@ -23,9 +23,9 @@ export async function getOctokit() {
     .then(({ data }) => data);
 
   return new Octokit({ auth: githubToken });
-}
+};
 
-export async function getAssignedPullRequests() {
+export const getAssignedPullRequests = async () => {
   try {
     const octokit = await getOctokit();
 
@@ -78,13 +78,13 @@ export async function getAssignedPullRequests() {
     console.error("Error fetching assigned pull requests:", error);
     return { error: "Failed to fetch assigned GitHub pull requests" };
   }
-}
+};
 
-export async function fetchBuildStatus(
+export const fetchBuildStatus = async (
   owner: string,
   repo: string,
   pullNumber: number,
-): Promise<PullRequest> {
+): Promise<PullRequest> => {
   const octokit = await getOctokit();
 
   try {
@@ -121,14 +121,14 @@ export async function fetchBuildStatus(
     console.error("Error fetching build status:", error);
     throw error;
   }
-}
+};
 
-async function fetchBuildStatusForRef(
+const fetchBuildStatusForRef = async (
   octokit: Octokit,
   owner: string,
   repo: string,
   ref: string,
-): Promise<string> {
+): Promise<string> => {
   try {
     const { data } = await octokit.rest.checks.listForRef({
       owner,
@@ -157,15 +157,15 @@ async function fetchBuildStatusForRef(
     console.error("Error fetching build status:", error);
     return "pending";
   }
-}
+};
 
-export async function commitChangesToPullRequest(
+export const commitChangesToPullRequest = async (
   owner: string,
   repo: string,
   pullNumber: number,
   filesToCommit: TestFile[],
   commitMessage: string,
-): Promise<string> {
+): Promise<string> => {
   const octokit = await getOctokit();
 
   try {
@@ -256,13 +256,13 @@ export async function commitChangesToPullRequest(
     console.error("Error committing changes to pull request:", error);
     throw error;
   }
-}
+};
 
-export async function getPullRequestInfo(
+export const getPullRequestInfo = async (
   owner: string,
   repo: string,
   pullNumber: number,
-) {
+) => {
   const octokit = await getOctokit();
   const testPatterns = await getTestPatternsConfig({ owner, repo });
 
@@ -329,13 +329,13 @@ export async function getPullRequestInfo(
     console.error("Error fetching PR info:", error);
     throw new Error("Failed to fetch PR info");
   }
-}
+};
 
-export async function getFailingTests(
+export const getFailingTests = async (
   owner: string,
   repo: string,
   pullNumber: number,
-): Promise<TestFile[]> {
+): Promise<TestFile[]> => {
   const octokit = await getOctokit();
   const testPatterns = await getTestPatternsConfig({ owner, repo });
   try {
@@ -387,13 +387,13 @@ export async function getFailingTests(
     console.error("Error fetching failing tests:", error);
     throw error;
   }
-}
+};
 
-export async function getWorkflowLogs(
+export const getWorkflowLogs = async (
   owner: string,
   repo: string,
   runId: string,
-): Promise<string> {
+): Promise<string> => {
   const octokit = await getOctokit();
 
   try {
@@ -448,13 +448,13 @@ export async function getWorkflowLogs(
       }`,
     );
   }
-}
+};
 
-export async function getLatestRunId(
+export const getLatestRunId = async (
   owner: string,
   repo: string,
   branchName: string,
-): Promise<string | null> {
+): Promise<string | null> => {
   const octokit = await getOctokit();
 
   try {
@@ -474,4 +474,4 @@ export async function getLatestRunId(
     console.error("Error fetching latest run ID:", error);
     throw error;
   }
-}
+};
