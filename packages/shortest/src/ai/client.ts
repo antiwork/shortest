@@ -207,9 +207,9 @@ export class AIClient {
               //   isContinued: result.isContinued,
               //   usage: result.usage,
               // });
-              function isMouseMove(args: any) {
+              const isMouseMove = (args: any) => {
                 return args.action === "mouse_move" && args.coordinate.length;
-              }
+              };
 
               for (const toolResult of result.toolResults as any[]) {
                 let extras: Record<string, unknown> = {};
