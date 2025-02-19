@@ -1,11 +1,11 @@
-export function isObject(item: Record<string, any>) {
+export const isObject = (item: Record<string, any>) => {
   return item && typeof item === "object" && !Array.isArray(item);
-}
+};
 
-export function mergeDeep(
+export const mergeDeep = (
   target: Record<string, any>,
   ...sources: Record<string, any>[]
-) {
+): Record<string, any> => {
   if (!sources.length) return target;
   const source = sources.shift();
 
@@ -21,4 +21,4 @@ export function mergeDeep(
   }
 
   return mergeDeep(target, ...sources);
-}
+};
