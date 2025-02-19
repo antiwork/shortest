@@ -8,10 +8,10 @@ type GitIgnoreResult = {
   error?: Error;
 };
 
-export async function addToGitignore(
+export const addToGitignore = async (
   path: string,
   values: string[],
-): Promise<GitIgnoreResult> {
+): Promise<GitIgnoreResult> => {
   const result: GitIgnoreResult = {
     wasCreated: false,
     wasUpdated: false,
@@ -53,4 +53,4 @@ export async function addToGitignore(
   }
 
   return result;
-}
+};
