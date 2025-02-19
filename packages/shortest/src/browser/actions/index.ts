@@ -27,11 +27,11 @@ export const scaleRatio = {
   y: 32 / 24,
 };
 
-export async function mouseMove(
+export const mouseMove = async (
   page: Page,
   x: number,
   y: number,
-): Promise<void> {
+): Promise<void> => {
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0) {
     throw new ToolError("Coordinates must be non-negative integers");
   }
@@ -61,34 +61,38 @@ export async function mouseMove(
   );
 
   await page.waitForTimeout(50);
-}
+};
 
-export async function click(page: Page, x: number, y: number): Promise<void> {
+export const click = async (
+  page: Page,
+  x: number,
+  y: number,
+): Promise<void> => {
   const scaledX = Math.round(x * scaleRatio.x);
   const scaledY = Math.round(y * scaleRatio.y);
 
   await mouseMove(page, x, y);
   await page.mouse.click(scaledX, scaledY);
   await showClickAnimation(page, "left");
-}
+};
 
-export async function dragMouse(
+export const dragMouse = async (
   page: Page,
   x: number,
   y: number,
-): Promise<void> {
+): Promise<void> => {
   const scaledX = Math.round(x * scaleRatio.x);
   const scaledY = Math.round(y * scaleRatio.y);
 
   await page.mouse.down();
   await page.mouse.move(scaledX, scaledY);
   await page.mouse.up();
-}
+};
 
-export async function showClickAnimation(
+export const showClickAnimation = async (
   page: Page,
   type: "left" | "right" | "double" = "left",
-): Promise<void> {
+): Promise<void> => {
   await page.evaluate((clickType) => {
     const cursor = document.getElementById("ai-cursor");
     if (cursor) {
@@ -114,11 +118,13 @@ export async function showClickAnimation(
       }, 200);
     }
   }, type);
-}
+};
 
-export async function getCursorPosition(page: Page): Promise<[number, number]> {
+export const getCursorPosition = async (
+  page: Page,
+): Promise<[number, number]> => {
   const position = await page.evaluate(() => {
     return window.cursorPosition || { x: 0, y: 0 };
   });
   return [position.x, position.y];
-}
+};
