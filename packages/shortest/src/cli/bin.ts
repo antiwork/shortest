@@ -30,7 +30,7 @@ const VALID_FLAGS = [
 ];
 const VALID_PARAMS = ["--target", "--secret", "--log-level"];
 
-function showHelp() {
+const showHelp = () => {
   console.log(`
 ${pc.bold("Shortest")} - AI-powered end-to-end testing framework
 ${pc.dim("https://github.com/anti-work/shortest")}
@@ -43,7 +43,7 @@ ${pc.bold("Options:")}
   --log-level=<level>   Set log level (default: silent). Options: silent, error, warn, info, debug, trace
   --target=<url>        Set target URL for tests (default: http://localhost:3000)
   --github-code         Generate GitHub 2FA code for authentication
-  --no-cache            Disable caching (storing browser actions between tests)
+  --no-cache           Disable caching (storing browser actions between tests)
 
 ${pc.bold("Authentication:")}
   --secret=<key>      GitHub TOTP secret key (or use ${ENV_LOCAL_FILENAME})
@@ -73,9 +73,9 @@ ${pc.bold("Documentation:")}
     "https://github.com/anti-work/shortest",
   )} for detailed setup and usage
 `);
-}
+};
 
-async function handleGitHubCode(args: string[]) {
+const handleGitHubCode = async (args: string[]) => {
   try {
     const secret = args
       .find((arg) => arg.startsWith("--secret="))
@@ -95,9 +95,9 @@ async function handleGitHubCode(args: string[]) {
     console.error(pc.red("\n✖ Error:"), (error as Error).message, "\n");
     process.exit(1);
   }
-}
+};
 
-function isValidArg(arg: string): boolean {
+const isValidArg = (arg: string): boolean => {
   if (VALID_FLAGS.includes(arg)) {
     return true;
   }
@@ -109,17 +109,20 @@ function isValidArg(arg: string): boolean {
   }
 
   return false;
-}
+};
 
-function getParamValue(args: string[], paramName: string): string | undefined {
+const getParamValue = (
+  args: string[],
+  paramName: string,
+): string | undefined => {
   const param = args.find((arg) => arg.startsWith(paramName));
   if (param) {
     return param.split("=")[1];
   }
   return undefined;
-}
+};
 
-async function main() {
+const main = async () => {
   const args = process.argv.slice(2);
   const logLevel = getParamValue(args, "--log-level");
   const log = getLogger({
@@ -183,7 +186,7 @@ async function main() {
     console.error(pc.red(error.name), error.message);
     process.exit(1);
   }
-}
+};
 
 main().catch((error) => {
   console.error(error);
