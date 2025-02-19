@@ -10,10 +10,10 @@ type EnvResult = {
   error?: Error;
 };
 
-export async function addToEnv(
+export const addToEnv = async (
   path: string,
   entries: Record<string, { value: string; comment?: string }>,
-): Promise<EnvResult> {
+): Promise<EnvResult> => {
   const result: EnvResult = {
     added: [],
     skipped: [],
@@ -60,4 +60,4 @@ export async function addToEnv(
   }
 
   return result;
-}
+};
