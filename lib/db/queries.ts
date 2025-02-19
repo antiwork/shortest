@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { db } from "./drizzle";
 import { users, User, NewUser, pullRequests, PullRequest } from "./schema";
 
-export async function updateUserSubscription(
+export const updateUserSubscription = async (
   clerkId: string,
   subscriptionData: {
     stripeSubscriptionId: string | null;
@@ -13,7 +13,7 @@ export async function updateUserSubscription(
     planName: string | null;
     subscriptionStatus: string;
   },
-) {
+) => {
   await db
     .update(users)
     .set({
@@ -21,9 +21,9 @@ export async function updateUserSubscription(
       updatedAt: new Date(),
     })
     .where(eq(users.clerkId, clerkId));
-}
+};
 
-async function createUser(clerkId: string): Promise<User> {
+const createUser = async (clerkId: string): Promise<User> => {
   const clerkUser = await clerkClient.users.getUser(clerkId);
   const newUser: NewUser = {
     clerkId,
@@ -36,9 +36,9 @@ async function createUser(clerkId: string): Promise<User> {
 
   const [createdUser] = await db.insert(users).values(newUser).returning();
   return createdUser;
-}
+};
 
-export async function getUserByClerkId(clerkId: string): Promise<User> {
+export const getUserByClerkId = async (clerkId: string): Promise<User> => {
   const [existingUser] = await db
     .select()
     .from(users)
@@ -50,9 +50,9 @@ export async function getUserByClerkId(clerkId: string): Promise<User> {
   }
 
   return createUser(clerkId);
-}
+};
 
-export async function getPullRequests(): Promise<PullRequest[]> {
+export const getPullRequests = async (): Promise<PullRequest[]> => {
   const { userId } = auth();
   if (!userId) {
     throw new Error("User not authenticated");
@@ -60,4 +60,4 @@ export async function getPullRequests(): Promise<PullRequest[]> {
 
   const user = await getUserByClerkId(userId);
   return db.select().from(pullRequests).where(eq(pullRequests.userId, user.id));
-}
+};
