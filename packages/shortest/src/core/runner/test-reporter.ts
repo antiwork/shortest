@@ -191,7 +191,7 @@ export class TestReporter {
 
 let reporterLogInstance: Log | null = null;
 
-export function getReporterLog(): Log {
+export const getReporterLog = (): Log => {
   if (reporterLogInstance) {
     return reporterLogInstance;
   }
@@ -200,4 +200,4 @@ export function getReporterLog(): Log {
     format: "reporter",
   });
   return reporterLogInstance;
-}
+};
