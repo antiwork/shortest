@@ -4,7 +4,6 @@ import {
   CoreMessage,
   CoreTool,
   generateText,
-  InvalidToolArgumentsError,
   LanguageModelV1,
   NoSuchToolError,
   tool,
@@ -98,9 +97,14 @@ export class AIClient {
   }
 
   private async runConversation(prompt: string, test: TestFunction) {
-    this.conversationHistory.push({
-      role: "user",
+    const initialMessageOptions = {
+      role: "user" as const,
       content: prompt,
+    };
+    this.conversationHistory.push(initialMessageOptions);
+    this.log.trace("💬", "New conversation message", initialMessageOptions);
+    this.log.trace("💬", "Conversation history initialized", {
+      totalMessageCount: this.conversationHistory.length,
     });
 
     while (true) {
@@ -109,10 +113,8 @@ export class AIClient {
       let resp;
       try {
         await sleep(1000);
-        this.log.trace("Generating text", {
-          messageCount: this.conversationHistory.length,
-          lastMessage:
-            this.conversationHistory[this.conversationHistory.length - 1],
+        this.log.trace("Calling generateText", {
+          conversationMessageCount: this.conversationHistory.length,
         });
 
         resp = await generateText({
@@ -144,9 +146,6 @@ export class AIClient {
             }
 
             for (const toolResult of toolResults as any[]) {
-              // this.log.trace("Tool result", {
-              //   toolResult,
-              // });
               let extras: Record<string, unknown> = {};
               if (isMouseMove(toolResult.args)) {
                 const [x, y] = (toolResult.args as any).coordinate;
@@ -176,18 +175,9 @@ export class AIClient {
           error: error as Error,
           fullError: JSON.stringify(error, null, 2),
           errorDetails: getErrorDetails(error),
-          stack: (error as Error).stack,
         });
         if (NoSuchToolError.isInstance(error)) {
           this.log.error("Tool is not supported");
-        } else if (InvalidToolArgumentsError.isInstance(error)) {
-          console.log("👻 InvalidToolArgumentsError");
-          this.log.error("Invalid tool arguments", {
-            error: error.message,
-            toolName: error.toolName,
-            toolArgs: error.toolArgs,
-            cause: error.cause,
-          });
         }
         throw error;
       }
@@ -203,7 +193,17 @@ export class AIClient {
       });
 
       this.updateUsage(resp.usage);
-      this.conversationHistory.push(...resp.response.messages);
+      resp.response.messages.forEach((message) => {
+        this.log.trace("💬", "New conversation message", {
+          role: message.role,
+          content: message.content,
+        });
+        this.conversationHistory.push(message);
+      });
+      this.log.trace("💬", "Conversation history updated", {
+        newMessageCount: resp.response.messages.length,
+        totalMessageCount: this.conversationHistory.length,
+      });
 
       this.throwOnErrorFinishReason(resp.finishReason);
 
