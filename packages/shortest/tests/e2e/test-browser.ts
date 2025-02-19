@@ -3,7 +3,7 @@ import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
 import { getConfig } from "@/index";
 
-export async function main() {
+export const main = async () => {
   const browserManager = new BrowserManager(getConfig());
 
   try {
@@ -81,7 +81,7 @@ export async function main() {
     console.log(pc.cyan("\n🧹 Cleaning up..."));
     await browserManager.close();
   }
-}
+};
 
 console.log(pc.cyan("🧪 Mouse Coordinate Test"));
 console.log(pc.cyan("======================="));
