@@ -6,7 +6,7 @@ import { getBearerToken } from "@/lib/utils-server";
  * Asserts that the bearer token is present in the request
  * If yes, returns the request body
  */
-export async function POST(req: Request) {
+export const POST = async (req: Request) => {
   const token = getBearerToken(req);
 
   if (!token || token !== ALLOWED_TEST_BEARER) {
@@ -25,4 +25,4 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-}
+};
