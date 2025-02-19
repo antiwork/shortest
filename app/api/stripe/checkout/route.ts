@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { stripe, handleSubscriptionChange } from "@/lib/payments/stripe";
 
-export async function GET(request: NextRequest) {
+export const GET = async (request: NextRequest) => {
   const { userId } = auth();
 
   if (!userId) {
@@ -45,4 +45,4 @@ export async function GET(request: NextRequest) {
     console.error("Error handling successful checkout:", error);
     return NextResponse.redirect(new URL("/error", request.url));
   }
-}
+};

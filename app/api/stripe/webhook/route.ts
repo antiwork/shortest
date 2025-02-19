@@ -4,7 +4,7 @@ import { handleSubscriptionChange, stripe } from "@/lib/payments/stripe";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-export async function POST(request: NextRequest) {
+export const POST = async (request: NextRequest) => {
   const payload = await request.text();
   const signature = request.headers.get("stripe-signature") as string;
 
@@ -31,4 +31,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
-}
+};
