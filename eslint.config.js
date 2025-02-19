@@ -42,6 +42,7 @@ export default [
         "allowArrowFunctions": true
       }],
       "arrow-body-style": ["error", "as-needed"],
+      "eqeqeq": ["error", "smart"],
       "prefer-arrow-callback": "error",
       "import/order": ["error", { alphabetize: { order: "asc" } }],
       "prettier/prettier": [
