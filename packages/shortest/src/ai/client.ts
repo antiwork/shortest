@@ -108,129 +108,132 @@ export class AIClient {
     });
 
     while (true) {
-      this.apiRequestCount++;
-      this.log.setGroup(`${this.apiRequestCount}`);
-      let resp;
       try {
-        await sleep(1000);
-        this.log.trace("Calling generateText", {
-          conversationMessageCount: this.conversationHistory.length,
-        });
+        this.apiRequestCount++;
+        this.log.setGroup(`${this.apiRequestCount}`);
+        let resp;
+        try {
+          await sleep(1000);
+          this.log.trace("Calling generateText", {
+            conversationMessageCount: this.conversationHistory.length,
+            messages: this.conversationHistory,
+          });
 
-        resp = await generateText({
-          system: SYSTEM_PROMPT,
-          model: this.client,
-          maxTokens: 1024,
-          tools: this.tools,
-          messages: this.conversationHistory,
-          onStepFinish: async ({
-            // stepType,
-            text,
-            // toolCalls,
-            toolResults,
-            // finishReason,
-            // usage,
-            // isContinued,
-          }) => {
-            // this.log.trace("onStepFinish", {
-            //   stepType,
-            //   text,
-            //   toolCalls,
-            //   toolResults,
-            //   finishReason,
-            //   isContinued,
-            //   usage,
-            // });
-            function isMouseMove(args: any) {
-              return args.action === "mouse_move" && args.coordinate.length;
-            }
-
-            for (const toolResult of toolResults as any[]) {
-              let extras: Record<string, unknown> = {};
-              if (isMouseMove(toolResult.args)) {
-                const [x, y] = (toolResult.args as any).coordinate;
-                extras.componentStr =
-                  await this.browserTool.getNormalizedComponentStringByCoords(
-                    x,
-                    y,
-                  );
+          resp = await generateText({
+            system: SYSTEM_PROMPT,
+            model: this.client,
+            maxTokens: 1024,
+            tools: this.tools,
+            messages: this.conversationHistory,
+            onStepFinish: async ({
+              // stepType,
+              text,
+              // toolCalls,
+              toolResults,
+              // finishReason,
+              // usage,
+              // isContinued,
+            }) => {
+              // this.log.trace("onStepFinish", {
+              //   stepType,
+              //   text,
+              //   toolCalls,
+              //   toolResults,
+              //   finishReason,
+              //   isContinued,
+              //   usage,
+              // });
+              function isMouseMove(args: any) {
+                return args.action === "mouse_move" && args.coordinate.length;
               }
 
-              this.addToPendingCache({
-                reasoning: text,
-                action: {
-                  name: toolResult.args.action,
-                  input: toolResult.args,
-                  type: "tool_use",
-                },
-                result: toolResult.result.output,
-                extras,
-                timestamp: Date.now(),
-              });
-            }
-          },
-        });
-      } catch (error) {
-        this.log.error("Error making request", {
-          error: error as Error,
-          fullError: JSON.stringify(error, null, 2),
-          errorDetails: getErrorDetails(error),
-        });
-        if (NoSuchToolError.isInstance(error)) {
-          this.log.error("Tool is not supported");
+              for (const toolResult of toolResults as any[]) {
+                let extras: Record<string, unknown> = {};
+                if (isMouseMove(toolResult.args)) {
+                  const [x, y] = (toolResult.args as any).coordinate;
+                  extras.componentStr =
+                    await this.browserTool.getNormalizedComponentStringByCoords(
+                      x,
+                      y,
+                    );
+                }
+
+                this.addToPendingCache({
+                  reasoning: text,
+                  action: {
+                    name: toolResult.args.action,
+                    input: toolResult.args,
+                    type: "tool_use",
+                  },
+                  result: toolResult.result.output,
+                  extras,
+                  timestamp: Date.now(),
+                });
+              }
+            },
+          });
+        } catch (error) {
+          this.log.error("Error making request", {
+            error: error as Error,
+            fullError: JSON.stringify(error, null, 2),
+            errorDetails: getErrorDetails(error),
+          });
+          if (NoSuchToolError.isInstance(error)) {
+            this.log.error("Tool is not supported");
+          }
+          throw error;
         }
-        throw error;
-      }
 
-      this.log.trace("Request completed", {
-        text: resp.text,
-        finishReason: resp.finishReason,
-        // usage: resp.usage,
-        warnings: resp.warnings,
-        // responseMessages: resp.response.messages.map((m) => ({
-        //   role: m.role,
-        // })),
-      });
-
-      this.updateUsage(resp.usage);
-      resp.response.messages.forEach((message) => {
-        this.log.trace("💬", "New conversation message", {
-          role: message.role,
-          content: message.content,
+        this.log.trace("Request completed", {
+          text: resp.text,
+          finishReason: resp.finishReason,
+          // usage: resp.usage,
+          warnings: resp.warnings,
+          // responseMessages: resp.response.messages.map((m) => ({
+          //   role: m.role,
+          // })),
         });
-        this.conversationHistory.push(message);
-      });
-      this.log.trace("💬", "Conversation history updated", {
-        newMessageCount: resp.response.messages.length,
-        totalMessageCount: this.conversationHistory.length,
-      });
 
-      this.throwOnErrorFinishReason(resp.finishReason);
+        this.updateUsage(resp.usage);
+        resp.response.messages.forEach((message) => {
+          this.log.trace("💬", "New conversation message", {
+            role: message.role,
+            content: message.content,
+          });
+          this.conversationHistory.push(message);
+        });
+        this.log.trace("💬", "Conversation history updated", {
+          newMessageCount: resp.response.messages.length,
+          totalMessageCount: this.conversationHistory.length,
+        });
 
-      if (resp.finishReason === "tool-calls") {
-        this.log.resetGroup();
-        continue;
-      }
+        this.throwOnErrorFinishReason(resp.finishReason);
 
-      // At this point, response reason is not a tool call, and it's not errored
-      try {
-        const json = extractJsonPayload(resp.text);
-        this.log.trace("Response", { ...json });
-
-        if (json.status === "passed") {
-          this.cache.set(test, this.pendingCache);
+        if (resp.finishReason === "tool-calls") {
+          this.log.resetGroup();
+          continue;
         }
-        return {
-          response: json,
-          metadata: {
-            usage: this.usage,
-          },
-        };
-      } catch {
-        throw new AIError(
-          "invalid-response",
-          "AI didn't return the expected JSON payload",
-        );
+
+        // At this point, response reason is not a tool call, and it's not errored
+        try {
+          const json = extractJsonPayload(resp.text);
+          this.log.trace("Response", { ...json });
+
+          if (json.status === "passed") {
+            this.cache.set(test, this.pendingCache);
+          }
+          return {
+            response: json,
+            metadata: {
+              usage: this.usage,
+            },
+          };
+        } catch {
+          throw new AIError(
+            "invalid-response",
+            "AI didn't return the expected JSON payload",
+          );
+        }
       } finally {
         this.log.resetGroup();
       }

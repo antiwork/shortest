@@ -159,6 +159,11 @@ export class TestRunner {
     context: BrowserContext,
     config: { noCache: boolean } = { noCache: false },
   ): Promise<TestResult> {
+    this.log.trace("Executing test", {
+      name: test.name,
+      filePath: test.filePath,
+      payload: test.payload,
+    });
     // If it's direct execution, skip AI
     if (test.directExecution) {
       try {
