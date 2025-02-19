@@ -4,10 +4,10 @@ import {
   APIFetchConfig,
 } from "@/types/request";
 
-function generatePrompt(
+const generatePrompt = (
   request: APIRequestType,
   config: Partial<APIRequestConfig>,
-) {
+) => {
   return `
         You are about to process an API request. Your goal is to dynamically populate variables (like <Bearer API KEY>) with actual values, either inferred or retrieved. Follow these steps:
         - Analyze the REQUEST OBJECT: extract all necessary values (e.g., HTTP method, headers, authorization tokens).
