@@ -4,7 +4,7 @@ import { db, client } from "@/lib/db/drizzle";
 
 dotenv.config({ path: ".env.local" });
 
-async function cleanup() {
+const cleanup = async () => {
   try {
     console.log("Dropping all tables...");
     await db.execute(sql`
@@ -18,6 +18,6 @@ async function cleanup() {
   } finally {
     await client.end();
   }
-}
+};
 
 cleanup();
