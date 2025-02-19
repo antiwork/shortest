@@ -825,11 +825,11 @@ export class BrowserTool extends BaseBrowserTool {
            * Gets deepest nested child node
            * If several nodes are on the same depth, the first node would be returned
            */
-          function getDeepestChildNode(element: Element): HTMLElement {
+          const getDeepestChildNode = (element: Element): HTMLElement => {
             let deepestChild = element.cloneNode(true) as HTMLElement;
             let maxDepth = 0;
 
-            function traverse(node: any, depth: number) {
+            const traverse = (node: any, depth: number) => {
               if (depth > maxDepth) {
                 maxDepth = depth;
                 deepestChild = node;
@@ -838,11 +838,11 @@ export class BrowserTool extends BaseBrowserTool {
               Array.from(node.children).forEach((child) => {
                 traverse(child, depth + 1);
               });
-            }
+            };
 
             traverse(deepestChild, 0);
             return deepestChild;
-          }
+          };
 
           const deepestNode = getDeepestChildNode(clone);
 
@@ -856,10 +856,10 @@ export class BrowserTool extends BaseBrowserTool {
           /**
            * Recursively delete attributes from Nodes
            */
-          function cleanAttributesRecursively(
+          const cleanAttributesRecursively = (
             element: Element,
             options: { exceptions: string[] },
-          ) {
+          ) => {
             Array.from(element.attributes).forEach((attr) => {
               if (!options.exceptions.includes(attr.name)) {
                 element.removeAttribute(attr.name);
@@ -869,7 +869,7 @@ export class BrowserTool extends BaseBrowserTool {
             Array.from(element.children).forEach((child) => {
               cleanAttributesRecursively(child, options);
             });
-          }
+          };
 
           cleanAttributesRecursively(node, {
             exceptions: allowedAttr,
