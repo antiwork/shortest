@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { LogGroup } from "../app/(dashboard)/dashboard/types";
 
-export function useLogGroups(logs: string | undefined) {
+export const useLogGroups = (logs: string | undefined) => {
   const parsedLogs = useMemo(() => {
     if (!logs) return [];
 
@@ -56,4 +56,4 @@ export function useLogGroups(logs: string | undefined) {
   }, [logs]);
 
   return parsedLogs;
-}
+};
