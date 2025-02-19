@@ -47,7 +47,7 @@ if (!global.__shortest__) {
   dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
 }
 
-export async function initializeConfig(configDir?: string) {
+export const initializeConfig = async (configDir?: string) => {
   const log = getLogger();
   if (globalConfig) {
     return globalConfig;
@@ -99,20 +99,20 @@ export async function initializeConfig(configDir?: string) {
   log.debug("Config initialized", { globalConfig });
 
   return globalConfig;
-}
+};
 
-export function getConfig(): ShortestStrictConfig {
+export const getConfig = (): ShortestStrictConfig => {
   if (!globalConfig) {
     throw new Error("Config not initialized. Call initializeConfig() first");
   }
   return globalConfig;
-}
+};
 
-function createTestChain(
+const createTestChain = (
   nameOrFn: string | string[] | ((context: TestContext) => Promise<void>),
   payloadOrFn?: ((context: TestContext) => Promise<void>) | any,
   fn?: (context: TestContext) => Promise<void>,
-): TestChain {
+): TestChain => {
   const registry = global.__shortest__.registry;
 
   // Handle array of test names
@@ -208,7 +208,7 @@ function createTestChain(
   };
 
   return chain;
-}
+};
 
 export const test: TestAPI = Object.assign(
   (
