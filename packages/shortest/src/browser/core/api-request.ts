@@ -27,7 +27,7 @@ const generatePrompt = (
           - Every single field in the config object MUST be accounted for in the final bash command.
           - DO NOT add any extra flags or arguments or flags unless they are explicitly state in REQUEST OBJECT or CONFIG OBJECT.
         `;
-}
+};
 
 export class APIRequest {
   private config: Partial<APIRequestConfig>;

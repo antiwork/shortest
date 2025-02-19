@@ -273,7 +273,7 @@ const promptForGitHubOAuth = async (): Promise<void> => {
     console.log("Please complete the GitHub OAuth setup before continuing.");
     process.exit(1);
   }
-}
+};
 
 const promptForGitHubTOTP = async (): Promise<string | undefined> => {
   console.log("\nStep 8: GitHub 2FA TOTP Setup (Optional)");
