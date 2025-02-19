@@ -20,10 +20,10 @@ export type AIJSONResponse = z.infer<typeof aiJSONResponseSchema>;
  *
  * @private
  */
-export function extractJsonPayload(
+export const extractJsonPayload = (
   response: string,
   schema: typeof aiJSONResponseSchema = aiJSONResponseSchema,
-) {
+) => {
   const jsonMatches = response.match(JSON_REGEX);
 
   if (!jsonMatches || jsonMatches.length === 0) {
@@ -54,4 +54,4 @@ export function extractJsonPayload(
     }
     throw error;
   }
-}
+};
