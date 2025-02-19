@@ -1,6 +1,6 @@
 import { stripe } from "../payments/stripe";
 
-async function createStripeProducts() {
+const createStripeProducts = async () => {
   console.log("Creating Stripe products and prices...");
 
   const baseProduct = await stripe.products.create({
@@ -34,11 +34,11 @@ async function createStripeProducts() {
   });
 
   console.log("Stripe products and prices created successfully.");
-}
+};
 
-async function seed() {
+const seed = async () => {
   await createStripeProducts();
-}
+};
 
 seed()
   .catch((error) => {
