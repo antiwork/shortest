@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
-function question(query: string): Promise<string> {
+const question = (query: string): Promise<string> => {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -19,9 +19,9 @@ function question(query: string): Promise<string> {
       resolve(ans);
     }),
   );
-}
+};
 
-async function checkStripeCLI() {
+const checkStripeCLI = async () => {
   console.log(
     "Step 1: Checking if Stripe CLI is installed and authenticated...",
   );
@@ -70,9 +70,9 @@ async function checkStripeCLI() {
     );
     process.exit(1);
   }
-}
+};
 
-async function setupPostgresConfig(): Promise<Object> {
+const setupPostgresConfig = async (): Promise<Object> => {
   console.log("Step 2: Setting up Postgres");
   const dbChoice = await question(
     "Do you want to use a local Postgres instance with Docker (L) or a remote Postgres instance using Vercel Postgres (R)? (L/R): ",
@@ -109,9 +109,9 @@ async function setupPostgresConfig(): Promise<Object> {
     };
     return postgresConfig;
   }
-}
+};
 
-async function setupLocalPostgres() {
+const setupLocalPostgres = async () => {
   console.log("Checking if Docker is installed and running...");
   try {
     // Check Docker version
@@ -209,17 +209,17 @@ volumes:
     );
     process.exit(1);
   }
-}
+};
 
-async function promptForStripeSecretKey(): Promise<string> {
+const promptForStripeSecretKey = async (): Promise<string> => {
   console.log("Step 3: Getting Stripe Secret Key");
   console.log(
     "You can find your Stripe Secret Key at: https://dashboard.stripe.com/test/apikeys Refer to the README.md for more details.",
   );
   return await question("Enter your Stripe Secret Key: ");
-}
+};
 
-async function setupStripeWebhook(): Promise<string> {
+const setupStripeWebhook = async (): Promise<string> => {
   console.log("Step 4: Creating Stripe webhook...");
   try {
     const { stdout } = await execAsync("stripe listen --print-secret");
@@ -240,12 +240,12 @@ async function setupStripeWebhook(): Promise<string> {
     }
     throw error;
   }
-}
+};
 
-async function promptForClerkKeys(): Promise<{
+const promptForClerkKeys = async (): Promise<{
   publishableKey: string;
   secretKey: string;
-}> {
+}> => {
   console.log("Step 5: Getting Clerk Keys");
   console.log(
     "You can find your Clerk keys at: https://dashboard.clerk.com/ Refer to the README.md for more details.",
@@ -253,17 +253,17 @@ async function promptForClerkKeys(): Promise<{
   const publishableKey = await question("Enter your Clerk Publishable Key: ");
   const secretKey = await question("Enter your Clerk Secret Key: ");
   return { publishableKey, secretKey };
-}
+};
 
-async function promptForAnthropicApiKey(): Promise<string> {
+const promptForAnthropicApiKey = async (): Promise<string> => {
   console.log("Step 6: Getting Anthropic API Key");
   console.log(
     "You can find your Anthropic API Key at: https://www.anthropic.com/ Refer to the README.md for more details.",
   );
   return await question("Enter your Anthropic API Key: ");
-}
+};
 
-async function promptForGitHubOAuth(): Promise<void> {
+const promptForGitHubOAuth = async (): Promise<void> => {
   console.log("Step 7: Setting up GitHub OAuth");
   console.log("Create a GitHub OAuth App as described in the README.md file.");
   console.log('Check "Github OAuth" section for more details.');
@@ -275,7 +275,7 @@ async function promptForGitHubOAuth(): Promise<void> {
   }
 }
 
-async function promptForGitHubTOTP(): Promise<string | undefined> {
+const promptForGitHubTOTP = async (): Promise<string | undefined> => {
   console.log("\nStep 8: GitHub 2FA TOTP Setup (Optional)");
   console.log(
     "If you want to test GitHub 2FA login, you'll need to add a TOTP secret.",
@@ -291,9 +291,9 @@ async function promptForGitHubTOTP(): Promise<string | undefined> {
     );
   }
   return undefined;
-}
+};
 
-async function writeEnvFile(envVars: Record<string, string>) {
+const writeEnvFile = async (envVars: Record<string, string>) => {
   console.log("Step 8: Writing environment variables to .env.local");
   const envContent = Object.entries(envVars)
     .map(([key, value]) => `${key}=${value}`)
@@ -301,9 +301,9 @@ async function writeEnvFile(envVars: Record<string, string>) {
 
   await fs.writeFile(path.join(process.cwd(), ".env.local"), envContent);
   console.log(".env.local file created with the necessary variables.");
-}
+};
 
-async function main() {
+const main = async () => {
   await checkStripeCLI();
 
   const postgresConfig = await setupPostgresConfig();
@@ -362,6 +362,6 @@ async function main() {
   });
 
   console.log("🎉 Setup completed successfully!");
-}
+};
 
 main().catch(console.error);
