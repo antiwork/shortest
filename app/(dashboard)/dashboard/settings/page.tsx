@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { customerPortalAction } from "@/lib/payments/actions";
 
-function SubscriptionContent() {
+const SubscriptionContent = () => {
   return (
     <div className="space-y-4">
       <div className="flex">
@@ -17,9 +17,9 @@ function SubscriptionContent() {
       </div>
     </div>
   );
-}
+};
 
-export default function SettingsPage() {
+const SettingsPage = () => {
   return (
     <Card>
       <CardHeader>
@@ -30,4 +30,6 @@ export default function SettingsPage() {
       </CardContent>
     </Card>
   );
-}
+};
+
+export default SettingsPage;

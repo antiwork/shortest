@@ -2,7 +2,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { streamObject } from "ai";
 import { GenerateTestsInput, TestFileSchema } from "./schema";
 
-export async function POST(req: Request) {
+export const POST = async (req: Request) => {
   const { mode, pr_diff, test_files, test_logs } =
     (await req.json()) as GenerateTestsInput;
 
@@ -46,4 +46,4 @@ export async function POST(req: Request) {
   });
 
   return result.toTextStreamResponse();
-}
+};

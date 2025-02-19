@@ -10,7 +10,7 @@ interface LogViewProps {
   isLoading: boolean;
 }
 
-export function LogView({ parsedLogs, error, isLoading }: LogViewProps) {
+export const LogView = ({ parsedLogs, error, isLoading }: LogViewProps) => {
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     {},
@@ -74,4 +74,4 @@ export function LogView({ parsedLogs, error, isLoading }: LogViewProps) {
       </div>
     </div>
   );
-}
+};

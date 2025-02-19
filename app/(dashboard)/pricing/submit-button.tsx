@@ -4,7 +4,7 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 
-export function SubmitButton() {
+export const SubmitButton = () => {
   const { pending } = useFormStatus();
 
   return (
@@ -26,4 +26,4 @@ export function SubmitButton() {
       )}
     </Button>
   );
-}
+};

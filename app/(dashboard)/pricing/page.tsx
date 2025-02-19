@@ -7,7 +7,7 @@ import { getStripePrices, getStripeProducts } from "@/lib/payments/stripe";
 // Prices are fresh for one hour max
 export const revalidate = 3600;
 
-export default async function PricingPage() {
+const PricingPage = async () => {
   const [prices, products] = await Promise.all([
     getStripePrices(),
     getStripeProducts(),
@@ -56,9 +56,11 @@ export default async function PricingPage() {
       </div>
     </main>
   );
-}
+};
 
-function PricingCard({
+export default PricingPage;
+
+const PricingCard = ({
   name,
   price,
   interval,
@@ -72,7 +74,7 @@ function PricingCard({
   trialDays?: number;
   features: string[];
   priceId?: string;
-}) {
+}) => {
   return (
     <div className="border rounded-lg p-6 shadow-sm">
       <h2 className="text-2xl font-medium text-gray-900 mb-2">{name}</h2>
@@ -107,4 +109,4 @@ function PricingCard({
       )}
     </div>
   );
-}
+};

@@ -43,9 +43,9 @@ interface PullRequestItemProps {
   pullRequest: PullRequest;
 }
 
-export function PullRequestItem({
+export const PullRequestItem = ({
   pullRequest: initialPullRequest,
-}: PullRequestItemProps) {
+}: PullRequestItemProps) => {
   const [optimisticRunning, setOptimisticRunning] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [testFiles, setTestFiles] = useState<TestFile[]>([]);
@@ -560,4 +560,4 @@ export function PullRequestItem({
       )}
     </div>
   );
-}
+};

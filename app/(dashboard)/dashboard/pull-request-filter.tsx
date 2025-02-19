@@ -15,13 +15,13 @@ interface FilterOptionProps {
   capitalize?: boolean;
 }
 
-function FilterOption({
+const FilterOption = ({
   id,
   label,
   checked,
   onCheckedChange,
   capitalize = false,
-}: FilterOptionProps) {
+}: FilterOptionProps) => {
   return (
     <div className="flex items-center space-x-2 p-2 hover:bg-accent hover:text-accent-foreground">
       <Checkbox id={id} checked={checked} onCheckedChange={onCheckedChange} />
@@ -35,7 +35,7 @@ function FilterOption({
       </label>
     </div>
   );
-}
+};
 
 interface FilterSectionProps {
   label: string;
@@ -47,7 +47,7 @@ interface FilterSectionProps {
   disabled?: boolean;
 }
 
-function FilterSection({
+const FilterSection = ({
   label,
   buttonText,
   options,
@@ -55,7 +55,7 @@ function FilterSection({
   onOptionChange,
   capitalize = false,
   disabled = false,
-}: FilterSectionProps) {
+}: FilterSectionProps) => {
   return (
     <div className="flex flex-col space-y-1.5">
       <label
@@ -96,7 +96,7 @@ function FilterSection({
       </Popover>
     </div>
   );
-}
+};
 
 interface PullRequestFilterProps {
   uniqueRepositories: string[];
@@ -106,13 +106,13 @@ interface PullRequestFilterProps {
   onBuildStatusFilterChange: (value: string) => void;
 }
 
-export function PullRequestFilter({
+export const PullRequestFilter = ({
   uniqueRepositories,
   selectedRepoFilters,
   buildStatusFilter,
   onRepoFilterChange,
   onBuildStatusFilterChange,
-}: PullRequestFilterProps) {
+}: PullRequestFilterProps) => {
   const buildStatusOptions = ["success", "failure", "pending", "unknown"];
 
   return (
@@ -145,4 +145,4 @@ export function PullRequestFilter({
       />
     </div>
   );
-}
+};

@@ -2,7 +2,7 @@ import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 
-export async function POST(request: NextRequest) {
+export const POST = async (request: NextRequest) => {
   let payload;
   try {
     payload = await request.json();
@@ -49,20 +49,20 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+};
 
-async function handlePushEvent(payload: any) {
+const handlePushEvent = async (payload: any) => {
   const { repository } = payload;
   console.log(`New push to ${repository.full_name}`);
-}
+};
 
-async function handlePullRequestEvent(payload: any) {
+const handlePullRequestEvent = async (payload: any) => {
   const { action, pull_request, repository } = payload;
   console.log(`Pull request ${action} in ${repository.full_name}`);
   revalidateTag(`pullRequest-${pull_request.id}`);
-}
+};
 
-async function handleCheckRunEvent(payload: any) {
+const handleCheckRunEvent = async (payload: any) => {
   const { action, check_run, repository } = payload;
   console.log(`Check run ${action} in ${repository.full_name}`);
   if (check_run.pull_requests && check_run.pull_requests.length > 0) {
@@ -70,9 +70,9 @@ async function handleCheckRunEvent(payload: any) {
       revalidateTag(`pullRequest-${pr.id}`);
     });
   }
-}
+};
 
-async function handleCheckSuiteEvent(payload: any) {
+const handleCheckSuiteEvent = async (payload: any) => {
   const { action, check_suite, repository } = payload;
   console.log(`Check suite ${action} in ${repository.full_name}`);
   if (check_suite.pull_requests && check_suite.pull_requests.length > 0) {
@@ -80,4 +80,4 @@ async function handleCheckSuiteEvent(payload: any) {
       revalidateTag(`pullRequest-${pr.id}`);
     });
   }
-}
+};
