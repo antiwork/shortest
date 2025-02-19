@@ -126,8 +126,12 @@ export class LogOutput {
                 const value =
                   typeof v === "string"
                     ? v.replace(/\\"/g, '"').replace(/\\n/g, "\n")
-                    : JSON.stringify(v, null, 2).replace(/\\n/g, "\n");
-                return `${pc.dim(k)}=${value}${value.includes("\n") ? "\n" : ""}`;
+                    : v === null || v === undefined
+                      ? "null"
+                      : JSON.stringify(v, null, 2).replace(/\\n/g, "\n");
+                return `${pc.dim(k)}=${value}${
+                  typeof value === "string" && value.includes("\n") ? "\n" : ""
+                }`;
               })
               .join(" ");
       outputParts.push(formattedMetadata);

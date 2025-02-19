@@ -42,13 +42,17 @@ export class LogEvent {
     this.metadata = metadata ?? {};
   }
 
-  get parsedMetadata(): Record<string, any> | undefined {
+  get parsedMetadata():
+    | Record<string, string | number | boolean | null | object>
+    | undefined {
     return (
       this._parsedMetadata ?? (this._parsedMetadata = this.parseMetadata())
     );
   }
 
-  private parseMetadata(): Record<string, any> | undefined {
+  private parseMetadata():
+    | Record<string, string | number | boolean | null | object>
+    | undefined {
     if (!Object.keys(this.metadata).length) return undefined;
 
     return Object.fromEntries(
