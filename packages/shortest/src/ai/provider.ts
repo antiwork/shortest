@@ -8,7 +8,7 @@ import { AIError } from "@/utils/errors";
  *
  * @private
  */
-export function createProvider(aiConfig: AIConfig): LanguageModelV1 {
+export const createProvider = (aiConfig: AIConfig): LanguageModelV1 => {
   switch (aiConfig.provider) {
     case "anthropic":
       const anthropic = createAnthropic({ apiKey: aiConfig.apiKey });
@@ -19,4 +19,4 @@ export function createProvider(aiConfig: AIConfig): LanguageModelV1 {
         `${aiConfig.provider} is not supported.`,
       );
   }
-}
+};
