@@ -1,9 +1,9 @@
 import { shortest } from "@/index";
 
-export async function main() {
+export const main = async () => {
   shortest([
     "Login to the application",
     "Navigate to invoices",
     "Send invoice",
   ]);
-}
+};
