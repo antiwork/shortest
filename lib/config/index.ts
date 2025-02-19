@@ -18,7 +18,7 @@ let config: Readonly<Config> = Object.freeze({});
  *
  * @private
  */
-async function loadConfig(): Promise<void> {
+const loadConfig = async (): Promise<void> => {
   try {
     const fileContents = await fs.readFile(CONFIG_FILE_PATH, "utf8");
     const parsedConfig = yaml.load(fileContents) as Record<string, unknown>;
@@ -42,7 +42,7 @@ async function loadConfig(): Promise<void> {
       );
     }
   }
-}
+};
 
 /**
  * Returns the current configuration, loading it if necessary.
@@ -52,12 +52,12 @@ async function loadConfig(): Promise<void> {
  *
  * @private
  */
-export async function getConfig(): Promise<Readonly<Config>> {
+export const getConfig = async (): Promise<Readonly<Config>> => {
   if (Object.keys(config).length === 0) {
     await loadConfig();
   }
   return config;
-}
+};
 
 /**
  * Gets repository-specific configuration.
@@ -69,19 +69,19 @@ export async function getConfig(): Promise<Readonly<Config>> {
  *
  * @private
  */
-export async function getRepoConfig({
+export const getRepoConfig = async ({
   owner,
   repo,
 }: {
   owner: string;
   repo: string;
-}): Promise<RepositoryConfig> {
+}): Promise<RepositoryConfig> => {
   const fullConfig = await getConfig();
   const repoKey = `${owner}/${repo}`;
   return (
     fullConfig[repoKey] || { repository_name: repoKey, ...DEFAULT_REPO_CONFIG }
   );
-}
+};
 
 /**
  * Gets test patterns configuration for a repository.
@@ -93,13 +93,13 @@ export async function getRepoConfig({
  *
  * @private
  */
-export async function getTestPatternsConfig({
+export const getTestPatternsConfig = async ({
   owner,
   repo,
 }: {
   owner: string;
   repo: string;
-}): Promise<RepositoryConfig["test_patterns"]> {
+}): Promise<RepositoryConfig["test_patterns"]> => {
   const repoConfig = await getRepoConfig({ owner, repo });
   return repoConfig.test_patterns;
-}
+};
