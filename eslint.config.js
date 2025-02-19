@@ -38,6 +38,9 @@ export default [
         "error",
         { argsIgnorePattern: "^_" },
       ],
+      "func-style": ["error", "expression", {
+        "allowArrowFunctions": true
+      }],
       "import/order": ["error", { alphabetize: { order: "asc" } }],
       "prettier/prettier": [
         "error",

@@ -3,7 +3,7 @@ import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
 import { getConfig, initializeConfig } from "@/index";
 
-export async function main() {
+export const main = async () => {
   const browserManager = new BrowserManager(getConfig());
 
   try {
@@ -51,7 +51,7 @@ export async function main() {
     console.log(pc.cyan("\n🧹 Cleaning up..."));
     await browserManager.close();
   }
-}
+};
 
 console.log(pc.cyan("🧪 Keyboard Handling Test"));
 console.log(pc.cyan("======================="));
