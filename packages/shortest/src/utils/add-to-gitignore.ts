@@ -21,7 +21,7 @@ export const addToGitignore = async (
     const gitignorePath = join(path, ".gitignore");
     let gitignore = await readFile(gitignorePath, "utf8").catch(() => null);
     const isNewFile = gitignore === null;
-    gitignore = gitignore ?? "";
+    gitignore ??= "";
     const EOL = gitignore.includes("\r\n") ? "\r\n" : os.EOL;
 
     const addValue = (content: string, value: string): string => {

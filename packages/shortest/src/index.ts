@@ -54,7 +54,7 @@ export const initializeConfig = async (configDir?: string) => {
   }
   log.trace("Initializing config");
 
-  configDir = configDir || process.cwd();
+  configDir ||= process.cwd();
   dotenv.config({ path: join(configDir, ".env") });
   dotenv.config({ path: join(configDir, ENV_LOCAL_FILENAME) });
 
