@@ -38,8 +38,8 @@ declare const global: typeof globalThis & {
   expect?: typeof jestExpect;
 };
 
-if (!global.__shortest__) {
-  global.__shortest__ = {
+const initializeGlobalRegistry = () => {
+  const registry = {
     expect: jestExpect,
     registry: {
       tests: new Map<string, TestFunction[]>(),
@@ -52,11 +52,17 @@ if (!global.__shortest__) {
     },
   };
 
-  // Attach to global scope
-  (global as any).expect = global.__shortest__.expect;
+  global.__shortest__ = registry;
+  (global as any).expect = registry.expect;
 
   dotenv.config({ path: join(process.cwd(), ".env") });
   dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
+
+  return registry;
+};
+
+if (!global.__shortest__) {
+  initializeGlobalRegistry();
 }
 
 export const initializeConfig = async (configDir?: string) => {
@@ -126,12 +132,12 @@ const createTestChain = (
   fn?: (context: TestContext) => Promise<void>,
 ): TestChain => {
   if (!global.__shortest__) {
-    throw new Error(
-      "Global __shortest__ not initialized. Call initializeConfig() first",
-    );
+    initializeGlobalRegistry();
   }
 
-  const registry = global.__shortest__.registry;
+  const registry = (
+    global.__shortest__ as NonNullable<typeof global.__shortest__>
+  ).registry;
 
   // Handle array of test names
   if (Array.isArray(nameOrFn)) {
@@ -238,52 +244,60 @@ export const test: TestAPI = Object.assign(
   ) => createTestChain(nameOrFn, payloadOrFn, fn),
   {
     beforeAll: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
-      if (!global.__shortest__) {
-        throw new Error(
-          "Global __shortest__ not initialized. Call initializeConfig() first",
-        );
-      }
       const hook =
         typeof nameOrFn === "function"
           ? () => nameOrFn({} as TestContext)
           : undefined;
-      if (hook) global.__shortest__.registry.beforeAllFns.push(hook);
+      if (hook) {
+        if (!global.__shortest__) {
+          initializeGlobalRegistry();
+        }
+        (
+          global.__shortest__ as NonNullable<typeof global.__shortest__>
+        ).registry.beforeAllFns.push(hook);
+      }
     },
     afterAll: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
-      if (!global.__shortest__) {
-        throw new Error(
-          "Global __shortest__ not initialized. Call initializeConfig() first",
-        );
-      }
       const hook =
         typeof nameOrFn === "function"
           ? () => nameOrFn({} as TestContext)
           : undefined;
-      if (hook) global.__shortest__.registry.afterAllFns.push(hook);
+      if (hook) {
+        if (!global.__shortest__) {
+          initializeGlobalRegistry();
+        }
+        (
+          global.__shortest__ as NonNullable<typeof global.__shortest__>
+        ).registry.afterAllFns.push(hook);
+      }
     },
     beforeEach: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
-      if (!global.__shortest__) {
-        throw new Error(
-          "Global __shortest__ not initialized. Call initializeConfig() first",
-        );
-      }
       const hook =
         typeof nameOrFn === "function"
           ? () => nameOrFn({} as TestContext)
           : undefined;
-      if (hook) global.__shortest__.registry.beforeEachFns.push(hook);
+      if (hook) {
+        if (!global.__shortest__) {
+          initializeGlobalRegistry();
+        }
+        (
+          global.__shortest__ as NonNullable<typeof global.__shortest__>
+        ).registry.beforeEachFns.push(hook);
+      }
     },
     afterEach: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
-      if (!global.__shortest__) {
-        throw new Error(
-          "Global __shortest__ not initialized. Call initializeConfig() first",
-        );
-      }
       const hook =
         typeof nameOrFn === "function"
           ? () => nameOrFn({} as TestContext)
           : undefined;
-      if (hook) global.__shortest__.registry.afterEachFns.push(hook);
+      if (hook) {
+        if (!global.__shortest__) {
+          initializeGlobalRegistry();
+        }
+        (
+          global.__shortest__ as NonNullable<typeof global.__shortest__>
+        ).registry.afterEachFns.push(hook);
+      }
     },
   },
 );
