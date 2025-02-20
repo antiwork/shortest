@@ -24,7 +24,7 @@ export const addToEnv = async (
     const envPath = join(path, ENV_LOCAL_FILENAME);
     let envContent = await readFile(envPath, "utf8").catch(() => null);
     result.wasCreated = envContent === null;
-    envContent = envContent ?? "";
+    envContent ??= "";
     const EOL = envContent.includes("\r\n") ? "\r\n" : os.EOL;
 
     const existingEntries = new Map(
