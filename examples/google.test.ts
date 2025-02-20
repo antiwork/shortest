@@ -1,7 +1,8 @@
 import { shortest } from "@antiwork/shortest";
+import { expect as jestExpect } from "expect";
 
-// Import the global type declarations
-import "@antiwork/shortest/dist/index";
+// Use jestExpect directly
+const expect = jestExpect;
 
 shortest.beforeAll(async ({ page }) => {
   await page.goto("https://google.com");
