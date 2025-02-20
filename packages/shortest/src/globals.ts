@@ -1,10 +1,11 @@
+import type { Expect } from "expect";
 import type { TestFunction } from "@/types";
 
 declare global {
   namespace NodeJS {
     interface Global {
       __shortest__: {
-        expect: any;
+        expect: Expect;
         registry: {
           tests: Map<string, TestFunction[]>;
           currentFileTests: TestFunction[];
@@ -15,6 +16,7 @@ declare global {
           directTestCounter: number;
         };
       };
+      expect: Expect;
     }
   }
 }
