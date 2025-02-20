@@ -1,6 +1,7 @@
 import { join } from "path";
 import dotenv from "dotenv";
 import { expect as jestExpect } from "expect";
+import type { Expect } from "expect";
 import { APIRequest } from "@/browser/core/api-request";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
 import { TestCompiler } from "@/core/compiler";
@@ -22,8 +23,19 @@ const compiler = new TestCompiler();
 
 // Initialize Shortest namespace and globals
 declare const global: {
-  __shortest__: any;
-  expect: any;
+  __shortest__: {
+    expect: Expect;
+    registry: {
+      tests: Map<string, TestFunction[]>;
+      currentFileTests: TestFunction[];
+      beforeAllFns: ((ctx: TestContext) => Promise<void>)[];
+      afterAllFns: ((ctx: TestContext) => Promise<void>)[];
+      beforeEachFns: ((ctx: TestContext) => Promise<void>)[];
+      afterEachFns: ((ctx: TestContext) => Promise<void>)[];
+      directTestCounter: number;
+    };
+  };
+  expect: Expect;
 } & typeof globalThis;
 
 if (!global.__shortest__) {
