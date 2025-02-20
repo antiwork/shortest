@@ -2,6 +2,7 @@ import type { Expect } from "expect";
 import type { TestFunction, TestContext } from "@/types";
 
 declare global {
+  // eslint-disable-next-line no-var
   var __shortest__: {
     expect: Expect;
     registry: {
@@ -14,4 +15,6 @@ declare global {
       directTestCounter: number;
     };
   };
+  // eslint-disable-next-line no-var
+  var expect: Expect;
 }
