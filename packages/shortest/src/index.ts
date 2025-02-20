@@ -125,6 +125,12 @@ const createTestChain = (
   payloadOrFn?: ((context: TestContext) => Promise<void>) | any,
   fn?: (context: TestContext) => Promise<void>,
 ): TestChain => {
+  if (!global.__shortest__) {
+    throw new Error(
+      "Global __shortest__ not initialized. Call initializeConfig() first",
+    );
+  }
+
   const registry = global.__shortest__.registry;
 
   // Handle array of test names
@@ -232,6 +238,11 @@ export const test: TestAPI = Object.assign(
   ) => createTestChain(nameOrFn, payloadOrFn, fn),
   {
     beforeAll: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
+      if (!global.__shortest__) {
+        throw new Error(
+          "Global __shortest__ not initialized. Call initializeConfig() first",
+        );
+      }
       const hook =
         typeof nameOrFn === "function"
           ? () => nameOrFn({} as TestContext)
@@ -239,6 +250,11 @@ export const test: TestAPI = Object.assign(
       if (hook) global.__shortest__.registry.beforeAllFns.push(hook);
     },
     afterAll: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
+      if (!global.__shortest__) {
+        throw new Error(
+          "Global __shortest__ not initialized. Call initializeConfig() first",
+        );
+      }
       const hook =
         typeof nameOrFn === "function"
           ? () => nameOrFn({} as TestContext)
@@ -246,6 +262,11 @@ export const test: TestAPI = Object.assign(
       if (hook) global.__shortest__.registry.afterAllFns.push(hook);
     },
     beforeEach: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
+      if (!global.__shortest__) {
+        throw new Error(
+          "Global __shortest__ not initialized. Call initializeConfig() first",
+        );
+      }
       const hook =
         typeof nameOrFn === "function"
           ? () => nameOrFn({} as TestContext)
@@ -253,6 +274,11 @@ export const test: TestAPI = Object.assign(
       if (hook) global.__shortest__.registry.beforeEachFns.push(hook);
     },
     afterEach: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
+      if (!global.__shortest__) {
+        throw new Error(
+          "Global __shortest__ not initialized. Call initializeConfig() first",
+        );
+      }
       const hook =
         typeof nameOrFn === "function"
           ? () => nameOrFn({} as TestContext)
