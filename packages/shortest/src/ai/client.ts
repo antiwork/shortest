@@ -15,7 +15,7 @@ import { createProvider } from "@/ai/provider";
 import { AIJSONResponse, extractJsonPayload } from "@/ai/utils/json";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BrowserTool } from "@/browser/core/browser-tool";
-import { BaseCache } from "@/cache/cache";
+import { BaseCache } from "@/cache";
 import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import { TestFunction, ToolResult } from "@/types";

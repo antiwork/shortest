@@ -7,7 +7,7 @@ import { z } from "zod";
 import { AIClient, AIClientResponse } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
-import { BaseCache } from "@/cache/cache";
+import { BaseCache } from "@/cache";
 import { TestCompiler } from "@/core/compiler";
 import { TestReporter } from "@/core/runner/test-reporter";
 import { initializeConfig, getConfig } from "@/index";

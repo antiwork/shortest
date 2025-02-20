@@ -63,8 +63,8 @@ export class BrowserTool extends BaseBrowserTool {
     this.viewport = { width: config.width, height: config.height };
     this.testContext = config.testContext;
     this.log = getLogger();
-    // Update active page reference to a newly opened tab
     this.page.context().on("page", async (newPage) => {
+      this.log.trace("Update active page reference to a newly opened tab");
       await newPage.waitForLoadState("domcontentloaded").catch(() => {});
       this.page = newPage;
     });
@@ -95,8 +95,8 @@ export class BrowserTool extends BaseBrowserTool {
 
     await initWithRetry();
 
-    // Re-initialize on navigation
     this.page.on("load", async () => {
+      this.log.trace("Re-initialize on navigation");
       await initWithRetry();
     });
   }

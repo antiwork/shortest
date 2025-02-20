@@ -2,7 +2,7 @@ import { generateText } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AIClient } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
-import { BaseCache } from "@/cache/cache";
+import { BaseCache } from "@/cache";
 import { TokenUsage } from "@/types/ai";
 import { TestFunction } from "@/types/test";
 import { AIError } from "@/utils/errors";
