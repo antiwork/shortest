@@ -1,15 +1,16 @@
 import type { Expect } from "expect";
+import type { TestFunction, TestContext } from "@/types";
 
 declare global {
-  let __shortest__: {
+  var __shortest__: {
     expect: Expect;
     registry: {
-      tests: Map<string, any[]>;
-      currentFileTests: any[];
-      beforeAllFns: any[];
-      afterAllFns: any[];
-      beforeEachFns: any[];
-      afterEachFns: any[];
+      tests: Map<string, TestFunction[]>;
+      currentFileTests: TestFunction[];
+      beforeAllFns: ((ctx: TestContext) => Promise<void>)[];
+      afterAllFns: ((ctx: TestContext) => Promise<void>)[];
+      beforeEachFns: ((ctx: TestContext) => Promise<void>)[];
+      afterEachFns: ((ctx: TestContext) => Promise<void>)[];
       directTestCounter: number;
     };
   };
