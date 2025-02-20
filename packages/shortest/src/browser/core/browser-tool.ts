@@ -163,8 +163,8 @@ export class BrowserTool extends BaseBrowserTool {
           document.body.appendChild(trail);
 
           // Restore or initialize position
-          window.cursorPosition = window.cursorPosition || { x: 0, y: 0 };
-          window.lastPosition = window.lastPosition || { x: 0, y: 0 };
+          window.cursorPosition ||= { x: 0, y: 0 };
+          window.lastPosition ||= { x: 0, y: 0 };
 
           // Set initial position
           cursor.style.left = window.cursorPosition.x + "px";
@@ -363,23 +363,21 @@ export class BrowserTool extends BaseBrowserTool {
               await currentTest.fn(testContext);
               testContext.currentStepIndex = 1;
               return { output: "Test function executed successfully" };
-            } else {
-              // Handle expectations
-              const expectationIndex = currentStepIndex - 1;
-              const expectation = currentTest.expectations?.[expectationIndex];
-
-              if (expectation?.fn) {
-                await expectation.fn(this.testContext);
-                testContext.currentStepIndex = currentStepIndex + 1;
-                return {
-                  output: `Callback function for "${expectation.description}" passed successfully`,
-                };
-              } else {
-                return {
-                  output: `Skipping callback execution: No callback function defined for expectation "${expectation?.description}"`,
-                };
-              }
             }
+            // Handle expectations
+            const expectationIndex = currentStepIndex - 1;
+            const expectation = currentTest.expectations?.[expectationIndex];
+
+            if (expectation?.fn) {
+              await expectation.fn(this.testContext);
+              testContext.currentStepIndex = currentStepIndex + 1;
+              return {
+                output: `Callback function for "${expectation.description}" passed successfully`,
+              };
+            }
+            return {
+              output: `Skipping callback execution: No callback function defined for expectation "${expectation?.description}"`,
+            };
           } catch (error) {
             // Check if it's an assertion error from jest/expect
             if (error && (error as any).matcherResult) {
@@ -874,9 +872,8 @@ export class BrowserTool extends BaseBrowserTool {
 
           // trim and remove white spaces
           return node.outerHTML.trim().replace(/\s+/g, " ");
-        } else {
-          return "";
         }
+        return "";
       },
       {
         x,
