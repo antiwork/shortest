@@ -1,5 +1,5 @@
 import { shortest } from "@antiwork/shortest";
-import "@antiwork/shortest/src/globals";
+import "@antiwork/shortest/packages/shortest/src/globals";
 
 shortest.beforeAll(async ({ page }) => {
   await page.goto("https://google.com");
