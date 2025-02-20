@@ -1,4 +1,5 @@
 import { shortest } from "@antiwork/shortest";
+/// <reference path="../packages/shortest/src/globals.ts" />
 
 shortest.beforeAll(async ({ page }) => {
   await page.goto("https://google.com");
