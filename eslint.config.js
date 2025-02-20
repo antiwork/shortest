@@ -44,6 +44,8 @@ export default [
       "arrow-body-style": ["error", "as-needed"],
       "eqeqeq": ["error", "smart"],
       "no-lonely-if": "error",
+      "no-lone-blocks": "error",
+      "no-empty": ["error", { "allowEmptyCatch": true }],
       "no-else-return": "error",
       "no-alert": "error",
       "logical-assignment-operators": "error",
