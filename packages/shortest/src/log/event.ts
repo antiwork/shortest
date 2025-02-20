@@ -95,12 +95,10 @@ export class LogEvent {
           return LogEvent.FILTERED_PLACEHOLDER;
         } else if (value.length < 15) {
           return `${value.slice(0, 3)}...`;
-        } else {
-          return `${value.slice(0, 3)}...${value.slice(-3)}`;
         }
-      } else {
-        return LogEvent.FILTERED_PLACEHOLDER;
+        return `${value.slice(0, 3)}...${value.slice(-3)}`;
       }
+      return LogEvent.FILTERED_PLACEHOLDER;
     }
 
     if (typeof value === "object" && value !== null) {

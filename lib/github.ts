@@ -149,9 +149,8 @@ const fetchBuildStatusForRef = async (
       return "success";
     } else if (conclusions.some((conclusion) => conclusion === "failure")) {
       return "failure";
-    } else {
-      return "pending";
     }
+    return "pending";
   } catch (error) {
     console.error("Error fetching build status:", error);
     return "pending";
