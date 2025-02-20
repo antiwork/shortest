@@ -40,6 +40,8 @@ import { sleep } from "@/utils/sleep";
  *
  * @private
  */
+
+// eslint-disable-next-line zod/require-zod-schema-types
 export type AIClientResponse = {
   response: AIJSONResponse;
   metadata: {

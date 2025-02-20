@@ -1,5 +1,6 @@
 import { ZodError } from "zod";
 
+// eslint-disable-next-line zod/require-zod-schema-types
 export type ConfigErrorType =
   | "duplicate-config"
   | "file-not-found"
@@ -15,6 +16,7 @@ export class ConfigError extends Error {
   }
 }
 
+// eslint-disable-next-line zod/require-zod-schema-types
 export type AIErrorType =
   | "invalid-response"
   | "max-retries-reached"

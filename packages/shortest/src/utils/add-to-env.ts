@@ -3,6 +3,7 @@ import os from "os";
 import { join } from "path";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 
+// eslint-disable-next-line zod/require-zod-schema-types
 type EnvResult = {
   added: string[];
   skipped: string[];

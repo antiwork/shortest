@@ -8,6 +8,7 @@ import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
 
+// eslint-disable-next-line zod/require-zod-schema-types
 type ToasterToast = ToastProps & {
   id: string;
   title?: React.ReactNode;
@@ -15,6 +16,7 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement;
 };
 
+// eslint-disable-next-line zod/require-zod-schema-types
 type ActionTypes = {
   ADD_TOAST: "ADD_TOAST";
   UPDATE_TOAST: "UPDATE_TOAST";
@@ -29,6 +31,7 @@ const genId = () => {
   return count.toString();
 };
 
+// eslint-disable-next-line zod/require-zod-schema-types
 type Action =
   | {
       type: ActionTypes["ADD_TOAST"];
@@ -135,6 +138,7 @@ const dispatch = (action: Action) => {
   });
 };
 
+// eslint-disable-next-line zod/require-zod-schema-types
 type Toast = Omit<ToasterToast, "id">;
 
 const toast = ({ ...props }: Toast) => {

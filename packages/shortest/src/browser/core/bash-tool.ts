@@ -1,6 +1,7 @@
 import { spawn } from "child_process";
 import { getLogger, Log } from "@/log";
 
+// eslint-disable-next-line zod/require-zod-schema-types
 type BashToolError = "timeout" | "network" | "unknown" | "unauthorized";
 
 export class BashTool {

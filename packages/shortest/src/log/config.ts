@@ -23,9 +23,11 @@ export const LOG_LEVELS = [
   "error",
   "silent",
 ] as const;
+// eslint-disable-next-line zod/require-zod-schema-types
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
 export const LOG_FORMATS = ["terminal", "pretty", "reporter"] as const;
+// eslint-disable-next-line zod/require-zod-schema-types
 export type LogFormat = (typeof LOG_FORMATS)[number];
 
 export const LogConfigSchema = z.object({

@@ -49,7 +49,6 @@ export const pullRequests = pgTable(
     ),
   }),
 );
-
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type PullRequest = typeof pullRequests.$inferSelect;

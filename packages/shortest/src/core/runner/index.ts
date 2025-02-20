@@ -24,6 +24,7 @@ import { hashData } from "@/utils/crypto";
 import { getErrorDetails } from "@/utils/errors";
 
 const STATUSES = ["pending", "running", "passed", "failed"] as const;
+// eslint-disable-next-line zod/require-zod-schema-types
 export type TestStatus = (typeof STATUSES)[number];
 
 export const TestResultSchema = z.object({

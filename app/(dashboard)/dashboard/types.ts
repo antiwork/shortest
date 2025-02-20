@@ -21,6 +21,7 @@ export interface TestFile {
   oldContent?: string;
 }
 
+// eslint-disable-next-line zod/require-zod-schema-types
 export type CommitChangesToPullRequest = (
   owner: string,
   repo: string,

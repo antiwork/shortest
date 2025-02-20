@@ -3,6 +3,7 @@ import eslintPluginImport from "eslint-plugin-import";
 import eslintPluginPrettier from "eslint-plugin-prettier";
 import typescriptEslintPlugin from "@typescript-eslint/eslint-plugin";
 import typescriptEslintParser from "@typescript-eslint/parser";
+import requireZodSchemaTypes from "./eslint/require-zod-schema-types.js";
 
 export default [
   {
@@ -24,6 +25,7 @@ export default [
         },
         ecmaVersion: "latest",
         sourceType: "module",
+        project: ["./tsconfig.json", "./packages/shortest/tsconfig.json"],
       },
     },
     plugins: {
@@ -31,6 +33,11 @@ export default [
       react: eslintPluginReact,
       import: eslintPluginImport,
       prettier: eslintPluginPrettier,
+      "zod": {
+        rules: {
+          "require-zod-schema-types": requireZodSchemaTypes,
+        },
+      },
     },
     rules: {
       "react/react-in-jsx-scope": "off",
@@ -38,14 +45,12 @@ export default [
         "error",
         { argsIgnorePattern: "^_" },
       ],
-      "func-style": ["error", "expression", {
-        "allowArrowFunctions": true
-      }],
+      "func-style": ["error", "expression", { allowArrowFunctions: true }],
       "arrow-body-style": ["error", "as-needed"],
       "eqeqeq": ["error", "smart"],
       "no-lonely-if": "error",
       "no-lone-blocks": "error",
-      "no-empty": ["error", { "allowEmptyCatch": true }],
+      "no-empty": ["error", { allowEmptyCatch: true }],
       "no-else-return": "error",
       "no-alert": "error",
       "logical-assignment-operators": "error",
@@ -57,6 +62,7 @@ export default [
           trailingComma: "all",
         },
       ],
+      "zod/require-zod-schema-types": "error",
     },
     settings: {
       react: {
