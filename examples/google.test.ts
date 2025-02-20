@@ -1,5 +1,7 @@
 import { shortest } from "@antiwork/shortest";
-import { expect } from "vitest";
+
+// Import the global type declarations
+import "@antiwork/shortest/dist/index";
 
 shortest.beforeAll(async ({ page }) => {
   await page.goto("https://google.com");
