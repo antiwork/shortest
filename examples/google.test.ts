@@ -1,5 +1,10 @@
 import { shortest } from "@antiwork/shortest";
-import "../packages/shortest/src/globals";
+import type { Expect } from "expect";
+
+declare global {
+  // @ts-ignore
+  let expect: Expect;
+}
 
 shortest.beforeAll(async ({ page }) => {
   await page.goto("https://google.com");
