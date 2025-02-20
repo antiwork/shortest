@@ -22,7 +22,21 @@ const compiler = new TestCompiler();
 
 // Initialize Shortest namespace and globals
 // Use the global type augmentation from ./globals
-declare const global: typeof globalThis;
+declare const global: typeof globalThis & {
+  __shortest__?: {
+    expect: typeof jestExpect;
+    registry: {
+      tests: Map<string, TestFunction[]>;
+      currentFileTests: TestFunction[];
+      beforeAllFns: (() => Promise<void>)[];
+      afterAllFns: (() => Promise<void>)[];
+      beforeEachFns: (() => Promise<void>)[];
+      afterEachFns: (() => Promise<void>)[];
+      directTestCounter: number;
+    };
+  };
+  expect?: typeof jestExpect;
+};
 
 if (!global.__shortest__) {
   global.__shortest__ = {
@@ -39,7 +53,7 @@ if (!global.__shortest__) {
   };
 
   // Attach to global scope
-  global.expect = global.__shortest__.expect;
+  (global as any).expect = global.__shortest__.expect;
 
   dotenv.config({ path: join(process.cwd(), ".env") });
   dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
@@ -218,19 +232,31 @@ export const test: TestAPI = Object.assign(
   ) => createTestChain(nameOrFn, payloadOrFn, fn),
   {
     beforeAll: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
-      const hook = typeof nameOrFn === "function" ? nameOrFn : undefined;
+      const hook =
+        typeof nameOrFn === "function"
+          ? () => nameOrFn({} as TestContext)
+          : undefined;
       if (hook) global.__shortest__.registry.beforeAllFns.push(hook);
     },
     afterAll: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
-      const hook = typeof nameOrFn === "function" ? nameOrFn : undefined;
+      const hook =
+        typeof nameOrFn === "function"
+          ? () => nameOrFn({} as TestContext)
+          : undefined;
       if (hook) global.__shortest__.registry.afterAllFns.push(hook);
     },
     beforeEach: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
-      const hook = typeof nameOrFn === "function" ? nameOrFn : undefined;
+      const hook =
+        typeof nameOrFn === "function"
+          ? () => nameOrFn({} as TestContext)
+          : undefined;
       if (hook) global.__shortest__.registry.beforeEachFns.push(hook);
     },
     afterEach: (nameOrFn: string | ((ctx: TestContext) => Promise<void>)) => {
-      const hook = typeof nameOrFn === "function" ? nameOrFn : undefined;
+      const hook =
+        typeof nameOrFn === "function"
+          ? () => nameOrFn({} as TestContext)
+          : undefined;
       if (hook) global.__shortest__.registry.afterEachFns.push(hook);
     },
   },
