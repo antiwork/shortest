@@ -54,7 +54,7 @@ export const initializeConfig = async (configDir?: string) => {
   }
   log.trace("Initializing config");
 
-  configDir = configDir || process.cwd();
+  configDir ||= process.cwd();
   dotenv.config({ path: join(configDir, ".env") });
   dotenv.config({ path: join(configDir, ENV_LOCAL_FILENAME) });
 
@@ -124,7 +124,8 @@ const createTestChain = (
         expectations: [],
       };
 
-      registry.tests.set(name, [...(registry.tests.get(name) || []), test]);
+      const existingTests = registry.tests.get(name) || [];
+      registry.tests.set(name, [...existingTests, test]);
       registry.currentFileTests.push(test);
       return test;
     });
@@ -169,7 +170,8 @@ const createTestChain = (
     expectations: [],
   };
 
-  registry.tests.set(nameOrFn, [...(registry.tests.get(nameOrFn) || []), test]);
+  let existingTests = registry.tests.get(nameOrFn) || [];
+  registry.tests.set(nameOrFn, [...existingTests, test]);
   registry.currentFileTests.push(test);
 
   const chain: TestChain = {
@@ -180,7 +182,7 @@ const createTestChain = (
     ) {
       // Handle direct execution for expect
       if (typeof descriptionOrFn === "function") {
-        test.expectations = test.expectations || [];
+        test.expectations ||= [];
         test.expectations.push({
           directExecution: true,
           fn: descriptionOrFn,
@@ -189,7 +191,7 @@ const createTestChain = (
       }
 
       // Existing expect implementation...
-      test.expectations = test.expectations || [];
+      test.expectations ||= [];
       test.expectations.push({
         description: descriptionOrFn,
         payload: typeof payloadOrFn === "function" ? undefined : payloadOrFn,
