@@ -1,8 +1,4 @@
 import { shortest } from "@antiwork/shortest";
-import { expect as jestExpect } from "expect";
-
-// Use jestExpect directly
-const expect = jestExpect;
 
 shortest.beforeAll(async ({ page }) => {
   await page.goto("https://google.com");
