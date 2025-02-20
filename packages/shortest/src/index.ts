@@ -22,21 +22,7 @@ const compiler = new TestCompiler();
 
 // Initialize Shortest namespace and globals
 // Use the global type augmentation from ./globals
-declare const global: typeof globalThis & {
-  __shortest__: {
-    expect: Expect;
-    registry: {
-      tests: Map<string, TestFunction[]>;
-      currentFileTests: TestFunction[];
-      beforeAllFns: ((ctx: TestContext) => Promise<void>)[];
-      afterAllFns: ((ctx: TestContext) => Promise<void>)[];
-      beforeEachFns: ((ctx: TestContext) => Promise<void>)[];
-      afterEachFns: ((ctx: TestContext) => Promise<void>)[];
-      directTestCounter: number;
-    };
-  };
-  expect: Expect;
-};
+declare const global: typeof globalThis;
 
 if (!global.__shortest__) {
   global.__shortest__ = {

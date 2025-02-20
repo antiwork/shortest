@@ -1,10 +1,9 @@
-import type { Expect } from "expect";
 import type { TestFunction, TestContext } from "@/types";
 
+/* eslint-disable no-var */
 declare global {
-  // eslint-disable-next-line no-var
   var __shortest__: {
-    expect: Expect;
+    expect: any;
     registry: {
       tests: Map<string, TestFunction[]>;
       currentFileTests: TestFunction[];
@@ -15,6 +14,5 @@ declare global {
       directTestCounter: number;
     };
   };
-  // eslint-disable-next-line no-var
-  var expect: Expect;
 }
+/* eslint-enable no-var */
