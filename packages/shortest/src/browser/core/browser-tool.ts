@@ -163,8 +163,8 @@ export class BrowserTool extends BaseBrowserTool {
           document.body.appendChild(trail);
 
           // Restore or initialize position
-          window.cursorPosition = window.cursorPosition || { x: 0, y: 0 };
-          window.lastPosition = window.lastPosition || { x: 0, y: 0 };
+          window.cursorPosition ||= { x: 0, y: 0 };
+          window.lastPosition ||= { x: 0, y: 0 };
 
           // Set initial position
           cursor.style.left = window.cursorPosition.x + "px";
