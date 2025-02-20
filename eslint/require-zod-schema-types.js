@@ -44,7 +44,6 @@ export default {
       const location = node.loc?.start;
       const locationStr = location ? `${filename}:${location.line}:${location.column}` : filename;
 
-      // Get the core structure we care about
       const structure = {
         nodeType: node.type,
         ...(node.type === "TSTypeQuery" && {
@@ -110,12 +109,10 @@ export default {
     const isZodReference = (typeName) => {
       const { left } = typeName;
 
-      // Check direct z.infer
       if (left.type === "Identifier") {
         return zodIdentifiers.has(left.name);
       }
 
-      // Check namespace.z.infer
       if (
         left.type === "TSQualifiedName" &&
         left.left.type === "Identifier"
