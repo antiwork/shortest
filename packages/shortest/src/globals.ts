@@ -1,20 +1,18 @@
-import type { TestFunction, TestContext } from "@/types";
+import type { TestFunction } from "@/types";
 
 declare global {
-  namespace NodeJS {
-    interface Global {
-      __shortest__: {
-        expect: any;
-        registry: {
-          tests: Map<string, TestFunction[]>;
-          currentFileTests: TestFunction[];
-          beforeAllFns: ((ctx: TestContext) => Promise<void>)[];
-          afterAllFns: ((ctx: TestContext) => Promise<void>)[];
-          beforeEachFns: ((ctx: TestContext) => Promise<void>)[];
-          afterEachFns: ((ctx: TestContext) => Promise<void>)[];
-          directTestCounter: number;
-        };
-      };
-    }
-  }
+  // We need to use var here since it's a global declaration
+  // eslint-disable-next-line no-var
+  var __shortest__: {
+    expect: any;
+    registry: {
+      tests: Map<string, TestFunction[]>;
+      currentFileTests: TestFunction[];
+      beforeAllFns: (() => Promise<void>)[];
+      afterAllFns: (() => Promise<void>)[];
+      beforeEachFns: (() => Promise<void>)[];
+      afterEachFns: (() => Promise<void>)[];
+      directTestCounter: number;
+    };
+  };
 }
