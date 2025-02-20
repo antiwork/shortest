@@ -45,9 +45,7 @@ export class LogEvent {
   get parsedMetadata():
     | Record<string, string | number | boolean | null | object>
     | undefined {
-    return (
-      this._parsedMetadata ?? (this._parsedMetadata = this.parseMetadata())
-    );
+    return (this._parsedMetadata ??= this.parseMetadata());
   }
 
   private parseMetadata():
