@@ -53,13 +53,11 @@ export class Log {
   private outputEvent(event: LogEvent): void {
     if (this.shouldLog(event.level)) {
       LogOutput.render(event, this.config.format, this.currentGroup);
-    } else {
-      if (event.level === "warn") {
-        console.warn(
-          pc.bgYellowBright(pc.black(" WARN ")),
-          pc.yellow(event.message),
-        );
-      }
+    } else if (event.level === "warn") {
+      console.warn(
+        pc.bgYellowBright(pc.black(" WARN ")),
+        pc.yellow(event.message),
+      );
     }
   }
 
