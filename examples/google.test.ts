@@ -1,4 +1,5 @@
 import { shortest } from "@antiwork/shortest";
+import type { expect } from "@antiwork/shortest";
 
 shortest.beforeAll(async ({ page }) => {
   await page.goto("https://google.com");
