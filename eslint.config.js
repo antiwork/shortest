@@ -44,6 +44,10 @@ export default [
       "arrow-body-style": ["error", "as-needed"],
       "eqeqeq": ["error", "smart"],
       "no-lone-blocks": "error",
+      "no-empty": ["error", { "allowEmptyCatch": true }],
+      "no-else-return": "error",
+      "no-alert": "error",
+      "logical-assignment-operators": "error",
       "prefer-arrow-callback": "error",
       "import/order": ["error", { alphabetize: { order: "asc" } }],
       "prettier/prettier": [
