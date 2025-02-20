@@ -34,27 +34,27 @@ export default {
      * //   }
      * // }
      */
-    const DEBUG_TYPES = process.env.ZOD_SCHEMA_TYPES_DEBUG === 'true';
+    const DEBUG_TYPES = process.env.ZOD_SCHEMA_TYPES_DEBUG === "true";
 
     /** Debug helper for analyzing type patterns */
-    const debugTypePattern = (node, name = '') => {
+    const debugTypePattern = (node, name = "") => {
       if (!DEBUG_TYPES) return;
 
-      const filename = context.getFilename();
+      const filename = context.filename;
       const location = node.loc?.start;
       const locationStr = location ? `${filename}:${location.line}:${location.column}` : filename;
 
       // Get the core structure we care about
       const structure = {
         nodeType: node.type,
-        ...(node.type === 'TSTypeQuery' && {
+        ...(node.type === "TSTypeQuery" && {
           expression: {
             type: node.exprName?.type,
             table: node.exprName?.left?.name,
             method: node.exprName?.right?.name
           }
         }),
-        ...(node.type === 'TSTypeReference' && {
+        ...(node.type === "TSTypeReference" && {
           typeName: {
             type: node.typeName?.type,
             namespace: node.typeName?.left?.name,
