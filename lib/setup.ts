@@ -82,33 +82,32 @@ const setupPostgresConfig = async (): Promise<Object> => {
     console.log("Setting up local Postgres instance with Docker...");
     const postgresConfig = await setupLocalPostgres();
     return postgresConfig;
-  } else {
-    console.log(
-      "You can find your Postgres environment variables at your Vercel project dashboard: https://vercel.com/dashboard Refer to the README.md for more details.",
-    );
-    const POSTGRES_URL = await question("Enter your POSTGRES_URL: ");
-    const POSTGRES_URL_NO_SSL = await question(
-      "Enter your POSTGRES_URL_NO_SSL: ",
-    );
-    const POSTGRES_URL_NON_POOLING = await question(
-      "Enter your POSTGRES_URL_NON_POOLING: ",
-    );
-    const POSTGRES_USER = await question("Enter your POSTGRES_USER: ");
-    const POSTGRES_HOST = await question("Enter your POSTGRES_HOST: ");
-    const POSTGRES_PASSWORD = await question("Enter your POSTGRES_PASSWORD: ");
-    const POSTGRES_DATABASE = await question("Enter your POSTGRES_DATABASE: ");
-
-    const postgresConfig = {
-      POSTGRES_URL,
-      POSTGRES_URL_NO_SSL,
-      POSTGRES_URL_NON_POOLING,
-      POSTGRES_USER,
-      POSTGRES_HOST,
-      POSTGRES_PASSWORD,
-      POSTGRES_DATABASE,
-    };
-    return postgresConfig;
   }
+  console.log(
+    "You can find your Postgres environment variables at your Vercel project dashboard: https://vercel.com/dashboard Refer to the README.md for more details.",
+  );
+  const POSTGRES_URL = await question("Enter your POSTGRES_URL: ");
+  const POSTGRES_URL_NO_SSL = await question(
+    "Enter your POSTGRES_URL_NO_SSL: ",
+  );
+  const POSTGRES_URL_NON_POOLING = await question(
+    "Enter your POSTGRES_URL_NON_POOLING: ",
+  );
+  const POSTGRES_USER = await question("Enter your POSTGRES_USER: ");
+  const POSTGRES_HOST = await question("Enter your POSTGRES_HOST: ");
+  const POSTGRES_PASSWORD = await question("Enter your POSTGRES_PASSWORD: ");
+  const POSTGRES_DATABASE = await question("Enter your POSTGRES_DATABASE: ");
+
+  const postgresConfig = {
+    POSTGRES_URL,
+    POSTGRES_URL_NO_SSL,
+    POSTGRES_URL_NON_POOLING,
+    POSTGRES_USER,
+    POSTGRES_HOST,
+    POSTGRES_PASSWORD,
+    POSTGRES_DATABASE,
+  };
+  return postgresConfig;
 };
 
 const setupLocalPostgres = async () => {
