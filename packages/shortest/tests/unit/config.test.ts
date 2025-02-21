@@ -19,6 +19,41 @@ describe("Config parsing", () => {
     };
   });
 
+  describe("with zero config", () => {
+    // process.env.ANTHROPIC_API_KEY = "env-api-key";
+    const zeroConfig = {
+      baseUrl: "https://example.com",
+      testPattern: ".*",
+      ai: {
+        provider: "anthropic",
+        apiKey: "foo",
+      },
+    } as ShortestConfig;
+
+    test("it generates default config", () => {
+      const config = parseConfig(zeroConfig);
+      console.log(config);
+      expect(Object.keys(config)).toEqual([
+        "headless",
+        "baseUrl",
+        "testPattern",
+        "ai",
+        "caching",
+      ]);
+      expect(config.headless).toBe(true);
+      expect(config.baseUrl).toBe("https://example.com");
+      expect(config.testPattern).toBe(".*");
+      expect(config.ai).toEqual({
+        apiKey: "foo",
+        model: "claude-3-5-sonnet-20241022",
+        provider: "anthropic",
+      });
+      expect(config.caching).toEqual({
+        enabled: true,
+      });
+    });
+  });
+
   describe("with invalid config option", () => {
     test("it throws an error", () => {
       const userConfig = {
@@ -40,7 +75,6 @@ describe("Config parsing", () => {
           invalidAIOption: "value",
         },
       };
-      console.log(userConfig);
       expect(() => parseConfig(userConfig)).toThrowError(
         "Unrecognized key(s) in object: 'invalidAIOption'",
       );
@@ -86,12 +120,12 @@ describe("Config parsing", () => {
         });
       });
 
-      describe("with SHORTTEST_ANTHROPIC_API_KEY", () => {
+      describe("with SHORTEST_ANTHROPIC_API_KEY", () => {
         beforeEach(() => {
-          process.env.SHORTTEST_ANTHROPIC_API_KEY = "shortest-env-api-key";
+          process.env.SHORTEST_ANTHROPIC_API_KEY = "shortest-env-api-key";
         });
 
-        test("uses value from SHORTTEST_ANTHROPIC_API_KEY", () => {
+        test("uses value from SHORTEST_ANTHROPIC_API_KEY", () => {
           const userConfig = {
             ...baseConfig,
             ai: {

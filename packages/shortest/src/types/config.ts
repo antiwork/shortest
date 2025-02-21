@@ -1,11 +1,12 @@
 import { z } from "zod";
 
-const mailosaurSchema = z
-  .object({
-    apiKey: z.string(),
-    serverId: z.string(),
-  })
-  .optional();
+export const cliOptionsSchema = z.object({
+  headless: z.boolean().optional(),
+  baseUrl: z.string().optional(),
+  testPattern: z.string().optional(),
+  noCache: z.boolean().optional(),
+});
+export type CLIOptions = z.infer<typeof cliOptionsSchema>;
 
 const ANTHROPIC_MODELS = ["claude-3-5-sonnet-20241022"] as const;
 
@@ -24,6 +25,20 @@ const aiSchema = z
   .strict();
 export type AIConfig = z.infer<typeof aiSchema>;
 
+const cachingSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+  })
+  .strict();
+export type CachingConfig = z.infer<typeof cachingSchema>;
+
+const mailosaurSchema = z
+  .object({
+    apiKey: z.string(),
+    serverId: z.string(),
+  })
+  .optional();
+
 export const configSchema = z
   .object({
     headless: z.boolean().default(true),
@@ -32,14 +47,16 @@ export const configSchema = z
     anthropicKey: z.string().optional(),
     ai: aiSchema,
     mailosaur: mailosaurSchema.optional(),
+    caching: cachingSchema.optional().default(cachingSchema.parse({})),
   })
   .strict();
 
 export const userConfigSchema = configSchema.extend({
   ai: aiSchema.strict().partial().optional(),
+  caching: cachingSchema.strict().partial().optional(),
 });
 
-const SHORTEST_ENV_PREFIX = "SHORTTEST_";
+const SHORTEST_ENV_PREFIX = "SHORTEST_";
 
 const getShortestEnvName = (key: string) => `${SHORTEST_ENV_PREFIX}${key}`;
 

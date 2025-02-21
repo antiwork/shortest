@@ -11,6 +11,7 @@ import {
   TestContext,
   TestChain,
   ShortestStrictConfig,
+  CLIOptions,
 } from "@/types";
 import { parseConfig } from "@/utils/config";
 import { ConfigError } from "@/utils/errors";
@@ -47,14 +48,19 @@ if (!global.__shortest__) {
   dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
 }
 
-export const initializeConfig = async (configDir?: string) => {
+export const initializeConfig = async ({
+  cliOptions,
+  configDir = process.cwd(),
+}: {
+  cliOptions?: CLIOptions;
+  configDir?: string;
+}) => {
   const log = getLogger();
   if (globalConfig) {
     return globalConfig;
   }
   log.trace("Initializing config");
 
-  configDir ||= process.cwd();
   dotenv.config({ path: join(configDir, ".env") });
   dotenv.config({ path: join(configDir, ENV_LOCAL_FILENAME) });
 
@@ -70,7 +76,7 @@ export const initializeConfig = async (configDir?: string) => {
       const module = await compiler.loadModule(file, configDir);
 
       const userConfig = module.default;
-      const parsedConfig = parseConfig(userConfig);
+      const parsedConfig = parseConfig(userConfig, cliOptions);
       configs.push({
         file,
         config: parsedConfig,

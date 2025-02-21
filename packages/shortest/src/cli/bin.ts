@@ -3,9 +3,10 @@ import pc from "picocolors";
 import { GitHubTool } from "@/browser/integrations/github";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
-import { getConfig } from "@/index";
+import { getConfig, initializeConfig } from "@/index";
 import { LogLevel } from "@/log/config";
 import { getLogger } from "@/log/index";
+import { CLIOptions } from "@/types";
 
 process.removeAllListeners("warning");
 process.on("warning", (warning) => {
@@ -163,24 +164,28 @@ const main = async () => {
   }
 
   const headless = args.includes("--headless");
-  const targetUrl = args
+  const baseUrl = args
     .find((arg) => arg.startsWith("--target="))
     ?.split("=")[1];
-  const cliTestPattern = args.find((arg) => !arg.startsWith("--"));
+  const testPattern = args.find((arg) => !arg.startsWith("--"));
   const noCache = args.includes("--no-cache");
+
+  const cliOptions: CLIOptions = {
+    headless,
+    baseUrl,
+    testPattern,
+    noCache,
+  };
+  log.trace("Initializing config with CLI options", { cliOptions });
+  await initializeConfig({ cliOptions });
+  const config = getConfig();
 
   log.trace("Initializing TestRunner");
   try {
-    const runner = new TestRunner(
-      process.cwd(),
-      true,
-      headless,
-      targetUrl,
-      noCache,
-    );
+    const runner = new TestRunner(process.cwd(), config);
     await runner.initialize();
-    const config = getConfig();
-    const testPattern = cliTestPattern || config.testPattern;
+    // const config = getConfig();
+    // const testPattern = cliTestPattern || config.testPattern;
     await runner.runTests(testPattern);
   } catch (error: any) {
     console.error(pc.red(error.name), error.message);

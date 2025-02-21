@@ -54,7 +54,7 @@ describe("End-to-end tests", async () => {
     try {
       console.log(pc.cyan("\n🚀 Initializing test environment..."));
       console.log(pc.cyan(`Looking for config in: ${projectRoot}`));
-      await initializeConfig(projectRoot);
+      await initializeConfig({ configDir: projectRoot });
       isSetupComplete = true;
     } catch (error) {
       console.error(pc.red("\n❌ Failed to initialize config:"), error);

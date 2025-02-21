@@ -4,7 +4,8 @@ import {
   configSchema,
   ShortestConfig,
   ShortestStrictConfig,
-} from "@/types/config";
+  CLIOptions,
+} from "@/types";
 import { formatZodError, ConfigError } from "@/utils/errors";
 
 /**
@@ -18,11 +19,16 @@ import { formatZodError, ConfigError } from "@/utils/errors";
  */
 export const parseConfig = (
   userConfig: ShortestConfig,
+  cliOptions?: CLIOptions,
 ): ShortestStrictConfig => {
   const log = getLogger();
   try {
-    const strictConfig = handleDeprecatedConfigOptions(userConfig);
-    return configSchema.parse(strictConfig) as ShortestStrictConfig;
+    let config: ShortestConfig;
+    config = handleDeprecatedConfigOptions(userConfig);
+    if (cliOptions) {
+      config = handleCliOptions(config, cliOptions);
+    }
+    return configSchema.parse(config) as ShortestStrictConfig;
   } catch (error) {
     log.error("Error parsing config", { error });
     if (error instanceof z.ZodError) {
@@ -73,6 +79,38 @@ const handleDeprecatedConfigOptions = (
       }
     }
     delete userConfig.anthropicKey;
+  }
+  return userConfig;
+};
+
+/**
+ * Applies command line options to override user configuration.
+ *
+ * @param {ShortestConfig} userConfig - Raw user configuration object
+ * @param {CLIOptions} cliOptions - Command line options to apply
+ * @returns {ShortestConfig} - Configuration with CLI options applied
+ *
+ * @private
+ */
+const handleCliOptions = (
+  userConfig: ShortestConfig,
+  cliOptions: CLIOptions,
+): ShortestConfig => {
+  if (cliOptions.headless) {
+    userConfig.headless = true;
+  }
+  if (cliOptions.baseUrl) {
+    userConfig.baseUrl = cliOptions.baseUrl;
+  }
+  if (cliOptions.testPattern) {
+    userConfig.testPattern = cliOptions.testPattern;
+  }
+  if (cliOptions.noCache) {
+    if (userConfig.caching) {
+      userConfig.caching.enabled = false;
+    } else {
+      userConfig.caching = { enabled: false };
+    }
   }
   return userConfig;
 };

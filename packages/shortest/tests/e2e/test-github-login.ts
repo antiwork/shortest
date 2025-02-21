@@ -9,7 +9,7 @@ export const main = async () => {
   const githubTool = new GitHubTool();
 
   try {
-    await initializeConfig();
+    await initializeConfig({});
     console.log(pc.cyan("\n🚀 First browser launch..."));
     let context = await browserManager.launch();
     let page = context.pages()[0];

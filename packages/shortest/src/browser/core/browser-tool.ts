@@ -74,7 +74,7 @@ export class BrowserTool extends BaseBrowserTool {
   }
 
   private async initialize(): Promise<void> {
-    await initializeConfig();
+    await initializeConfig({});
     this.config = getConfig();
 
     const initWithRetry = async () => {

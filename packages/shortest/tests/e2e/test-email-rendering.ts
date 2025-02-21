@@ -8,7 +8,7 @@ import { getConfig, initializeConfig } from "@/index";
 export const main = async () => {
   console.log(pc.cyan("\n📧 Testing Email"));
 
-  await initializeConfig();
+  await initializeConfig({});
   const config = getConfig();
 
   if (!config.mailosaur?.apiKey || !config.mailosaur?.serverId) {

@@ -10,13 +10,12 @@ import { BrowserManager } from "@/browser/manager";
 import { BaseCache } from "@/cache";
 import { TestCompiler } from "@/core/compiler";
 import { TestReporter } from "@/core/runner/test-reporter";
-import { initializeConfig, getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import {
   TestFunction,
   TestContext,
   BrowserActionEnum,
-  ShortestConfig,
+  ShortestStrictConfig,
 } from "@/types";
 import { TokenUsageSchema } from "@/types/ai";
 import { CacheEntry } from "@/types/cache";
@@ -43,31 +42,20 @@ export const FileResultSchema = z.object({
 export type FileResult = z.infer<typeof FileResultSchema>;
 
 export class TestRunner {
-  private config!: ShortestConfig;
+  private config: ShortestStrictConfig;
   private cwd: string;
   private exitOnSuccess: boolean;
-  private forceHeadless: boolean;
-  private targetUrl: string | undefined;
   private compiler: TestCompiler;
   private browserManager!: BrowserManager;
   private reporter: TestReporter;
-  private noCache: boolean;
   private testContext: TestContext | null = null;
   private cache: BaseCache<CacheEntry>;
   private log: Log;
 
-  constructor(
-    cwd: string,
-    exitOnSuccess = true,
-    forceHeadless = false,
-    targetUrl?: string,
-    noCache = false,
-  ) {
+  constructor(cwd: string, config: ShortestStrictConfig, exitOnSuccess = true) {
+    this.config = config;
     this.cwd = cwd;
     this.exitOnSuccess = exitOnSuccess;
-    this.forceHeadless = forceHeadless;
-    this.targetUrl = targetUrl;
-    this.noCache = noCache;
     this.compiler = new TestCompiler();
     this.reporter = new TestReporter();
     this.log = getLogger();
@@ -75,24 +63,6 @@ export class TestRunner {
   }
 
   async initialize() {
-    await initializeConfig();
-    this.config = getConfig();
-
-    // Override with CLI options
-    if (this.forceHeadless) {
-      this.config = {
-        ...this.config,
-        headless: true,
-      };
-    }
-
-    if (this.targetUrl) {
-      this.config = {
-        ...this.config,
-        baseUrl: this.targetUrl,
-      };
-    }
-
     this.browserManager = new BrowserManager(this.config);
   }
 
@@ -158,7 +128,6 @@ export class TestRunner {
   private async executeTest(
     test: TestFunction,
     context: BrowserContext,
-    config: { noCache: boolean } = { noCache: false },
   ): Promise<TestResult> {
     this.log.trace("Executing test", {
       name: test.name,
@@ -229,8 +198,7 @@ export class TestRunner {
       .filter(Boolean)
       .join("\n");
 
-    // check if CLI option is not specified
-    if (!this.noCache && !config.noCache) {
+    if (this.config.caching.enabled) {
       // if test hasn't changed and is already in cache, replay steps from cache
       if (await this.cache.get(test)) {
         try {
@@ -273,9 +241,7 @@ export class TestRunner {
           // reset window state
           const page = browserTool.getPage();
           await page.goto(initialState.metadata?.window_info?.url!);
-          await this.executeTest(test, context, {
-            noCache: true,
-          });
+          await this.executeTest(test, context);
         }
       }
     }

@@ -13,7 +13,7 @@ export const main = async () => {
   const browserManager = new BrowserManager(getConfig());
 
   try {
-    await initializeConfig();
+    await initializeConfig({});
     console.log("🚀 Launching browser...");
     const context = await browserManager.launch();
     const page = context.pages()[0];

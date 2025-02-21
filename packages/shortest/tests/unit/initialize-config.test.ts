@@ -32,7 +32,7 @@ describe("initializeConfig", () => {
     );
 
     const { initializeConfig } = await import("@/index");
-    const config = await initializeConfig(tempDir);
+    const config = await initializeConfig({ configDir: tempDir });
     expect(config).toEqual({
       headless: true,
       baseUrl: "https://example.com",
@@ -41,6 +41,9 @@ describe("initializeConfig", () => {
         provider: "anthropic",
         apiKey: "test-key",
         model: "claude-3-5-sonnet-20241022",
+      },
+      caching: {
+        enabled: true,
       },
     });
   });
@@ -63,7 +66,7 @@ describe("initializeConfig", () => {
     );
 
     const { initializeConfig } = await import("@/index");
-    const config = await initializeConfig(tempDir);
+    const config = await initializeConfig({ configDir: tempDir });
     expect(config).toEqual({
       headless: true,
       baseUrl: "https://example.com",
@@ -72,6 +75,9 @@ describe("initializeConfig", () => {
         provider: "anthropic",
         apiKey: "test-key",
         model: "claude-3-5-sonnet-20241022",
+      },
+      caching: {
+        enabled: true,
       },
     });
   });
@@ -102,17 +108,62 @@ describe("initializeConfig", () => {
     );
 
     const { initializeConfig } = await import("@/index");
-    await expect(initializeConfig(tempDir)).rejects.toThrow(
+    await expect(initializeConfig({ configDir: tempDir })).rejects.toThrow(
       "Multiple config files found",
     );
   });
 
   test("throws when no config file exists", async () => {
     const { initializeConfig } = await import("@/index");
-    await expect(initializeConfig(tempDir)).rejects.toMatchObject({
+    await expect(
+      initializeConfig({ configDir: tempDir }),
+    ).rejects.toMatchObject({
       name: "ConfigError",
       type: "no-config",
       message: "No config file found. Please create one.",
+    });
+  });
+
+  describe("CLI options", async () => {
+    beforeEach(async () => {
+      await fs.writeFile(
+        path.join(tempDir, "shortest.config.ts"),
+        `
+      export default {
+        headless: true,
+        baseUrl: "https://example.com",
+        testPattern: ".*",
+        ai: {
+          provider: "anthropic",
+          apiKey: "test-key",
+        }
+      }
+      `,
+      );
+    });
+
+    test("overwrite config options", async () => {
+      const cliOptions = {
+        headless: true,
+        baseUrl: "https://other.example.com",
+        testPattern: "**/*.test.ts",
+        noCache: true,
+      };
+      const { initializeConfig } = await import("@/index");
+      const config = await initializeConfig({ cliOptions, configDir: tempDir });
+      expect(config).toEqual({
+        headless: true,
+        baseUrl: "https://other.example.com",
+        testPattern: "**/*.test.ts",
+        ai: {
+          provider: "anthropic",
+          apiKey: "test-key",
+          model: "claude-3-5-sonnet-20241022",
+        },
+        caching: {
+          enabled: false,
+        },
+      });
     });
   });
 });
