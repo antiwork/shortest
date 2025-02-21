@@ -184,8 +184,6 @@ const main = async () => {
   try {
     const runner = new TestRunner(process.cwd(), config);
     await runner.initialize();
-    // const config = getConfig();
-    // const testPattern = cliTestPattern || config.testPattern;
     await runner.runTests(testPattern);
   } catch (error: any) {
     console.error(pc.red(error.name), error.message);

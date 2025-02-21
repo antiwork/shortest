@@ -19,9 +19,8 @@ describe("Config parsing", () => {
     };
   });
 
-  describe("with zero config", () => {
-    // process.env.ANTHROPIC_API_KEY = "env-api-key";
-    const zeroConfig = {
+  describe("with minimal config", () => {
+    const minimalConfig = {
       baseUrl: "https://example.com",
       testPattern: ".*",
       ai: {
@@ -31,7 +30,7 @@ describe("Config parsing", () => {
     } as ShortestConfig;
 
     test("it generates default config", () => {
-      const config = parseConfig(zeroConfig);
+      const config = parseConfig(minimalConfig);
       console.log(config);
       expect(Object.keys(config)).toEqual([
         "headless",
