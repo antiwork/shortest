@@ -455,11 +455,11 @@ export class TestRunner {
           const componentStr =
             await browserTool.getNormalizedComponentStringByCoords(x, y);
 
-          this.log.trace("Component UI elements", {
-            componentStr,
-            stepComponentStr: step.extras.componentStr,
-          });
           if (componentStr !== step.extras.componentStr) {
+            this.log.trace("Component UI elements mismatch", {
+              componentStr,
+              stepComponentStr: step.extras.componentStr,
+            });
             return {
               test: test,
               status: "failed",
