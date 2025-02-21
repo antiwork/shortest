@@ -15,12 +15,12 @@ import { createProvider } from "@/ai/provider";
 import { AIJSONResponse, extractJsonPayload } from "@/ai/utils/json";
 import { BashTool } from "@/browser/core/bash-tool";
 import { BrowserTool } from "@/browser/core/browser-tool";
-import { BaseCache } from "@/cache";
+import { TestCache } from "@/cache/test-cache";
 import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import { TestFunction, ToolResult } from "@/types";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
-import { CacheEntry, CacheStep } from "@/types/cache";
+import { CacheStep } from "@/types/cache";
 import { getErrorDetails, AIError, AIErrorType } from "@/utils/errors";
 import { sleep } from "@/utils/sleep";
 
@@ -68,10 +68,10 @@ export type AIClientResponse = {
  * ```
  *
  * @param {BrowserTool} browserTool - Browser automation tool
- * @param {BaseCache<CacheEntry>} cache - Cache for storing test results
+ * @param {TestCache} cache - Cache for storing test results
  *
  * @see {@link BrowserTool} for web automation
- * @see {@link BaseCache} for caching implementation
+ * @see {@link TestCache} for caching implementation
  *
  * @private
  */
@@ -80,7 +80,7 @@ export class AIClient {
   private browserTool: BrowserTool;
   private conversationHistory: Array<CoreMessage> = [];
   private pendingCache: Partial<{ steps?: CacheStep[] }> = {};
-  private cache: BaseCache<CacheEntry>;
+  private cache: TestCache;
   private log: Log;
   private usage: TokenUsage;
   private apiRequestCount: number = 0;
@@ -91,7 +91,7 @@ export class AIClient {
     cache,
   }: {
     browserTool: BrowserTool;
-    cache: BaseCache<CacheEntry>;
+    cache: TestCache;
   }) {
     this.client = createProvider(getConfig().ai);
     this.browserTool = browserTool;

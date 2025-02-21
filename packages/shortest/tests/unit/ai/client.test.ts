@@ -2,7 +2,7 @@ import { generateText } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AIClient } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
-import { BaseCache } from "@/cache";
+import { TestCache } from "@/cache/test-cache";
 import { TokenUsage } from "@/types/ai";
 import { TestFunction } from "@/types/test";
 import { AIError } from "@/utils/errors";
@@ -45,7 +45,7 @@ vi.mock("@/ai/prompts", () => ({
 describe("AIClient", () => {
   let client: AIClient;
   let browserTool: BrowserTool;
-  let cache: BaseCache<any>;
+  let cache: TestCache;
   let mockTest: TestFunction;
 
   const createMockResponse = (

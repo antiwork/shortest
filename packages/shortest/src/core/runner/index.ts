@@ -7,7 +7,7 @@ import { z } from "zod";
 import { AIClient, AIClientResponse } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
-import { BaseCache } from "@/cache";
+import { TestCache } from "@/cache";
 import { TestCompiler } from "@/core/compiler";
 import { TestReporter } from "@/core/runner/test-reporter";
 import { getLogger, Log } from "@/log";
@@ -18,7 +18,6 @@ import {
   ShortestStrictConfig,
 } from "@/types";
 import { TokenUsageSchema } from "@/types/ai";
-import { CacheEntry } from "@/types/cache";
 import { hashData } from "@/utils/crypto";
 import { getErrorDetails } from "@/utils/errors";
 
@@ -49,7 +48,7 @@ export class TestRunner {
   private browserManager!: BrowserManager;
   private reporter: TestReporter;
   private testContext: TestContext | null = null;
-  private cache: BaseCache<CacheEntry>;
+  private cache: TestCache;
   private log: Log;
 
   constructor(cwd: string, config: ShortestStrictConfig, exitOnSuccess = true) {
@@ -59,7 +58,7 @@ export class TestRunner {
     this.compiler = new TestCompiler();
     this.reporter = new TestReporter();
     this.log = getLogger();
-    this.cache = new BaseCache();
+    this.cache = new TestCache();
   }
 
   async initialize() {
@@ -456,6 +455,10 @@ export class TestRunner {
           const componentStr =
             await browserTool.getNormalizedComponentStringByCoords(x, y);
 
+          this.log.trace("Component UI elements", {
+            componentStr,
+            stepComponentStr: step.extras.componentStr,
+          });
           if (componentStr !== step.extras.componentStr) {
             return {
               test: test,

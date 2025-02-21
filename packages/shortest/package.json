@@ -34,7 +34,8 @@
     "dev": "pnpm build --watch",
     "test:unit": "npx vitest run",
     "test:unit:watch": "npx vitest --watch",
-    "test:e2e": "node --import tsx --test tests/e2e/index.ts"
+    "test:e2e": "node --import tsx --test tests/e2e/index.ts",
+    "cache:clear": "pnpm build && rimraf .shortest/cache.json"
   },
   "dependencies": {
     "chromium-bidi": "^0.5.24",
