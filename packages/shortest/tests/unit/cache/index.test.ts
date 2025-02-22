@@ -13,7 +13,8 @@ describe("cache", () => {
 
   beforeEach<TestContext>(async (context) => {
     // Create and store the unique test directory in the context
-    const uniqueId = createHash({
+    const uniqueId = createHash(
+      {
         timestamp: Date.now(),
         random: Math.random(),
       },

@@ -21,7 +21,8 @@ describe("TestCache", () => {
 
   beforeEach<TestContext>(async (context) => {
     // Create and store the unique test directory in the context
-    const uniqueId = createHash({
+    const uniqueId = createHash(
+      {
         timestamp: Date.now(),
         random: Math.random(),
       },
@@ -75,7 +76,7 @@ describe("TestCache", () => {
   });
 
   describe("set", () => {
-    it<TestContext>("saves cache entry with steps", async ({ cacheDir }) => {
+    it("saves cache entry with steps", async () => {
       const mockStep: CacheStep = {
         reasoning: "test reason",
         action: null,
@@ -99,7 +100,7 @@ describe("TestCache", () => {
       expect(savedEntry.data.steps![0]).toEqual(mockStep);
     });
 
-    it<TestContext>("clears steps after saving", async ({ cacheDir }) => {
+    it("clears steps after saving", async () => {
       const mockStep: CacheStep = {
         reasoning: "test reason",
         action: null,
