@@ -174,7 +174,6 @@ export class TestCache {
     this.steps.push(cacheStep);
   };
 
-
   /**
    * Acquires a lock for cache file access
    * @returns {Promise<boolean>} Whether lock was acquired
