@@ -7,6 +7,30 @@ import type { TestFunction } from "@/types/test";
 import { hashData } from "@/utils/crypto";
 import { getErrorDetails } from "@/utils/errors";
 
+// Shared process handlers registration
+let handlersRegistered = false;
+const registerSharedProcessHandlers = (log: Log) => {
+  if (handlersRegistered) return;
+
+  const activeCaches = new Set<TestCache>();
+
+  const cleanupAndExit = async () => {
+    await Promise.all([...activeCaches].map((cache) => cache.releaseLock()));
+    process.exit();
+  };
+
+  process.on("exit", cleanupAndExit);
+  process.on("SIGINT", cleanupAndExit);
+  process.on("SIGTERM", cleanupAndExit);
+  process.on("uncaughtException", async (error) => {
+    log.error("Uncaught exception", getErrorDetails(error));
+    await cleanupAndExit();
+  });
+
+  handlersRegistered = true;
+  return activeCaches;
+};
+
 /**
  * Test result caching system with file locking mechanism.
  *
@@ -38,6 +62,8 @@ export class TestCache {
   private steps: CacheStep[] = [];
   private identifier: string;
   private test: TestFunction;
+  private static activeCaches: Set<TestCache>;
+
   /**
    * Creates a new test cache instance
    * @param {TestFunction} test - Test function to cache results for
@@ -52,7 +78,11 @@ export class TestCache {
     this.cacheFilePath = path.join(this.cacheDir, this.cacheFileName);
     this.lockFileName = `${this.cacheFileName}.lock`;
     this.lockFilePath = path.join(this.cacheDir, this.lockFileName);
-    this.setupProcessHandlers();
+
+    // Register shared handlers and track this instance
+    TestCache.activeCaches =
+      registerSharedProcessHandlers(this.log) || TestCache.activeCaches;
+    TestCache.activeCaches.add(this);
   }
 
   /**
@@ -242,31 +272,20 @@ export class TestCache {
 
   /**
    * Releases previously acquired lock
-   * @private
    */
-  private async releaseLock(): Promise<void> {
-    // this.log.trace("🔓", "Releasing lock", {
-    //   lockFile: this.lockFile,
-    // });
-
-    try {
-      const lockContent = await fs.readFile(this.lockFilePath, "utf-8");
-      const { pid } = JSON.parse(lockContent);
-      if (pid === process.pid) {
+  public async releaseLock(): Promise<void> {
+    if (this.lockAcquired) {
+      try {
         await fs.unlink(this.lockFilePath);
         this.lockAcquired = false;
-      } else {
-        this.log.trace("Skipped releasing lock not owned by this process", {
-          lockFilePath: this.lockFilePath,
-          ownerPid: pid,
-        });
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        this.log.error("Failed to release lock", {
-          lockFilePath: this.lockFilePath,
-          ...getErrorDetails(error),
-        });
+        TestCache.activeCaches.delete(this);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          this.log.error("Failed to release lock", {
+            lockFilePath: this.lockFilePath,
+            ...getErrorDetails(error),
+          });
+        }
       }
     }
   }
@@ -288,27 +307,5 @@ export class TestCache {
       );
       return false;
     }
-  }
-
-  /**
-   * Sets up process exit handlers for proper lock cleanup
-   * @private
-   */
-  private setupProcessHandlers(): void {
-    const releaseLockAndExit = async () => {
-      if (this.lockAcquired) {
-        await this.releaseLock();
-      }
-      process.exit();
-    };
-    process.on("exit", releaseLockAndExit);
-    process.on("SIGINT", releaseLockAndExit);
-    process.on("SIGTERM", releaseLockAndExit);
-    process.on("uncaughtException", async (error) => {
-      this.log.error("Uncaught exception", getErrorDetails(error));
-      if (this.lockAcquired) {
-        await releaseLockAndExit();
-      }
-    });
   }
 }
