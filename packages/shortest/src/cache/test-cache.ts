@@ -14,17 +14,17 @@ const registerSharedProcessHandlers = (log: Log) => {
 
   const activeCaches = new Set<TestCache>();
 
-  const cleanupAndExit = async () => {
+  const cleanUpAndExit = async () => {
     await Promise.all([...activeCaches].map((cache) => cache.releaseLock()));
     process.exit();
   };
 
-  process.on("exit", cleanupAndExit);
-  process.on("SIGINT", cleanupAndExit);
-  process.on("SIGTERM", cleanupAndExit);
+  process.on("exit", cleanUpAndExit);
+  process.on("SIGINT", cleanUpAndExit);
+  process.on("SIGTERM", cleanUpAndExit);
   process.on("uncaughtException", async (error) => {
     log.error("Uncaught exception", getErrorDetails(error));
-    await cleanupAndExit();
+    await cleanUpAndExit();
   });
 
   handlersRegistered = true;

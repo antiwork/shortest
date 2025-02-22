@@ -5,10 +5,13 @@ import { CACHE_DIR_PATH } from "@/cache";
 import { TestCache } from "@/cache/test-cache";
 import { CacheEntry, CacheStep } from "@/types/cache";
 import { TestFunction } from "@/types/test";
-
-const TEST_CACHE_DIR_PATH = `${CACHE_DIR_PATH}.test`;
+import { hashData } from "@/utils/crypto";
 
 describe("TestCache", () => {
+  interface TestContext {
+    cacheDir: string;
+  }
+
   let testCache: TestCache;
   const mockTest: TestFunction = {
     name: "test",
@@ -16,19 +19,19 @@ describe("TestCache", () => {
     fn: () => Promise.resolve(),
   };
 
-  beforeEach(async () => {
+  beforeEach<TestContext>(async (context) => {
+    // Create and store the unique test directory in the context
+    const uniqueId = hashData({ timestamp: Date.now(), random: Math.random() });
+    context.cacheDir = `${CACHE_DIR_PATH}.${uniqueId}.test`;
+
     vi.resetModules();
-    await fs.mkdir(TEST_CACHE_DIR_PATH, { recursive: true });
-    testCache = new TestCache(mockTest, TEST_CACHE_DIR_PATH);
+    await fs.mkdir(context.cacheDir, { recursive: true });
+    testCache = new TestCache(mockTest, context.cacheDir);
     await testCache.initialize();
   });
 
-  afterEach(async () => {
-    try {
-      await fs.rm(TEST_CACHE_DIR_PATH, { recursive: true, force: true });
-    } catch {
-      // Ignore errors during cleanup
-    }
+  afterEach<TestContext>(async (context) => {
+    await fs.rm(context.cacheDir, { recursive: true, force: true });
   });
 
   describe("get", () => {
@@ -49,9 +52,9 @@ describe("TestCache", () => {
       expect(result).toEqual(mockEntry);
     });
 
-    it("returns null on invalid JSON", async () => {
+    it<TestContext>("returns null on invalid JSON", async ({ cacheDir }) => {
       const cacheFilePath = path.join(
-        TEST_CACHE_DIR_PATH,
+        cacheDir,
         `${testCache["identifier"]}.json`,
       );
       await fs.writeFile(cacheFilePath, "invalid json");
@@ -62,7 +65,7 @@ describe("TestCache", () => {
   });
 
   describe("set", () => {
-    it("saves cache entry with steps", async () => {
+    it<TestContext>("saves cache entry with steps", async ({ cacheDir }) => {
       const mockStep: CacheStep = {
         reasoning: "test reason",
         action: null,
@@ -74,7 +77,7 @@ describe("TestCache", () => {
       await testCache.set();
 
       const cacheFilePath = path.join(
-        TEST_CACHE_DIR_PATH,
+        cacheDir,
         `${testCache["identifier"]}.json`,
       );
 
@@ -92,7 +95,7 @@ describe("TestCache", () => {
       expect(savedEntry.data.steps![0]).toEqual(mockStep);
     });
 
-    it("clears steps after saving", async () => {
+    it<TestContext>("clears steps after saving", async ({ cacheDir }) => {
       const mockStep: CacheStep = {
         reasoning: "test reason",
         action: null,
@@ -105,7 +108,7 @@ describe("TestCache", () => {
       await testCache.set(); // Second save should write empty steps
 
       const cacheFilePath = path.join(
-        TEST_CACHE_DIR_PATH,
+        cacheDir,
         `${testCache["identifier"]}.json`,
       );
 
@@ -119,13 +122,13 @@ describe("TestCache", () => {
   });
 
   describe("delete", () => {
-    it("removes cache and lock files", async () => {
+    it<TestContext>("removes cache and lock files", async ({ cacheDir }) => {
       const cacheFilePath = path.join(
-        TEST_CACHE_DIR_PATH,
+        cacheDir,
         `${testCache["identifier"]}.json`,
       );
       const lockFilePath = path.join(
-        TEST_CACHE_DIR_PATH,
+        cacheDir,
         `${testCache["identifier"]}.json.lock`,
       );
 
@@ -145,7 +148,7 @@ describe("TestCache", () => {
   });
 
   describe("addToSteps", () => {
-    it("adds steps to internal array", () => {
+    it("adds steps to internal array", async () => {
       const mockStep: CacheStep = {
         reasoning: "test reason",
         action: null,
@@ -162,9 +165,11 @@ describe("TestCache", () => {
   });
 
   describe("file locking", () => {
-    it("acquires and releases lock for operations", async () => {
+    it<TestContext>("acquires and releases lock for operations", async ({
+      cacheDir,
+    }) => {
       const lockFilePath = path.join(
-        TEST_CACHE_DIR_PATH,
+        cacheDir,
         `${testCache["identifier"]}.json.lock`,
       );
 
@@ -176,8 +181,10 @@ describe("TestCache", () => {
       expect(result).not.toBeNull();
     });
 
-    it("handles concurrent access attempts", async () => {
-      const otherCache = new TestCache(mockTest, TEST_CACHE_DIR_PATH);
+    it<TestContext>("handles concurrent access attempts", async ({
+      cacheDir,
+    }) => {
+      const otherCache = new TestCache(mockTest, cacheDir);
       const mockStep: CacheStep = {
         reasoning: "test reason",
         action: null,
