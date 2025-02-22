@@ -72,7 +72,8 @@ export class TestCache {
     this.log = getLogger();
     this.log.trace("Initializing TestCache", { test });
     this.test = test;
-    this.identifier = createHash(test);
+    // Low collision risk for datasets under 65,000 tests
+    this.identifier = createHash(test, { length: 8 });
     this.cacheDir = cacheDir;
     this.cacheFileName = `${this.identifier}.json`;
     this.cacheFilePath = path.join(this.cacheDir, this.cacheFileName);
