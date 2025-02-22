@@ -21,6 +21,7 @@ import { BaseBrowserTool, ToolError } from "@/browser/core";
 import { GitHubTool } from "@/browser/integrations/github";
 import { MailosaurTool } from "@/browser/integrations/mailosaur";
 import { BrowserManager } from "@/browser/manager";
+import { DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger, Log } from "@/log/index";
 import {
@@ -58,7 +59,7 @@ export class BrowserTool extends BaseBrowserTool {
     super(config);
     this.page = page;
     this.browserManager = browserManager;
-    this.screenshotDir = join(process.cwd(), ".shortest", "screenshots");
+    this.screenshotDir = join(DOT_SHORTEST_DIR_PATH, "screenshots");
     mkdirSync(this.screenshotDir, { recursive: true });
     this.viewport = { width: config.width, height: config.height };
     this.testContext = config.testContext;

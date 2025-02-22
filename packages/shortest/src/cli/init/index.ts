@@ -4,6 +4,7 @@ import { join } from "path";
 import { fileURLToPath } from "url";
 import { detect, resolveCommand } from "package-manager-detector";
 import pc from "picocolors";
+import { DOT_SHORTEST_DIR_NAME } from "@/cache";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
 import { addToEnv } from "@/utils/add-to-env";
 import { addToGitignore } from "@/utils/add-to-gitignore";
@@ -64,7 +65,7 @@ export default async function main() {
 
     const resultGitignore = await addToGitignore(process.cwd(), [
       ".env*.local",
-      ".shortest/",
+      `${DOT_SHORTEST_DIR_NAME}/`,
     ]);
     if (resultGitignore.error) {
       console.error(

@@ -96,6 +96,7 @@ export class AIClient {
     this.client = createProvider(getConfig().ai);
     this.browserTool = browserTool;
     this.testCache = new TestCache(test);
+    this.testCache.initialize();
     this.usage = TokenUsageSchema.parse({});
     this.log.trace(
       "Available tools",
@@ -113,7 +114,6 @@ export class AIClient {
    * Manages conversation flow and caches results for successful tests.
    *
    * @param {string} prompt - Input prompt for the AI
-   * @param {TestCase} test - Test case to execute
    * @returns {Promise<AIClientResponse>} Response with results and metadata
    * @throws {AIError} When max retries reached or non-retryable error occurs
    *
@@ -121,7 +121,6 @@ export class AIClient {
    * ```typescript
    * const response = await client.runAction(
    *   "Click login button and verify redirect",
-   *   testCase
    * );
    * ```
    *
@@ -156,7 +155,6 @@ export class AIClient {
    * Processes tool calls, updates conversation history, and validates responses.
    *
    * @param {string} prompt - Input prompt to start conversation
-   * @param {TestCase} test - Test case context
    * @returns {Promise<AIClientResponse | undefined>} Processed response
    * @throws {AIError} For invalid responses or tool execution failures
    *

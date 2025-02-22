@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AIClient } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { TestCache } from "@/cache/test-cache";
-import { TestCase } from "@/core/runner/test-case";
 import { TokenUsage } from "@/types/ai";
 import { ActionInput, ToolResult } from "@/types/browser";
 import { CacheEntry } from "@/types/cache";
+import { TestFunction } from "@/types/test";
 import { AIError } from "@/utils/errors";
 
 vi.mock("ai", () => ({
@@ -48,7 +48,7 @@ describe("AIClient", () => {
   let client: AIClient;
   let browserTool: BrowserTool;
   let cache: TestCache;
-  let mockTest: TestCase;
+  let mockTest: TestFunction;
 
   const createMockResponse = (
     text: string,
@@ -106,11 +106,11 @@ describe("AIClient", () => {
           (error as { status?: number }).status === 401),
     );
 
-    mockTest = new TestCase({
+    mockTest = {
       name: "test",
       filePath: "/test/path.ts",
       fn: () => Promise.resolve(),
-    });
+    } as TestFunction;
 
     client = new AIClient({
       browserTool,

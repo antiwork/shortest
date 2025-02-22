@@ -1,6 +1,6 @@
 import * as fs from "fs/promises";
 import path from "path";
-import { CACHE_DIR } from "@/cache";
+import { CACHE_DIR_PATH } from "@/cache";
 import { getLogger, Log } from "@/log";
 import { CacheEntry, CacheStep } from "@/types/cache";
 import type { TestFunction } from "@/types/test";
@@ -13,10 +13,11 @@ import { getErrorDetails } from "@/utils/errors";
  * @class
  * @example
  * ```typescript
- * const cache = new TestCache(testFunction);
- * await cache.get(); // Get cached result
- * cache.addToSteps(step); // Add execution step
- * await cache.set(); // Save to cache
+ * const testCache = new TestCache(testFunction);
+ * await testCache.initialize();
+ * await testCache.get();
+ * testCache.addToSteps(step);
+ * await testCache.set();
  * ```
  *
  * @see {@link CacheEntry} for cache data structure
@@ -25,6 +26,7 @@ import { getErrorDetails } from "@/utils/errors";
  * @private
  */
 export class TestCache {
+  private readonly cacheDir: string;
   private readonly cacheFileName: string;
   private readonly cacheFilePath: string;
   private readonly lockFileName: string;
@@ -36,22 +38,29 @@ export class TestCache {
   private steps: CacheStep[] = [];
   private identifier: string;
   private test: TestFunction;
-
   /**
    * Creates a new test cache instance
    * @param {TestFunction} test - Test function to cache results for
    */
-  constructor(test: TestFunction) {
+  constructor(test: TestFunction, cacheDir = CACHE_DIR_PATH) {
     this.log = getLogger();
     this.log.trace("Initializing TestCache", { test });
     this.test = test;
     this.identifier = hashData(test);
+    this.cacheDir = cacheDir;
     this.cacheFileName = `${this.identifier}.json`;
-    this.cacheFilePath = path.join(CACHE_DIR, this.cacheFileName);
+    this.cacheFilePath = path.join(this.cacheDir, this.cacheFileName);
     this.lockFileName = `${this.cacheFileName}.lock`;
-    this.lockFilePath = path.join(CACHE_DIR, this.lockFileName);
-    this.ensureCacheDirectory();
+    this.lockFilePath = path.join(this.cacheDir, this.lockFileName);
     this.setupProcessHandlers();
+  }
+
+  /**
+   * Initializes the cache instance
+   * @private
+   */
+  async initialize(): Promise<void> {
+    await this.ensureCacheDirectory();
   }
 
   /**
@@ -60,7 +69,7 @@ export class TestCache {
    */
   private async ensureCacheDirectory(): Promise<void> {
     try {
-      await fs.mkdir(CACHE_DIR, { recursive: true });
+      await fs.mkdir(this.cacheDir, { recursive: true });
     } catch (error) {
       this.log.error(
         "Failed to create cache directory",
@@ -76,6 +85,7 @@ export class TestCache {
   async get(): Promise<CacheEntry | null> {
     this.log.trace("Getting cache", {
       cacheFileName: this.cacheFileName,
+      cacheFilePath: this.cacheFilePath,
     });
 
     if (!(await this.acquireLock())) {
@@ -146,7 +156,7 @@ export class TestCache {
   }
 
   /**
-   * Deletes cache entry and associated lock file
+   * Deletes cache file and associated lock file
    */
   async delete(): Promise<void> {
     this.log.trace("Deleting cache", {

@@ -8,39 +8,37 @@ import { getErrorDetails } from "@/utils/errors";
 
 export { TestCache };
 
-/**
- * Directory where cache files are stored
- * @private
- */
-export const CACHE_DIR = path.join(process.cwd(), ".shortest", "cache");
+export const DOT_SHORTEST_DIR_NAME = ".shortest";
+export const DOT_SHORTEST_DIR_PATH = path.join(
+  process.cwd(),
+  DOT_SHORTEST_DIR_NAME,
+);
+export const CACHE_DIR_PATH = path.join(DOT_SHORTEST_DIR_PATH, "cache");
 
-/**
- * Maximum age of cache entries in milliseconds (7 days)
- * @private
- */
 export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Removes expired cache entries and optionally purges all cache
  *
- * @param {{ forcePurge?: boolean }} options - Cleanup options where forcePurge forces removal of all entries regardless of age
+ * @param {{ forcePurge?: boolean, dirPath?: string }} options - Cleanup options where forcePurge forces removal of all entries regardless of age
  * @private
  */
 export const cleanUpCache = async ({
   forcePurge = false,
+  dirPath = CACHE_DIR_PATH,
 }: {
-  /** Force remove all cache entries regardless of age */
   forcePurge?: boolean;
+  dirPath?: string;
 } = {}) => {
   const log = getLogger();
   log.debug("Cleaning up cache", { forcePurge });
-  const files = await fs.readdir(CACHE_DIR);
+  const files = await fs.readdir(dirPath);
   const now = Date.now();
 
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
 
-    const filePath = path.join(CACHE_DIR, file);
+    const filePath = path.join(dirPath, file);
     try {
       const content = await fs.readFile(filePath, "utf-8");
       const entry = JSON.parse(content) as CacheEntry;
@@ -62,17 +60,23 @@ export const cleanUpCache = async ({
 
 /**
  * Removes legacy cache file from older versions
+ *
+ * @param {{ dirPath?: string }} options - Cleanup options where dirPath is the path to the SHORTEST_DIR_NAME directory
  * @private
  */
-export const purgeLegacyCache = async () => {
+export const purgeLegacyCache = async ({
+  dirPath = DOT_SHORTEST_DIR_PATH,
+}: {
+  dirPath?: string;
+} = {}) => {
   const log = getLogger();
-  const legacyCachePath = path.join(process.cwd(), ".shortest", "cache.json");
+  const legacyCachePath = path.join(dirPath, "cache.json");
 
   if (!existsSync(legacyCachePath)) {
     return;
   }
 
-  log.warn(`Purging legacy cache file ${legacyCachePath}`);
+  log.warn(`Purging v0.4.3 and below cache file: ${legacyCachePath}`);
 
   try {
     await fs.unlink(legacyCachePath);

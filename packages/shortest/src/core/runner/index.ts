@@ -195,6 +195,7 @@ export class TestRunner {
 
     if (this.config.caching.enabled) {
       const testCache = new TestCache(test);
+      await testCache.initialize();
       const cachedEntry = await testCache.get();
       if (cachedEntry) {
         try {
@@ -403,14 +404,18 @@ export class TestRunner {
       this.log.trace("Running cached test", { test });
       this.log.setGroup("💾");
       const testCache = new TestCache(test);
+      await testCache.initialize();
       const cachedTest = await testCache.get();
 
       this.log.debug("Executing cached test", { hash: hashData(test) });
 
-      const steps = cachedTest?.data.steps?.filter(
-        (step) =>
-          step.action?.input.action !== BrowserActionEnum.Screenshot.toString(),
-      );
+      const steps = cachedTest?.data.steps
+        // do not take screenshots in cached mode
+        ?.filter(
+          (step) =>
+            step.action?.input.action !==
+            BrowserActionEnum.Screenshot.toString(),
+        );
 
       if (!steps) {
         this.log.debug("No steps to execute, running test in normal mode");
