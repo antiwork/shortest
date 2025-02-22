@@ -4,7 +4,7 @@ import { CACHE_DIR_PATH } from "@/cache";
 import { getLogger, Log } from "@/log";
 import { CacheEntry, CacheStep } from "@/types/cache";
 import type { TestFunction } from "@/types/test";
-import { hashData } from "@/utils/crypto";
+import { createHash } from "@/utils/create-hash";
 import { getErrorDetails } from "@/utils/errors";
 
 // Shared process handlers registration
@@ -72,7 +72,7 @@ export class TestCache {
     this.log = getLogger();
     this.log.trace("Initializing TestCache", { test });
     this.test = test;
-    this.identifier = hashData(test);
+    this.identifier = createHash(test);
     this.cacheDir = cacheDir;
     this.cacheFileName = `${this.identifier}.json`;
     this.cacheFilePath = path.join(this.cacheDir, this.cacheFileName);

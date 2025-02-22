@@ -18,7 +18,7 @@ import {
   ShortestStrictConfig,
 } from "@/types";
 import { TokenUsageSchema } from "@/types/ai";
-import { hashData } from "@/utils/crypto";
+import { createHash } from "@/utils/create-hash";
 import { getErrorDetails } from "@/utils/errors";
 
 const STATUSES = ["pending", "running", "passed", "failed"] as const;
@@ -407,7 +407,7 @@ export class TestRunner {
       await testCache.initialize();
       const cachedTest = await testCache.get();
 
-      this.log.debug("Executing cached test", { hash: hashData(test) });
+      this.log.debug("Executing cached test", { hash: createHash(test) });
 
       const steps = cachedTest?.data.steps
         // do not take screenshots in cached mode

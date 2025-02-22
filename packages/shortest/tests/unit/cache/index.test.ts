@@ -3,7 +3,7 @@ import path from "path";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { CACHE_DIR_PATH, CACHE_MAX_AGE_MS, cleanUpCache } from "@/cache";
 import { CacheEntry } from "@/types/cache";
-import { hashData } from "@/utils/crypto";
+import { createHash } from "@/utils/create-hash";
 
 describe("cache", () => {
   interface TestContext {
@@ -13,7 +13,7 @@ describe("cache", () => {
 
   beforeEach<TestContext>(async (context) => {
     // Create and store the unique test directory in the context
-    const uniqueId = hashData({ timestamp: Date.now(), random: Math.random() });
+    const uniqueId = createHash({ timestamp: Date.now(), random: Math.random() });
     context.cacheDirPath = `${CACHE_DIR_PATH}.${uniqueId}.test`;
     context.mockCacheFilePath = path.join(context.cacheDirPath, "test.json");
 

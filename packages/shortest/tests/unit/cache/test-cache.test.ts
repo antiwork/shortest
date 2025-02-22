@@ -5,7 +5,7 @@ import { CACHE_DIR_PATH } from "@/cache";
 import { TestCache } from "@/cache/test-cache";
 import { CacheEntry, CacheStep } from "@/types/cache";
 import { TestFunction } from "@/types/test";
-import { hashData } from "@/utils/crypto";
+import { createHash } from "@/utils/create-hash";
 
 describe("TestCache", () => {
   interface TestContext {
@@ -21,7 +21,7 @@ describe("TestCache", () => {
 
   beforeEach<TestContext>(async (context) => {
     // Create and store the unique test directory in the context
-    const uniqueId = hashData({ timestamp: Date.now(), random: Math.random() });
+    const uniqueId = createHash({ timestamp: Date.now(), random: Math.random() });
     context.cacheDir = `${CACHE_DIR_PATH}.${uniqueId}.test`;
 
     vi.resetModules();
