@@ -44,8 +44,9 @@ ${pc.bold("Usage:")}
   shortest cache clear [--force-purge]
 
 ${pc.bold("Commands:")}
-  cache clear          Clear test cache
-    --force-purge      Force delete all cache files
+  init                  Initialize Shortest in the current directory
+  cache clear           Clear test cache
+    --force-purge       Force delete all cache files
 
 ${pc.bold("Options:")}
   --headless            Run tests in headless browser mode
