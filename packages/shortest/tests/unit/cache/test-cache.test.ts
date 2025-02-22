@@ -41,15 +41,20 @@ describe("TestCache", () => {
     });
 
     it("returns cached entry when file exists", async () => {
+      const mockTimestamp = Date.now();
+      vi.spyOn(Date, "now").mockReturnValue(mockTimestamp);
+
       const mockEntry: CacheEntry = {
         test: { name: mockTest.name, filePath: mockTest.filePath },
         data: { steps: [] },
-        timestamp: Date.now(),
+        timestamp: mockTimestamp,
       };
 
       await testCache.set();
       const result = await testCache.get();
       expect(result).toEqual(mockEntry);
+
+      vi.restoreAllMocks();
     });
 
     it<TestContext>("returns null on invalid JSON", async ({ cacheDir }) => {

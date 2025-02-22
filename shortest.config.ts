@@ -4,7 +4,6 @@ export default {
   headless: false,
   baseUrl: "http://localhost:3000",
   testPattern: "app/**/*.test.ts",
-  anthropicKey: process.env.ANTHROPIC_API_KEY!,
   ai: {
     provider: "anthropic",
   },
