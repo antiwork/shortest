@@ -1,4 +1,5 @@
 import { BrowserAction, ActionInput } from "@/types/browser";
+import { TestFunction } from "@/types/test";
 
 export interface CacheAction {
   type: "tool_use" | "text";
@@ -15,6 +16,7 @@ export interface CacheStep {
 }
 
 export interface CacheEntry {
+  test: Pick<TestFunction, "name" | "filePath">;
   data: {
     steps?: CacheStep[];
   };

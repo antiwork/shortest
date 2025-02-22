@@ -20,7 +20,6 @@ import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import { TestFunction, ToolResult } from "@/types";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
-import { CacheStep } from "@/types/cache";
 import { getErrorDetails, AIError, AIErrorType } from "@/utils/errors";
 import { sleep } from "@/utils/sleep";
 
@@ -79,8 +78,7 @@ export class AIClient {
   private client: LanguageModelV1;
   private browserTool: BrowserTool;
   private conversationHistory: Array<CoreMessage> = [];
-  private pendingCache: Partial<{ steps?: CacheStep[] }> = {};
-  private cache: TestCache;
+  private testCache: TestCache;
   private log: Log;
   private usage: TokenUsage;
   private apiRequestCount: number = 0;
@@ -88,17 +86,17 @@ export class AIClient {
 
   constructor({
     browserTool,
-    cache,
+    test,
   }: {
     browserTool: BrowserTool;
-    cache: TestCache;
+    test: TestFunction;
   }) {
+    this.log = getLogger();
+    this.log.trace("Initializing AIClient");
     this.client = createProvider(getConfig().ai);
     this.browserTool = browserTool;
-    this.cache = cache;
+    this.testCache = new TestCache(test);
     this.usage = TokenUsageSchema.parse({});
-    this.log = getLogger();
-    this.log.trace("AIClient initialized");
     this.log.trace(
       "Available tools",
       Object.fromEntries(
@@ -115,7 +113,7 @@ export class AIClient {
    * Manages conversation flow and caches results for successful tests.
    *
    * @param {string} prompt - Input prompt for the AI
-   * @param {TestFunction} test - Test function to execute
+   * @param {TestCase} test - Test case to execute
    * @returns {Promise<AIClientResponse>} Response with results and metadata
    * @throws {AIError} When max retries reached or non-retryable error occurs
    *
@@ -123,22 +121,19 @@ export class AIClient {
    * ```typescript
    * const response = await client.runAction(
    *   "Click login button and verify redirect",
-   *   testFunction
+   *   testCase
    * );
    * ```
    *
    * @private
    */
-  async runAction(
-    prompt: string,
-    test: TestFunction,
-  ): Promise<AIClientResponse> {
+  async runAction(prompt: string): Promise<AIClientResponse> {
     const MAX_RETRIES = 3;
     let retries = 0;
 
     while (retries < MAX_RETRIES) {
       try {
-        const result = await this.runConversation(prompt, test);
+        const result = await this.runConversation(prompt);
         if (!result) {
           throw new AIError("invalid-response", "No response received from AI");
         }
@@ -149,10 +144,7 @@ export class AIClient {
           throw error;
         }
         retries++;
-        this.log.trace("Retry attempt", {
-          retries: retries,
-          maxRetries: MAX_RETRIES,
-        });
+        this.log.trace("Retry attempt", { retries, maxRetries: MAX_RETRIES });
         await sleep(5000 * retries);
       }
     }
@@ -164,17 +156,14 @@ export class AIClient {
    * Processes tool calls, updates conversation history, and validates responses.
    *
    * @param {string} prompt - Input prompt to start conversation
-   * @param {TestFunction} test - Test function context
+   * @param {TestCase} test - Test case context
    * @returns {Promise<AIClientResponse | undefined>} Processed response
    * @throws {AIError} For invalid responses or tool execution failures
    *
    * @private
    */
-  private async runConversation(prompt: string, test: TestFunction) {
-    const initialMessageOptions = {
-      role: "user" as const,
-      content: prompt,
-    };
+  private async runConversation(prompt: string): Promise<AIClientResponse> {
+    const initialMessageOptions = { role: "user" as const, content: prompt };
     this.conversationHistory.push(initialMessageOptions);
     this.log.trace("💬", "New conversation message", initialMessageOptions);
     this.log.trace("💬", "Conversation history initialized", {
@@ -222,8 +211,7 @@ export class AIClient {
                       y,
                     );
                 }
-
-                this.addToPendingCache({
+                this.testCache.addToSteps({
                   reasoning: result.text,
                   action: {
                     name: toolResult.args.action,
@@ -281,14 +269,9 @@ export class AIClient {
           this.log.trace("Response", { ...json });
 
           if (json.status === "passed") {
-            this.cache.set(test, this.pendingCache);
+            this.testCache.set();
           }
-          return {
-            response: json,
-            metadata: {
-              usage: this.usage,
-            },
-          };
+          return { response: json, metadata: { usage: this.usage } };
         } catch {
           throw new AIError(
             "invalid-response",
@@ -457,24 +440,6 @@ export class AIClient {
 
     if (errorInfo) {
       throw new AIError(errorInfo.error, errorInfo.message);
-    }
-  }
-
-  /**
-   * Adds a step to the pending cache for successful test runs.
-   * Includes reasoning, action details, and results.
-   *
-   * @param {CacheStep} cacheStep - Step data to cache
-   *
-   * @private
-   */
-  private addToPendingCache(cacheStep: CacheStep) {
-    try {
-      this.log.setGroup("💾");
-      this.log.debug("Adding step to cache");
-      this.pendingCache.steps = [...(this.pendingCache.steps || []), cacheStep];
-    } finally {
-      this.log.resetGroup();
     }
   }
 

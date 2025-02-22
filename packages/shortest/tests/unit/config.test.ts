@@ -31,7 +31,6 @@ describe("Config parsing", () => {
 
     test("it generates default config", () => {
       const config = parseConfig(minimalConfig);
-      console.log(config);
       expect(Object.keys(config)).toEqual([
         "headless",
         "baseUrl",

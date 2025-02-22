@@ -43,22 +43,18 @@ export type FileResult = z.infer<typeof FileResultSchema>;
 export class TestRunner {
   private config: ShortestStrictConfig;
   private cwd: string;
-  private exitOnSuccess: boolean;
   private compiler: TestCompiler;
   private browserManager!: BrowserManager;
   private reporter: TestReporter;
   private testContext: TestContext | null = null;
-  private cache: TestCache;
   private log: Log;
 
-  constructor(cwd: string, config: ShortestStrictConfig, exitOnSuccess = true) {
+  constructor(cwd: string, config: ShortestStrictConfig) {
     this.config = config;
     this.cwd = cwd;
-    this.exitOnSuccess = exitOnSuccess;
     this.compiler = new TestCompiler();
     this.reporter = new TestReporter();
     this.log = getLogger();
-    this.cache = new TestCache();
   }
 
   async initialize() {
@@ -139,14 +135,14 @@ export class TestRunner {
         const testContext = await this.createTestContext(context);
         await test.fn?.(testContext);
         return {
-          test: test,
+          test,
           status: "passed",
           reason: "Direct execution successful",
           tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
         };
       } catch (error) {
         return {
-          test: test,
+          test,
           status: "failed",
           reason:
             error instanceof Error ? error.message : "Direct execution failed",
@@ -198,17 +194,17 @@ export class TestRunner {
       .join("\n");
 
     if (this.config.caching.enabled) {
-      // if test hasn't changed and is already in cache, replay steps from cache
-      if (await this.cache.get(test)) {
+      const testCache = new TestCache(test);
+      const cachedEntry = await testCache.get();
+      if (cachedEntry) {
         try {
           const result = await this.runCachedTest(test, browserTool);
-
           if (test.afterFn) {
             try {
               await test.afterFn(testContext);
             } catch (error) {
               return {
-                test: test,
+                test,
                 status: "failed",
                 reason:
                   result?.status === "failed"
@@ -235,8 +231,8 @@ export class TestRunner {
             },
           };
         } catch {
-          // delete stale cached test entry
-          await this.cache.delete(test);
+          // delete stale cache file
+          await testCache.delete();
           // reset window state
           const page = browserTool.getPage();
           await page.goto(initialState.metadata?.window_info?.url!);
@@ -251,7 +247,7 @@ export class TestRunner {
         await test.beforeFn(testContext);
       } catch (error) {
         return {
-          test: test,
+          test,
           status: "failed",
           reason: error instanceof Error ? error.message : String(error),
           tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
@@ -262,58 +258,49 @@ export class TestRunner {
     let aiResponse: AIClientResponse;
     try {
       this.log.setGroup("🤖");
-      const aiClient = new AIClient({
-        browserTool,
-        cache: this.cache,
-      });
-      aiResponse = await aiClient.runAction(prompt, test);
+      const aiClient = new AIClient({ browserTool, test });
+      aiResponse = await aiClient.runAction(prompt);
     } finally {
       this.log.resetGroup();
     }
 
-    const { response, metadata } = aiResponse;
-
-    // Execute after function if present
     if (test.afterFn) {
       try {
         await test.afterFn(testContext);
       } catch (error) {
         return {
-          test: test,
+          test,
           status: "failed",
           reason:
-            response?.status === "failed"
-              ? `AI: ${response.reason}, After: ${
+            aiResponse.response.status === "failed"
+              ? `AI: ${aiResponse.response.reason}, After: ${
                   error instanceof Error ? error.message : String(error)
                 }`
               : error instanceof Error
                 ? error.message
                 : String(error),
-          tokenUsage: metadata.usage,
+          tokenUsage: aiResponse.metadata.usage,
         };
       }
     }
 
     return {
       test,
-      status: response?.status,
-      reason: response?.reason,
-      tokenUsage: metadata.usage,
+      status: aiResponse.response.status,
+      reason: aiResponse.response.reason,
+      tokenUsage: aiResponse.metadata.usage,
     };
   }
 
   private async executeTestFile(file: string) {
     try {
       const registry = (global as any).__shortest__.registry;
-
       registry.tests.clear();
       registry.currentFileTests = [];
 
       const filePathWithoutCwd = file.replace(this.cwd + "/", "");
       const compiledPath = await this.compiler.compileFile(file);
-      this.log.trace("Importing compiled file", {
-        compiledPath,
-      });
+      this.log.trace("Importing compiled file", { compiledPath });
       await import(pathToFileURL(compiledPath).href);
 
       let context;
@@ -388,14 +375,14 @@ export class TestRunner {
     }
   }
 
-  async runTests(pattern?: string) {
+  async runTests(testPattern?: string): Promise<boolean> {
     await this.initialize();
-    const files = await this.findTestFiles(pattern);
+    const files = await this.findTestFiles(testPattern);
 
     if (files.length === 0) {
       this.reporter.error(
         "Test Discovery",
-        `No test files found matching the pattern: ${pattern || this.config.testPattern}`,
+        `No test files found matching the pattern: ${testPattern || this.config.testPattern}`,
       );
       process.exit(1);
     }
@@ -404,14 +391,8 @@ export class TestRunner {
     for (const file of files) {
       await this.executeTestFile(file);
     }
-
     this.reporter.onRunEnd();
-
-    if (this.exitOnSuccess && this.reporter.allTestsPassed()) {
-      process.exit(0);
-    } else {
-      process.exit(1);
-    }
+    return this.reporter.allTestsPassed();
   }
 
   private async runCachedTest(
@@ -419,29 +400,28 @@ export class TestRunner {
     browserTool: BrowserTool,
   ): Promise<TestResult> {
     try {
+      this.log.trace("Running cached test", { test });
       this.log.setGroup("💾");
-
-      const cachedTest = await this.cache.get(test);
+      const testCache = new TestCache(test);
+      const cachedTest = await testCache.get();
 
       this.log.debug("Executing cached test", { hash: hashData(test) });
 
-      const steps = cachedTest?.data.steps
-        // do not take screenshots in cached mode
-        ?.filter(
-          (step) =>
-            step.action?.input.action !==
-            BrowserActionEnum.Screenshot.toString(),
-        );
+      const steps = cachedTest?.data.steps?.filter(
+        (step) =>
+          step.action?.input.action !== BrowserActionEnum.Screenshot.toString(),
+      );
 
       if (!steps) {
         this.log.debug("No steps to execute, running test in normal mode");
         return {
-          test: test,
+          test,
           status: "failed",
           reason: "No steps to execute, running test in normal mode",
           tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
         };
       }
+
       for (const step of steps) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         if (
@@ -461,7 +441,7 @@ export class TestRunner {
               stepComponentStr: step.extras.componentStr,
             });
             return {
-              test: test,
+              test,
               status: "failed",
               reason:
                 "Component UI elements are different, running test in normal mode",
@@ -487,7 +467,7 @@ export class TestRunner {
 
       this.log.debug("All actions successfully replayed from cache");
       return {
-        test: test,
+        test,
         status: "passed",
         reason: "All actions successfully replayed from cache",
         tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },

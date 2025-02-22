@@ -166,7 +166,7 @@ export class BaseCache<T extends CacheEntry> {
     }
   }
 
-  public async acquireLock(): Promise<boolean> {
+  private async acquireLock(): Promise<boolean> {
     const startTime = Date.now();
     while (Date.now() - startTime < this.LOCK_TIMEOUT_MS) {
       try {
@@ -198,7 +198,7 @@ export class BaseCache<T extends CacheEntry> {
     return false;
   }
 
-  public releaseLock(): void {
+  private releaseLock(): void {
     try {
       if (fs.existsSync(this.lockFile)) {
         fs.unlinkSync(this.lockFile);

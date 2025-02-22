@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AIClient } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { TestCache } from "@/cache/test-cache";
+import { TestCase } from "@/core/runner/test-case";
 import { TokenUsage } from "@/types/ai";
-import { TestFunction } from "@/types/test";
+import { ActionInput, ToolResult } from "@/types/browser";
+import { CacheEntry } from "@/types/cache";
 import { AIError } from "@/utils/errors";
 
 vi.mock("ai", () => ({
@@ -46,7 +48,7 @@ describe("AIClient", () => {
   let client: AIClient;
   let browserTool: BrowserTool;
   let cache: TestCache;
-  let mockTest: TestFunction;
+  let mockTest: TestCase;
 
   const createMockResponse = (
     text: string,
@@ -70,14 +72,20 @@ describe("AIClient", () => {
     vi.clearAllMocks();
 
     browserTool = {
-      execute: vi.fn(),
-      getNormalizedComponentStringByCoords: vi.fn(),
-    } as any;
+      execute: vi.fn<[ActionInput], Promise<ToolResult>>(),
+      getNormalizedComponentStringByCoords: vi.fn<
+        [number, number],
+        Promise<string>
+      >(),
+    } as Pick<
+      BrowserTool,
+      "execute" | "getNormalizedComponentStringByCoords"
+    > as BrowserTool;
 
     cache = {
-      set: vi.fn(),
-      get: vi.fn(),
-    } as any;
+      set: vi.fn<[], Promise<void>>(),
+      get: vi.fn<[], Promise<CacheEntry | null>>(),
+    } as Pick<TestCache, "set" | "get"> as TestCache;
 
     Object.defineProperty(AIClient.prototype, "tools", {
       get: () => ({
@@ -94,16 +102,21 @@ describe("AIClient", () => {
     ).mockImplementation(
       (error: unknown) =>
         error instanceof AIError ||
-        (error instanceof Error && (error as any).status === 401),
+        (error instanceof Error &&
+          (error as { status?: number }).status === 401),
     );
 
-    client = new AIClient({ browserTool, cache });
-
-    mockTest = {
+    mockTest = new TestCase({
       name: "test",
       filePath: "/test/path.ts",
       fn: () => Promise.resolve(),
-    };
+    });
+
+    client = new AIClient({
+      browserTool,
+      test: mockTest,
+    });
+    (client as any).testCache = cache;
   });
 
   describe("runAction", () => {
@@ -115,7 +128,7 @@ describe("AIClient", () => {
 
       (generateText as any).mockResolvedValue(mockResponse);
 
-      const result = await client.runAction("test prompt", mockTest);
+      const result = await client.runAction("test prompt");
 
       expect(result).toEqual({
         response: {
@@ -126,7 +139,7 @@ describe("AIClient", () => {
           usage: mockResponse.usage,
         },
       });
-      expect(cache.set).toHaveBeenCalledWith(mockTest, expect.any(Object));
+      expect(cache.set).toHaveBeenCalled();
     });
 
     it("handles tool calls and continues conversation", async () => {
@@ -156,13 +169,13 @@ describe("AIClient", () => {
         .mockResolvedValueOnce(toolCallResponse)
         .mockResolvedValueOnce(finalResponse);
 
-      const result = await client.runAction("test prompt", mockTest);
+      const result = await client.runAction("test prompt");
 
       expect(result.response).toEqual({
         status: "passed",
         reason: "test completed",
       });
-      expect(cache.set).toHaveBeenCalledWith(mockTest, expect.any(Object));
+      expect(cache.set).toHaveBeenCalled();
     });
 
     describe("error handling", () => {
@@ -177,7 +190,7 @@ describe("AIClient", () => {
           .mockRejectedValueOnce(error)
           .mockResolvedValue(successResponse);
 
-        const result = await client.runAction("test prompt", mockTest);
+        const result = await client.runAction("test prompt");
 
         expect(result.response).toEqual({
           status: "passed",
@@ -204,7 +217,7 @@ describe("AIClient", () => {
           (generateText as any).mockRejectedValue(error);
 
           await expect(async () => {
-            await client.runAction("test prompt", mockTest);
+            await client.runAction("test prompt");
           }).rejects.toSatisfy((value: unknown) => {
             const e = value as Error;
             expect(e).toBeInstanceOf(expectedInstance);
@@ -240,9 +253,7 @@ describe("AIClient", () => {
           const response = createMockResponse("", finishReason);
           (generateText as any).mockResolvedValue(response);
 
-          await expect(
-            client.runAction("test prompt", mockTest),
-          ).rejects.toMatchObject({
+          await expect(client.runAction("test prompt")).rejects.toMatchObject({
             message: expectedMessage,
             name: "AIError",
             type: expectedType,
@@ -257,9 +268,7 @@ describe("AIClient", () => {
           .mockRejectedValueOnce(error)
           .mockRejectedValueOnce(error);
 
-        await expect(
-          client.runAction("test prompt", mockTest),
-        ).rejects.toMatchObject({
+        await expect(client.runAction("test prompt")).rejects.toMatchObject({
           message: "Max retries reached",
           name: "AIError",
           type: "max-retries-reached",

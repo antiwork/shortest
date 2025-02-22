@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import pc from "picocolors";
 import { GitHubTool } from "@/browser/integrations/github";
+import { purgeLegacyCache, cleanUpCache } from "@/cache";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
 import { getConfig, initializeConfig } from "@/index";
 import { LogLevel } from "@/log/config";
 import { getLogger } from "@/log/index";
 import { CLIOptions } from "@/types";
+import { getErrorDetails } from "@/utils/errors";
 
 process.removeAllListeners("warning");
 process.on("warning", (warning) => {
@@ -27,6 +29,7 @@ const VALID_FLAGS = [
   "--log-enabled",
   "--no-cache",
   "--no-legacy-output",
+  "--force-purge",
   "-h",
 ];
 const VALID_PARAMS = ["--target", "--secret", "--log-level"];
@@ -38,13 +41,18 @@ ${pc.dim("https://github.com/anti-work/shortest")}
 
 ${pc.bold("Usage:")}
   shortest [options] [test-pattern]
+  shortest cache clear [--force-purge]
+
+${pc.bold("Commands:")}
+  cache clear          Clear test cache
+    --force-purge      Force delete all cache files
 
 ${pc.bold("Options:")}
   --headless            Run tests in headless browser mode
   --log-level=<level>   Set log level (default: silent). Options: silent, error, warn, info, debug, trace
   --target=<url>        Set target URL for tests (default: http://localhost:3000)
   --github-code         Generate GitHub 2FA code for authentication
-  --no-cache           Disable caching (storing browser actions between tests)
+  --no-cache            Disable caching (storing browser actions between tests)
 
 ${pc.bold("Authentication:")}
   --secret=<key>      GitHub TOTP secret key (or use ${ENV_LOCAL_FILENAME})
@@ -144,6 +152,16 @@ const main = async () => {
     process.exit(0);
   }
 
+  if (args[0] === "cache") {
+    if (args[1] === "clear") {
+      const forcePurge = args.includes("--force-purge");
+      await cleanUpCache({ forcePurge });
+      process.exit(0);
+    }
+    console.error("Invalid cache command. Use 'shortest cache clear'");
+    process.exit(1);
+  }
+
   if (args.includes("--help") || args.includes("-h")) {
     showHelp();
     process.exit(0);
@@ -180,18 +198,25 @@ const main = async () => {
   await initializeConfig({ cliOptions });
   const config = getConfig();
 
-  log.trace("Initializing TestRunner");
+  await purgeLegacyCache();
+
   try {
+    log.trace("Initializing TestRunner");
     const runner = new TestRunner(process.cwd(), config);
     await runner.initialize();
-    await runner.runTests(testPattern);
+    const success = await runner.runTests(testPattern);
+    process.exitCode = success ? 0 : 1;
   } catch (error: any) {
-    console.error(pc.red(error.name), error.message);
-    process.exit(1);
+    console.error(pc.red(error));
+    console.error(pc.red(error.name), error.message, getErrorDetails(error));
+    process.exitCode = 1;
+  } finally {
+    await cleanUpCache();
   }
+  process.exit();
 };
 
 main().catch(async (error) => {
-  console.error(error);
+  console.error(error, getErrorDetails(error));
   process.exit(1);
 });
