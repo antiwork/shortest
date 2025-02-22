@@ -137,53 +137,6 @@ export class TestCache {
 
   saveScreenshot = (_base64Image: string): string => "";
 
-  async cleanup(maxFiles: number, maxAgeHours: number): Promise<void> {
-    try {
-      const files = await fs.readdir(CACHE_DIR);
-      const cacheFiles = await Promise.all(
-        files
-          .filter((file) => file.endsWith(".json"))
-          .map(async (file) => ({
-            name: file,
-            path: path.join(CACHE_DIR, file),
-            lock: path.join(CACHE_DIR, `${file}.lock`),
-            time: (await fs.stat(path.join(CACHE_DIR, file))).mtime.getTime(),
-          })),
-      );
-      cacheFiles.sort((a, b) => b.time - a.time);
-
-      const now = Date.now();
-      const maxAgeMs = maxAgeHours * 60 * 60 * 1000;
-
-      for (const [index, file] of cacheFiles.entries()) {
-        const isOld = now - file.time > maxAgeMs;
-        const isBeyondLimit = index >= maxFiles;
-
-        if (isOld || isBeyondLimit) {
-          if (!(await this.acquireLock())) {
-            this.log.error("Failed to acquire lock for cleanup", {
-              cacheFile: file.path,
-            });
-            continue;
-          }
-          try {
-            await fs.unlink(file.path);
-            this.log.debug("Removed cache file", { file: file.path });
-          } catch (error) {
-            this.log.error("Failed to remove cache file", {
-              file: file.path,
-              ...getErrorDetails(error),
-            });
-          } finally {
-            await this.releaseLock();
-          }
-        }
-      }
-    } catch (error) {
-      this.log.error("Failed to clean up cache directory", { error });
-    }
-  }
-
   private async acquireLock(): Promise<boolean> {
     // this.log.trace("🔒", "Acquiring lock", {
     //   lockFile: this.lockFile,
