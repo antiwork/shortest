@@ -7,6 +7,23 @@ import type { TestFunction } from "@/types/test";
 import { hashData } from "@/utils/crypto";
 import { getErrorDetails } from "@/utils/errors";
 
+/**
+ * Test result caching system with file locking mechanism.
+ *
+ * @class
+ * @example
+ * ```typescript
+ * const cache = new TestCache(testFunction);
+ * await cache.get(); // Get cached result
+ * cache.addToSteps(step); // Add execution step
+ * await cache.set(); // Save to cache
+ * ```
+ *
+ * @see {@link CacheEntry} for cache data structure
+ * @see {@link CacheStep} for step data structure
+ *
+ * @private
+ */
 export class TestCache {
   private readonly cacheFileName: string;
   private readonly cacheFilePath: string;
@@ -20,6 +37,10 @@ export class TestCache {
   private identifier: string;
   private test: TestFunction;
 
+  /**
+   * Creates a new test cache instance
+   * @param {TestFunction} test - Test function to cache results for
+   */
   constructor(test: TestFunction) {
     this.log = getLogger();
     this.log.trace("Initializing TestCache", { test });
@@ -33,6 +54,10 @@ export class TestCache {
     this.setupProcessHandlers();
   }
 
+  /**
+   * Ensures cache directory exists
+   * @private
+   */
   private async ensureCacheDirectory(): Promise<void> {
     try {
       await fs.mkdir(CACHE_DIR, { recursive: true });
@@ -44,6 +69,10 @@ export class TestCache {
     }
   }
 
+  /**
+   * Retrieves cached test result if available
+   * @returns {Promise<CacheEntry | null>} Cached entry or null if not found
+   */
   async get(): Promise<CacheEntry | null> {
     this.log.trace("Getting cache", {
       cacheFileName: this.cacheFileName,
@@ -73,6 +102,9 @@ export class TestCache {
     }
   }
 
+  /**
+   * Saves current test steps to cache
+   */
   async set(): Promise<void> {
     this.log.trace("Setting cache", {
       cacheFileName: this.cacheFileName,
@@ -113,6 +145,9 @@ export class TestCache {
     }
   }
 
+  /**
+   * Deletes cache entry and associated lock file
+   */
   async delete(): Promise<void> {
     this.log.trace("Deleting cache", {
       cacheFileName: this.cacheFileName,
@@ -131,12 +166,20 @@ export class TestCache {
     }
   }
 
+  /**
+   * Adds a test execution step to be cached
+   * @param {CacheStep} cacheStep - Step to add
+   */
   addToSteps = (cacheStep: CacheStep) => {
     this.steps.push(cacheStep);
   };
 
-  saveScreenshot = (_base64Image: string): string => "";
 
+  /**
+   * Acquires a lock for cache file access
+   * @returns {Promise<boolean>} Whether lock was acquired
+   * @private
+   */
   private async acquireLock(): Promise<boolean> {
     // this.log.trace("🔒", "Acquiring lock", {
     //   lockFile: this.lockFile,
@@ -188,6 +231,10 @@ export class TestCache {
     return false;
   }
 
+  /**
+   * Releases previously acquired lock
+   * @private
+   */
   private async releaseLock(): Promise<void> {
     // this.log.trace("🔓", "Releasing lock", {
     //   lockFile: this.lockFile,
@@ -215,6 +262,12 @@ export class TestCache {
     }
   }
 
+  /**
+   * Checks if a process is still running
+   * @param {number} pid - Process ID to check
+   * @returns {boolean} Whether process is alive
+   * @private
+   */
   private isProcessAlive(pid: number): boolean {
     try {
       process.kill(pid, 0); // Signal 0 checks existence
@@ -228,6 +281,10 @@ export class TestCache {
     }
   }
 
+  /**
+   * Sets up process exit handlers for proper lock cleanup
+   * @private
+   */
   private setupProcessHandlers(): void {
     const releaseLockAndExit = async () => {
       if (this.lockAcquired) {

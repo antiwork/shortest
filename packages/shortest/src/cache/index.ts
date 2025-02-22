@@ -8,17 +8,30 @@ import { getErrorDetails } from "@/utils/errors";
 
 export { TestCache };
 
+/**
+ * Directory where cache files are stored
+ * @private
+ */
 export const CACHE_DIR = path.join(process.cwd(), ".shortest", "cache");
 
-export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+/**
+ * Maximum age of cache entries in milliseconds (7 days)
+ * @private
+ */
+export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-interface CleanUpCacheOptions {
-  forcePurge?: boolean;
-}
-
+/**
+ * Removes expired cache entries and optionally purges all cache
+ *
+ * @param {{ forcePurge?: boolean }} options - Cleanup options where forcePurge forces removal of all entries regardless of age
+ * @private
+ */
 export const cleanUpCache = async ({
   forcePurge = false,
-}: CleanUpCacheOptions = {}) => {
+}: {
+  /** Force remove all cache entries regardless of age */
+  forcePurge?: boolean;
+} = {}) => {
   const log = getLogger();
   log.debug("Cleaning up cache", { forcePurge });
   const files = await fs.readdir(CACHE_DIR);
@@ -47,6 +60,10 @@ export const cleanUpCache = async ({
   }
 };
 
+/**
+ * Removes legacy cache file from older versions
+ * @private
+ */
 export const purgeLegacyCache = async () => {
   const log = getLogger();
   const legacyCachePath = path.join(process.cwd(), ".shortest", "cache.json");
