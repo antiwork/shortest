@@ -51,10 +51,18 @@ const registerSharedProcessHandlers = (log: Log) => {
  */
 export class TestCache {
   private readonly cacheDir: string;
-  private readonly cacheFileName: string;
-  private readonly cacheFilePath: string;
+  private readonly cacheFileNameSuffix: string; // e.g., "_a1b2c3d4.json"
+  private currentCacheFileName: string | undefined = undefined; // Set by set(), e.g. "2025-02-22T12-34-56-a1b2c3d4.json"
+  private get currentCacheFilePath(): string {
+    if (!this.currentCacheFileName) {
+      throw new Error("currentCacheFilePath is not set");
+    }
+    return path.join(this.cacheDir, this.currentCacheFileName);
+  }
   private readonly lockFileName: string;
-  private readonly lockFilePath: string;
+  private get lockFilePath(): string {
+    return path.join(this.cacheDir, this.lockFileName);
+  }
   private readonly log: Log;
   private readonly MAX_LOCK_ATTEMPTS = 10;
   private readonly BASE_LOCK_DELAY_MS = 10;
@@ -70,15 +78,13 @@ export class TestCache {
    */
   constructor(test: TestFunction, cacheDir = CACHE_DIR_PATH) {
     this.log = getLogger();
-    this.log.trace("Initializing TestCache", { test });
+    this.log.trace("Initializing TestCache");
     this.test = test;
     // Low collision risk for datasets under 65,000 tests
     this.identifier = createHash(test, { length: 8 });
     this.cacheDir = cacheDir;
-    this.cacheFileName = `${this.identifier}.json`;
-    this.cacheFilePath = path.join(this.cacheDir, this.cacheFileName);
-    this.lockFileName = `${this.cacheFileName}.lock`;
-    this.lockFilePath = path.join(this.cacheDir, this.lockFileName);
+    this.cacheFileNameSuffix = `_${this.identifier}.json`;
+    this.lockFileName = `${this.identifier}.lock`;
 
     // Register shared handlers and track this instance
     TestCache.activeCaches =
@@ -112,29 +118,54 @@ export class TestCache {
   /**
    * Retrieves cached test result if available
    * @returns {Promise<CacheEntry | null>} Cached entry or null if not found
+   * @private
    */
   async get(): Promise<CacheEntry | null> {
-    this.log.trace("Getting cache", {
-      cacheFileName: this.cacheFileName,
-      cacheFilePath: this.cacheFilePath,
+    this.log.trace("Retrieving cache", {
+      identifier: this.identifier,
     });
 
     if (!(await this.acquireLock())) {
-      this.log.error("Failed to acquire lock for get", {
-        cacheFileName: this.cacheFileName,
+      this.log.error("Failed to acquire lock for cache retrieval", {
+        identifier: this.identifier,
       });
       return null;
     }
 
     try {
-      const content = await fs.readFile(this.cacheFilePath, "utf-8");
-      return JSON.parse(content) as CacheEntry;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      const files = (await fs.readdir(this.cacheDir)).filter((f) =>
+        f.endsWith(this.cacheFileNameSuffix),
+      );
+
+      if (!files.length) {
+        this.log.trace("No cache file found", { identifier: this.identifier });
         return null;
       }
-      this.log.error("Failed to read cache file", {
-        cacheFileName: this.cacheFileName,
+
+      if (files.length > 1) {
+        this.log.warn("Multiple cache files detected, using the first one", {
+          identifier: this.identifier,
+          files,
+        });
+      }
+
+      // Use the first (and ideally only) file
+      const fileName = files[0];
+      const filePath = path.join(this.cacheDir, fileName);
+      const content = await fs.readFile(filePath, "utf-8");
+      const cacheEntry = JSON.parse(content) as CacheEntry;
+      this.log.debug("Loaded cache entry", { fileName });
+      return cacheEntry;
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException;
+      if (err.code === "ENOENT") {
+        this.log.trace("Cache file not found during read", {
+          identifier: this.identifier,
+        });
+        return null;
+      }
+      this.log.error("Failed to read cache", {
+        identifier: this.identifier,
         ...getErrorDetails(error),
       });
       return null;
@@ -145,22 +176,31 @@ export class TestCache {
 
   /**
    * Saves current test steps to cache
+   * @returns {Promise<void>} Resolves when cache is set
+   * @private
    */
   async set(): Promise<void> {
     this.log.trace("Setting cache", {
-      cacheFileName: this.cacheFileName,
+      identifier: this.identifier,
       stepCount: this.steps.length,
     });
 
     if (!(await this.acquireLock())) {
       this.log.error("Failed to acquire lock for set", {
-        cacheFileName: this.cacheFileName,
+        identifier: this.identifier,
       });
       return;
     }
 
     try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      this.currentCacheFileName = `${timestamp}${this.cacheFileNameSuffix}`;
+
       const cacheEntry: CacheEntry = {
+        metadata: {
+          timestamp: Date.now(),
+          version: "1",
+        },
         test: {
           name: this.test.name,
           filePath: this.test.filePath,
@@ -168,38 +208,50 @@ export class TestCache {
         data: {
           steps: this.steps,
         },
-        timestamp: Date.now(),
       };
       await fs.writeFile(
-        this.cacheFilePath,
+        this.currentCacheFilePath,
         JSON.stringify(cacheEntry, null, 2),
         "utf-8",
       );
+
+      const oldFiles = (await fs.readdir(this.cacheDir)).filter(
+        (f) =>
+          f.endsWith(this.cacheFileNameSuffix) &&
+          f !== this.currentCacheFileName,
+      );
+      for (const oldFile of oldFiles) {
+        await fs.unlink(path.join(this.cacheDir, oldFile));
+        this.log.trace("Deleted older cache file", { file: oldFile });
+      }
     } catch (error) {
       this.log.error("Failed to write cache file", {
-        cacheFileName: this.cacheFileName,
+        cacheFileName: this.currentCacheFileName,
         ...getErrorDetails(error),
       });
     } finally {
       this.steps = [];
+
       await this.releaseLock();
     }
   }
 
   /**
    * Deletes cache file and associated lock file
+   * @returns {Promise<void>} Resolves when cache is deleted
+   * @private
    */
   async delete(): Promise<void> {
     this.log.trace("Deleting cache", {
-      cacheFileName: this.cacheFileName,
+      cacheFileName: this.currentCacheFileName,
     });
 
     try {
-      await fs.unlink(this.cacheFilePath);
+      await fs.unlink(this.currentCacheFilePath);
       await fs.unlink(this.lockFilePath);
     } catch (error) {
       this.log.error("Failed to delete cache file", {
-        cacheFileName: this.cacheFileName,
+        cacheFileName: this.currentCacheFileName,
         ...getErrorDetails(error),
       });
     } finally {
@@ -210,6 +262,7 @@ export class TestCache {
   /**
    * Adds a test execution step to be cached
    * @param {CacheStep} cacheStep - Step to add
+   * @private
    */
   addToSteps = (cacheStep: CacheStep) => {
     this.steps.push(cacheStep);
@@ -217,7 +270,7 @@ export class TestCache {
 
   /**
    * Acquires a lock for cache file access
-   * @returns {Promise<boolean>} Whether lock was acquired
+   * @returns {Promise<boolean>} True if lock was acquired, false otherwise
    * @private
    */
   private async acquireLock(): Promise<boolean> {
@@ -273,6 +326,7 @@ export class TestCache {
 
   /**
    * Releases previously acquired lock
+   * @private
    */
   public async releaseLock(): Promise<void> {
     if (this.lockAcquired) {
@@ -294,7 +348,7 @@ export class TestCache {
   /**
    * Checks if a process is still running
    * @param {number} pid - Process ID to check
-   * @returns {boolean} Whether process is alive
+   * @returns {boolean} True if process is alive, false otherwise
    * @private
    */
   private isProcessAlive(pid: number): boolean {

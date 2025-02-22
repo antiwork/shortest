@@ -13,7 +13,12 @@ describe("cache", () => {
 
   beforeEach<TestContext>(async (context) => {
     // Create and store the unique test directory in the context
-    const uniqueId = createHash({ timestamp: Date.now(), random: Math.random() });
+    const uniqueId = createHash({
+        timestamp: Date.now(),
+        random: Math.random(),
+      },
+      { length: 8 },
+    );
     context.cacheDirPath = `${CACHE_DIR_PATH}.${uniqueId}.test`;
     context.mockCacheFilePath = path.join(context.cacheDirPath, "test.json");
 
@@ -33,7 +38,10 @@ describe("cache", () => {
       const expiredEntry: CacheEntry = {
         test: { name: "test", filePath: "test.ts" },
         data: { steps: [] },
-        timestamp: Date.now() - CACHE_MAX_AGE_MS - 1000,
+        metadata: {
+          timestamp: Date.now() - CACHE_MAX_AGE_MS - 1000,
+          version: "1",
+        },
       };
       await fs.writeFile(mockCacheFilePath, JSON.stringify(expiredEntry));
       await cleanUpCache({ dirPath: cacheDirPath });
@@ -47,7 +55,10 @@ describe("cache", () => {
       const validEntry: CacheEntry = {
         test: { name: "test", filePath: "test.ts" },
         data: { steps: [] },
-        timestamp: Date.now() - 1000,
+        metadata: {
+          timestamp: Date.now() - 1000,
+          version: "1",
+        },
       };
 
       await fs.writeFile(mockCacheFilePath, JSON.stringify(validEntry));
@@ -63,7 +74,10 @@ describe("cache", () => {
       const validEntry: CacheEntry = {
         test: { name: "test", filePath: "test.ts" },
         data: { steps: [] },
-        timestamp: Date.now(),
+        metadata: {
+          timestamp: Date.now(),
+          version: "1",
+        },
       };
 
       await fs.writeFile(mockCacheFilePath, JSON.stringify(validEntry));

@@ -1,5 +1,13 @@
 import crypto from "crypto";
 
+/**
+ * Creates a SHA-256 hash of the given data.
+ * @param {unknown} data - The data to hash.
+ * @param {Object} [options] - Optional settings.
+ * @param {number} [options.length] - Length of the hash to return.
+ * @returns {string} The resulting hash string.
+ * @private
+ */
 export const createHash = (
   data: unknown,
   options?: { length?: number },

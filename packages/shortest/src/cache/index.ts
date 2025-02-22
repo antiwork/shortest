@@ -43,7 +43,7 @@ export const cleanUpCache = async ({
       const content = await fs.readFile(filePath, "utf-8");
       const entry = JSON.parse(content) as CacheEntry;
 
-      if (forcePurge || now - entry.timestamp > CACHE_MAX_AGE_MS) {
+      if (forcePurge || now - entry.metadata.timestamp > CACHE_MAX_AGE_MS) {
         await fs.unlink(filePath);
         log.trace("Cache file removed", { file: filePath });
       }

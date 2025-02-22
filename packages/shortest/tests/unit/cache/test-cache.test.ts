@@ -21,7 +21,12 @@ describe("TestCache", () => {
 
   beforeEach<TestContext>(async (context) => {
     // Create and store the unique test directory in the context
-    const uniqueId = createHash({ timestamp: Date.now(), random: Math.random() });
+    const uniqueId = createHash({
+        timestamp: Date.now(),
+        random: Math.random(),
+      },
+      { length: 8 },
+    );
     context.cacheDir = `${CACHE_DIR_PATH}.${uniqueId}.test`;
 
     vi.resetModules();
@@ -47,7 +52,7 @@ describe("TestCache", () => {
       const mockEntry: CacheEntry = {
         test: { name: mockTest.name, filePath: mockTest.filePath },
         data: { steps: [] },
-        timestamp: mockTimestamp,
+        metadata: { timestamp: mockTimestamp, version: "1" },
       };
 
       await testCache.set();
@@ -80,16 +85,10 @@ describe("TestCache", () => {
 
       testCache.addToSteps(mockStep);
       await testCache.set();
-
-      const cacheFilePath = path.join(
-        cacheDir,
-        `${testCache["identifier"]}.json`,
+      const content = await fs.readFile(
+        testCache["currentCacheFilePath"],
+        "utf-8",
       );
-
-      // Wait for the file to be written
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const content = await fs.readFile(cacheFilePath, "utf-8");
       const savedEntry = JSON.parse(content) as CacheEntry;
 
       expect(savedEntry.test).toEqual({
@@ -110,37 +109,25 @@ describe("TestCache", () => {
 
       testCache.addToSteps(mockStep);
       await testCache.set();
-      await testCache.set(); // Second save should write empty steps
-
-      const cacheFilePath = path.join(
-        cacheDir,
-        `${testCache["identifier"]}.json`,
-      );
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const content = await fs.readFile(cacheFilePath, "utf-8");
-      const savedEntry = JSON.parse(content) as CacheEntry;
-
-      expect(savedEntry.data.steps).toHaveLength(0);
+      expect(testCache["steps"]).toHaveLength(0);
     });
   });
 
   describe("delete", () => {
     it<TestContext>("removes cache and lock files", async ({ cacheDir }) => {
-      const cacheFilePath = path.join(
-        cacheDir,
-        `${testCache["identifier"]}.json`,
-      );
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const cacheFileName = `${timestamp}_${testCache["identifier"]}.json`;
+      const cacheFilePath = path.join(cacheDir, cacheFileName);
       const lockFilePath = path.join(
         cacheDir,
-        `${testCache["identifier"]}.json.lock`,
+        `${testCache["identifier"]}.lock`,
       );
 
       await fs.mkdir(path.dirname(cacheFilePath), { recursive: true });
       await fs.writeFile(cacheFilePath, "test");
       await fs.writeFile(lockFilePath, "test");
 
+      testCache["currentCacheFileName"] = cacheFileName;
       await testCache.delete();
 
       await expect(fs.access(cacheFilePath)).rejects.toThrow();
@@ -175,7 +162,7 @@ describe("TestCache", () => {
     }) => {
       const lockFilePath = path.join(
         cacheDir,
-        `${testCache["identifier"]}.json.lock`,
+        `${testCache["identifier"]}.lock`,
       );
 
       await testCache.set();

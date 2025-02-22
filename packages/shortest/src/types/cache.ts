@@ -16,11 +16,14 @@ export interface CacheStep {
 }
 
 export interface CacheEntry {
+  metadata: {
+    timestamp: number;
+    version: string;
+  };
   test: Pick<TestFunction, "name" | "filePath">;
   data: {
     steps?: CacheStep[];
   };
-  timestamp: number;
 }
 
 export interface CacheStore {
