@@ -33,7 +33,6 @@ export const cleanUpCache = async ({
   const log = getLogger();
   log.debug("Cleaning up cache", { forcePurge });
   const files = await fs.readdir(dirPath);
-  log.trace("Found files", { files });
   const now = Date.now();
 
   for (const file of files) {
