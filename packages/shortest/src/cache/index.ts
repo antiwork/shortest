@@ -33,6 +33,7 @@ export const cleanUpCache = async ({
   const log = getLogger();
   log.debug("Cleaning up cache", { forcePurge });
   const files = await fs.readdir(dirPath);
+  log.trace("Found files", { files });
   const now = Date.now();
 
   for (const file of files) {
@@ -76,7 +77,7 @@ export const purgeLegacyCache = async ({
     return;
   }
 
-  log.warn(`Purging v0.4.3 and below cache file: ${legacyCachePath}`);
+  log.warn(`Purging legacy cache file (v0.4.3 and below): ${legacyCachePath}`);
 
   try {
     await fs.unlink(legacyCachePath);
