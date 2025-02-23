@@ -6,7 +6,6 @@ import { TestCache } from "@/cache/test-cache";
 import { TokenUsage } from "@/types/ai";
 import { ActionInput, ToolResult } from "@/types/browser";
 import { CacheEntry } from "@/types/cache";
-import { TestFunction } from "@/types/test";
 import { AIError } from "@/utils/errors";
 
 vi.mock("ai", () => ({
@@ -48,7 +47,6 @@ describe("AIClient", () => {
   let client: AIClient;
   let browserTool: BrowserTool;
   let cache: TestCache;
-  let mockTest: TestFunction;
 
   const createMockResponse = (
     text: string,
@@ -105,12 +103,6 @@ describe("AIClient", () => {
         (error instanceof Error &&
           (error as { status?: number }).status === 401),
     );
-
-    mockTest = {
-      name: "test",
-      filePath: "/test/path.ts",
-      fn: () => Promise.resolve(),
-    } as TestFunction;
 
     client = new AIClient({
       browserTool,

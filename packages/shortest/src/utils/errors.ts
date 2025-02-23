@@ -26,7 +26,6 @@ export class ConfigError extends ShortestError {
   }
 }
 
-// eslint-disable-next-line zod/require-zod-schema-types
 const AIErrorTypeSchema = z.enum([
   "invalid-response",
   "max-retries-reached",
