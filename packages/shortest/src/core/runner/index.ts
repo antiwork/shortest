@@ -191,7 +191,7 @@ export class TestRunner {
         }
         const page = browserTool.getPage();
         await page.goto(initialState.metadata?.window_info?.url!);
-        await this.executeTest(test, context, true);
+        return await this.executeTest(test, context, true);
       }
     } else {
       this.log.trace("Skipping cache", {
@@ -423,7 +423,7 @@ export class TestRunner {
             await browserTool.getNormalizedComponentStringByCoords(x, y);
 
           if (componentStr !== step.extras.componentStr) {
-            this.log.trace("UI element mismatch with cache", {
+            this.log.trace("UI element mismatch with cached UI element", {
               componentStr,
               stepComponentStr: step.extras.componentStr,
             });

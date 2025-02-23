@@ -58,9 +58,9 @@
     "node": ">=18"
   },
   "peerDependencies": {
-    "@ai-sdk/anthropic": "^1.1.8",
-    "@ai-sdk/provider": "^1.0.7",
-    "ai": "^3.4.0",
+    "@ai-sdk/anthropic": "^1.1.9",
+    "@ai-sdk/provider": "^1.0.8",
+    "ai": "^4.1.45",
     "dotenv": "^16.4.5",
     "esbuild": "^0.20.1",
     "expect": "^29.7.0",

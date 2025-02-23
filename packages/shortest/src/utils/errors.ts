@@ -9,7 +9,6 @@ export class ShortestError extends Error {
   }
 }
 
-// eslint-disable-next-line zod/require-zod-schema-types
 const ConfigErrorTypeSchema = z.enum([
   "duplicate-config",
   "file-not-found",
