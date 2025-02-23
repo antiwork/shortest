@@ -435,7 +435,7 @@ export class TestRunner {
           try {
             await browserTool.execute(step.action.input);
           } catch (error) {
-            this.log.error("Failed to execute cachedstep", {
+            this.log.error("Failed to execute cached step", {
               input: step.action.input,
               ...getErrorDetails(error),
             });

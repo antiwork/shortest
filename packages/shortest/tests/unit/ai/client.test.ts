@@ -114,7 +114,7 @@ describe("AIClient", () => {
 
     client = new AIClient({
       browserTool,
-      test: mockTest,
+      testCache: cache,
     });
     (client as any).testCache = cache;
   });
