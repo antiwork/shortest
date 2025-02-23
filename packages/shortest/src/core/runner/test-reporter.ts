@@ -42,12 +42,14 @@ export class TestReporter {
   }
 
   onTestStart(test: TestFunction) {
+    this.log.trace("onTestStart called");
     this.log.setGroup(test.name);
     this.reporterLog.info(this.getStatusIcon("running"), test.name);
     this.reporterLog.setGroup(test.name);
   }
 
   onTestEnd(testResult: TestResult) {
+    this.log.trace("onTestEnd called");
     switch (testResult.status) {
       case "passed":
         this.passedTestsCount++;

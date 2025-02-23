@@ -266,7 +266,7 @@ export class AIClient {
           this.log.trace("Response", { ...json });
 
           if (json.status === "passed") {
-            this.testCache.set();
+            await this.testCache.set();
           }
           return { response: json, metadata: { usage: this.usage } };
         } catch {

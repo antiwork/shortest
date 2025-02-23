@@ -52,7 +52,7 @@ const registerSharedProcessHandlers = (log: Log) => {
 export class TestCache {
   private readonly cacheDir: string;
   private readonly cacheFileNameSuffix: string; // e.g., "_a1b2c3d4.json"
-  private currentCacheFileName: string | undefined = undefined; // Set by set(), e.g. "2025-02-22T12-34-56-a1b2c3d4.json"
+  private currentCacheFileName: string | undefined = undefined; // e.g. "2025-02-22T12-34-56-a1b2c3d4.json"
   private get currentCacheFilePath(): string {
     if (!this.currentCacheFileName) {
       throw new Error("currentCacheFilePath is not set");
@@ -154,7 +154,8 @@ export class TestCache {
       const filePath = path.join(this.cacheDir, fileName);
       const content = await fs.readFile(filePath, "utf-8");
       const cacheEntry = JSON.parse(content) as CacheEntry;
-      this.log.debug("Loaded cache entry", { fileName });
+      this.currentCacheFileName = fileName;
+      this.log.debug("Cache entry loaded", { fileName });
       return cacheEntry;
     } catch (error) {
       const err = error as NodeJS.ErrnoException;
@@ -248,7 +249,7 @@ export class TestCache {
 
     try {
       await fs.unlink(this.currentCacheFilePath);
-      await fs.unlink(this.lockFilePath);
+      fs.unlink(this.lockFilePath).catch(() => {});
     } catch (error) {
       this.log.error("Failed to delete cache file", {
         cacheFileName: this.currentCacheFileName,

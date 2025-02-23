@@ -18,7 +18,7 @@ import {
   ShortestStrictConfig,
 } from "@/types";
 import { TokenUsageSchema } from "@/types/ai";
-import { getErrorDetails } from "@/utils/errors";
+import { CacheError, getErrorDetails } from "@/utils/errors";
 
 const TestStatusSchema = z.enum(["pending", "running", "passed", "failed"]);
 export type TestStatus = z.infer<typeof TestStatusSchema>;
@@ -98,11 +98,13 @@ export class TestRunner {
   private async executeTest(
     test: TestFunction,
     context: BrowserContext,
+    skipCache: boolean = false,
   ): Promise<TestResult> {
     this.log.trace("Executing test", {
       name: test.name,
       filePath: test.filePath,
       payload: test.payload,
+      skipCache,
     });
     // If it's direct execution, skip AI
     if (test.directExecution) {
@@ -142,35 +144,9 @@ export class TestRunner {
       action: "screenshot",
     });
 
-    // Build prompt with initial state and screenshot
-    const prompt = [
-      `Test: "${test.name}"`,
-      test.payload ? `Context: ${JSON.stringify(test.payload)}` : "",
-      `Callback function: ${test.fn ? " [HAS_CALLBACK]" : " [NO_CALLBACK]"}`,
-
-      // Add expectations if they exist
-      ...(test.expectations?.length
-        ? [
-            "\nExpect:",
-            ...test.expectations.map(
-              (exp, i) =>
-                `${i + 1}. ${exp.description}${
-                  exp.fn ? " [HAS_CALLBACK]" : "[NO_CALLBACK]"
-                }`,
-            ),
-          ]
-        : ["\nExpect:", `1. "${test.name}" expected to be successful`]),
-
-      "\nCurrent Page State:",
-      `URL: ${initialState.metadata?.window_info?.url || "unknown"}`,
-      `Title: ${initialState.metadata?.window_info?.title || "unknown"}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
     const testCache = new TestCache(test);
     await testCache.initialize();
-    if (this.config.caching.enabled) {
+    if (this.config.caching.enabled && !skipCache) {
       try {
         const result = await this.runCachedTest(test, browserTool, testCache);
         if (test.afterFn) {
@@ -205,14 +181,23 @@ export class TestRunner {
           },
         };
       } catch (error) {
-        this.log.error("Failed to read cached test", getErrorDetails(error));
-        // delete stale cache file
-        await testCache.delete();
-        // reset window state
+        if (!(error instanceof CacheError)) throw error;
+        this.log.error(
+          "Cache execution interrupted, falling back to normal execution",
+          getErrorDetails(error),
+        );
+        if (error.type !== "not-found") {
+          await testCache.delete();
+        }
         const page = browserTool.getPage();
         await page.goto(initialState.metadata?.window_info?.url!);
-        await this.executeTest(test, context);
+        await this.executeTest(test, context, true);
       }
+    } else {
+      this.log.trace("Skipping cache", {
+        cachingEnabled: this.config.caching.enabled,
+        skipCache,
+      });
     }
 
     // Execute before function if present
@@ -232,6 +217,31 @@ export class TestRunner {
     let aiResponse: AIClientResponse;
     try {
       this.log.setGroup("🤖");
+      // Build prompt with initial state and screenshot
+      const prompt = [
+        `Test: "${test.name}"`,
+        test.payload ? `Context: ${JSON.stringify(test.payload)}` : "",
+        `Callback function: ${test.fn ? " [HAS_CALLBACK]" : " [NO_CALLBACK]"}`,
+
+        // Add expectations if they exist
+        ...(test.expectations?.length
+          ? [
+              "\nExpect:",
+              ...test.expectations.map(
+                (exp, i) =>
+                  `${i + 1}. ${exp.description}${
+                    exp.fn ? " [HAS_CALLBACK]" : "[NO_CALLBACK]"
+                  }`,
+              ),
+            ]
+          : ["\nExpect:", `1. "${test.name}" expected to be successful`]),
+
+        "\nCurrent Page State:",
+        `URL: ${initialState.metadata?.window_info?.url || "unknown"}`,
+        `Title: ${initialState.metadata?.window_info?.title || "unknown"}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
       const aiClient = new AIClient({ browserTool, testCache });
       aiResponse = await aiClient.runAction(prompt);
     } finally {
@@ -384,22 +394,22 @@ export class TestRunner {
       this.log.setGroup("💾");
       this.log.trace("Executing test from cache");
       const cachedEntry = await testCache.get();
-      if (!cachedEntry ===) {
-        // No cache found, execute the test
+      if (!cachedEntry) {
+        throw new CacheError("not-found", "No cache found");
       }
       const steps = cachedEntry.data.steps
         // do not take screenshots in cached mode
         ?.filter(
           (step) =>
-            step.action?.input.action !== BrowserActionEnum.Screenshot.toString(),
+            step.action?.input.action !==
+            BrowserActionEnum.Screenshot.toString(),
         );
 
-      if (!steps) {
-        this.log.debug("No steps in cache, falling back to normal execution");
-        await testCache.delete();
-        return await this.executeTest(test, browserTool.getPage().context());
+      if (!steps || steps.length === 0) {
+        throw new CacheError("invalid", "No eligible steps in cache");
       }
 
+      this.log.trace("Executing cached steps", { stepCount: steps.length });
       for (const step of steps) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         if (
@@ -412,17 +422,12 @@ export class TestRunner {
           const componentStr =
             await browserTool.getNormalizedComponentStringByCoords(x, y);
 
-          if (true) {
-            this.log.debug("Cache invalid - UI elements mismatch", {
+          if (componentStr !== step.extras.componentStr) {
+            this.log.trace("UI element mismatch with cache", {
               componentStr,
               stepComponentStr: step.extras.componentStr,
             });
-            const testCache = new TestCache(test);
-            await testCache.delete();
-            return await this.executeTest(
-              test,
-              browserTool.getPage().context(),
-            );
+            throw new CacheError("invalid", "UI element mismatch");
           }
         }
 
@@ -430,16 +435,11 @@ export class TestRunner {
           try {
             await browserTool.execute(step.action.input);
           } catch (error) {
-            this.log.debug("Cache invalid - Failed to execute step", {
+            this.log.error("Failed to execute cachedstep", {
               input: step.action.input,
-              error: getErrorDetails(error),
+              ...getErrorDetails(error),
             });
-            const testCache = new TestCache(test);
-            await testCache.delete();
-            return await this.executeTest(
-              test,
-              browserTool.getPage().context(),
-            );
+            throw new CacheError("invalid", "Error executing cached step");
           }
         }
       }
@@ -451,14 +451,6 @@ export class TestRunner {
         reason: "All actions successfully replayed from cache",
         tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
       };
-    } catch (error) {
-      this.log.debug(
-        "Cache execution failed, falling back to normal execution",
-        getErrorDetails(error),
-      );
-      const testCache = new TestCache(test);
-      await testCache.delete();
-      return await this.executeTest(test, browserTool.getPage().context());
     } finally {
       this.log.resetGroup();
     }
