@@ -18,7 +18,7 @@ import { BrowserTool } from "@/browser/core/browser-tool";
 import { TestCache } from "@/cache/test-cache";
 import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
-import { TestFunction, ToolResult } from "@/types";
+import { ToolResult } from "@/types";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
 import { getErrorDetails, AIError, AIErrorType } from "@/utils/errors";
 import { sleep } from "@/utils/sleep";
@@ -57,7 +57,7 @@ export type AIClientResponse = {
  * ```typescript
  * const client = new AIClient({
  *   browserTool: new BrowserTool(),
- *   cache: new TestCache()
+ *   testCache: new TestCache()
  * });
  *
  * const response = await client.runAction(
@@ -86,17 +86,16 @@ export class AIClient {
 
   constructor({
     browserTool,
-    test,
+    testCache,
   }: {
     browserTool: BrowserTool;
-    test: TestFunction;
+    testCache: TestCache;
   }) {
     this.log = getLogger();
     this.log.trace("Initializing AIClient");
     this.client = createProvider(getConfig().ai);
     this.browserTool = browserTool;
-    this.testCache = new TestCache(test);
-    this.testCache.initialize();
+    this.testCache = testCache;
     this.usage = TokenUsageSchema.parse({});
     this.log.trace(
       "Available tools",

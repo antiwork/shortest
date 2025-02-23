@@ -169,11 +169,11 @@ export class TestRunner {
       .filter(Boolean)
       .join("\n");
 
+    const testCache = new TestCache(test);
     if (this.config.caching.enabled) {
       try {
         this.log.setGroup("💾");
         this.log.trace("Checking for cached test");
-        const testCache = new TestCache(test);
         await testCache.initialize();
         const cachedEntry = await testCache.get();
         if (cachedEntry) {
@@ -249,7 +249,7 @@ export class TestRunner {
     let aiResponse: AIClientResponse;
     try {
       this.log.setGroup("🤖");
-      const aiClient = new AIClient({ browserTool, test });
+      const aiClient = new AIClient({ browserTool, testCache });
       aiResponse = await aiClient.runAction(prompt);
     } finally {
       this.log.resetGroup();
