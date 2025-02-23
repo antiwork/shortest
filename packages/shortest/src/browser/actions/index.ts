@@ -73,8 +73,12 @@ export const click = async (
   const scaledY = Math.round(y * scaleRatio.y);
 
   await mouseMove(page, x, y);
-  await page.mouse.click(scaledX, scaledY);
-  await showClickAnimation(page, "left");
+  const animationPromise = showClickAnimation(page, "left");
+
+  await Promise.all([
+    page.mouse.click(scaledX, scaledY, { delay: 200 }), // delay to match animation duration
+    animationPromise,
+  ]);
 };
 
 export const dragMouse = async (
@@ -93,33 +97,36 @@ export const dragMouse = async (
 export const showClickAnimation = async (
   page: Page,
   type: "left" | "right" | "double" = "left",
-): Promise<void> => {
-  await page.evaluate((clickType) => {
-    const cursor = document.getElementById("ai-cursor");
-    if (cursor) {
-      cursor.classList.add("clicking");
+) =>
+  page.evaluate(
+    (clickType) =>
+      new Promise<void>((resolve) => {
+        const cursor = document.getElementById("ai-cursor");
+        if (!cursor) return resolve(undefined);
 
-      switch (clickType) {
-        case "double":
-          cursor.style.transform = "translate(-50%, -50%) scale(0.7)";
-          cursor.style.backgroundColor = "rgba(255, 0, 0, 0.5)";
-          break;
-        case "right":
-          cursor.style.borderColor = "blue";
-          break;
-        default:
-          cursor.style.transform = "translate(-50%, -50%) scale(0.8)";
-      }
+        cursor.classList.add("clicking");
+        switch (clickType) {
+          case "double":
+            cursor.style.transform = "translate(-50%, -50%) scale(0.7)";
+            cursor.style.backgroundColor = "rgba(255, 0, 0, 0.5)";
+            break;
+          case "right":
+            cursor.style.borderColor = "blue";
+            break;
+          default:
+            cursor.style.transform = "translate(-50%, -50%) scale(0.8)";
+        }
 
-      setTimeout(() => {
-        cursor.classList.remove("clicking");
-        cursor.style.transform = "translate(-50%, -50%) scale(1)";
-        cursor.style.backgroundColor = "rgba(255, 0, 0, 0.2)";
-        cursor.style.borderColor = "red";
-      }, 200);
-    }
-  }, type);
-};
+        setTimeout(() => {
+          cursor.classList.remove("clicking");
+          cursor.style.transform = "translate(-50%, -50%) scale(1)";
+          cursor.style.backgroundColor = "rgba(255, 0, 0, 0.2)";
+          cursor.style.borderColor = "red";
+          resolve(undefined);
+        }, 200);
+      }),
+    type,
+  );
 
 export const getCursorPosition = async (
   page: Page,
