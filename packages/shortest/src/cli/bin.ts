@@ -40,48 +40,37 @@ ${pc.bold("Shortest")} - AI-powered end-to-end testing framework
 ${pc.dim("https://github.com/anti-work/shortest")}
 
 ${pc.bold("Usage:")}
-  shortest [options] [test-pattern]
-  shortest cache clear [--force-purge]
-
-${pc.bold("Commands:")}
-  init                  Initialize Shortest in the current directory
-  cache clear           Clear test cache
-    --force-purge       Force delete all cache files
+  $ shortest [options] [pattern]                  Run tests matching pattern (default: **/*.test.ts)
+  $ shortest init                                 Initialize Shortest in current directory
+  $ shortest cache clear [--force-purge]          Clear test cache
 
 ${pc.bold("Options:")}
-  --headless            Run tests in headless browser mode
-  --log-level=<level>   Set log level (default: silent). Options: silent, error, warn, info, debug, trace
-  --target=<url>        Set target URL for tests (default: http://localhost:3000)
-  --github-code         Generate GitHub 2FA code for authentication
-  --no-cache            Disable caching (storing browser actions between tests)
+  --headless                                      Run tests in headless browser mode
+  --target=<url>                                  Set target URL for tests (default: http://localhost:3000)
+  --no-cache                                      Disable test action caching
+  --log-level=<level>                             Set logging level [silent|error|warn|info|debug|trace] (default: silent)
+  --github-code                                   Generate GitHub 2FA code for authentication
+  --secret=<key>                                  GitHub TOTP secret key (can also be set in ${ENV_LOCAL_FILENAME})
 
-${pc.bold("Authentication:")}
-  --secret=<key>      GitHub TOTP secret key (or use ${ENV_LOCAL_FILENAME})
+${pc.bold("Environment setup:")}
+  Required in ${ENV_LOCAL_FILENAME}:
+    AI authentication
+      SHORTEST_ANTHROPIC_API_KEY                  Anthropic API key for AI test execution
+      ANTHROPIC_API_KEY                           Alternative Anthropic API key (only one is required)
+
+    GitHub authentication
+      GITHUB_TOTP_SECRET                          GitHub 2FA secret
+      GITHUB_USERNAME                             GitHub username
+      GITHUB_PASSWORD                             GitHub password
 
 ${pc.bold("Examples:")}
-  ${pc.dim("# Run all tests")}
-  shortest
-
-  ${pc.dim("# Run specific test file")}
-  shortest login.test.ts
-
-  ${pc.dim("# Run tests in headless mode")}
-  shortest --headless
-
-  ${pc.dim("# Generate GitHub 2FA code")}
-  shortest --github-code --secret=<OTP_SECRET>
-
-${pc.bold("Environment Setup:")}
-  Required variables in ${ENV_LOCAL_FILENAME}:
-  - ANTHROPIC_API_KEY     Required for AI test execution
-  - GITHUB_TOTP_SECRET    Required for GitHub authentication
-  - GITHUB_USERNAME       GitHub login credentials
-  - GITHUB_PASSWORD       GitHub login credentials
+  shortest                                        # Run all tests
+  shortest login.test.ts                          # Run a single test file
+  shortest --headless                             # Run in headless browser mode
+  shortest --github-code --secret=<OTP_SECRET>    # Generate GitHub 2FA code
 
 ${pc.bold("Documentation:")}
-  Visit ${pc.cyan(
-    "https://github.com/anti-work/shortest",
-  )} for detailed setup and usage
+  ${pc.cyan("https://github.com/anti-work/shortest")}
 `);
 };
 
@@ -205,7 +194,7 @@ const main = async () => {
     log.trace("Initializing TestRunner");
     const runner = new TestRunner(process.cwd(), config);
     await runner.initialize();
-    const success = await runner.runTests(testPattern);
+    const success = await runner.execute(config.testPattern);
     process.exitCode = success ? 0 : 1;
   } catch (error: any) {
     console.error(pc.red(error));

@@ -35,6 +35,20 @@ export class AIError extends Error {
   }
 }
 
+class ShortestError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ShortestError";
+  }
+}
+
+export class RunnerError extends ShortestError {
+  constructor(message: string) {
+    super(message);
+    this.name = "RunnerError";
+  }
+}
+
 export const getErrorDetails = (error: any) => ({
   message: error instanceof Error ? error.message : String(error),
   name: error instanceof Error ? error.name : "Unknown",

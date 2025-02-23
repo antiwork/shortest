@@ -54,13 +54,13 @@ describe("initializeConfig", () => {
       `
       export default {
         headless: true,
-        baseUrl: 'https://example.com',
-        testPattern: '.*',
+        baseUrl: "https://example.com",
+        testPattern: ".*",
         ai: {
           provider: "anthropic",
           apiKey: "test-key",
-          model: "claude-3-5-sonnet-20241022"
-        }
+          model: "claude-3-5-sonnet-20241022",
+        },
       }
       `,
     );
@@ -142,7 +142,7 @@ describe("initializeConfig", () => {
       );
     });
 
-    test("overwrite config options", async () => {
+    test("overwrites config options", async () => {
       const cliOptions = {
         headless: true,
         baseUrl: "https://other.example.com",

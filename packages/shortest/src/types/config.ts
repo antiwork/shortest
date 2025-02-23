@@ -39,11 +39,13 @@ const mailosaurSchema = z
   })
   .optional();
 
+const testPatternSchema = z.string().default("**/*.test.ts");
+
 export const configSchema = z
   .object({
     headless: z.boolean().default(true),
     baseUrl: z.string().url("must be a valid URL"),
-    testPattern: z.string(),
+    testPattern: testPatternSchema,
     anthropicKey: z.string().optional(),
     ai: aiSchema,
     mailosaur: mailosaurSchema.optional(),
@@ -52,6 +54,7 @@ export const configSchema = z
   .strict();
 
 export const userConfigSchema = configSchema.extend({
+  testPattern: testPatternSchema.optional(),
   ai: aiSchema.strict().partial().optional(),
   caching: cachingSchema.strict().partial().optional(),
 });

@@ -7,22 +7,9 @@ import { parseConfig } from "@/utils/config";
 describe("Config parsing", () => {
   let baseConfig: ShortestConfig;
 
-  beforeEach(() => {
-    baseConfig = {
-      headless: true,
-      baseUrl: "https://example.com",
-      testPattern: ".*",
-      ai: {
-        provider: "anthropic",
-        apiKey: "explicit-api-key",
-      },
-    };
-  });
-
   describe("with minimal config", () => {
     const minimalConfig = {
       baseUrl: "https://example.com",
-      testPattern: ".*",
       ai: {
         provider: "anthropic",
         apiKey: "foo",
@@ -40,7 +27,7 @@ describe("Config parsing", () => {
       ]);
       expect(config.headless).toBe(true);
       expect(config.baseUrl).toBe("https://example.com");
-      expect(config.testPattern).toBe(".*");
+      expect(config.testPattern).toBe("**/*.test.ts");
       expect(config.ai).toEqual({
         apiKey: "foo",
         model: "claude-3-5-sonnet-20241022",
@@ -50,6 +37,18 @@ describe("Config parsing", () => {
         enabled: true,
       });
     });
+  });
+
+  beforeEach(() => {
+    baseConfig = {
+      headless: true,
+      baseUrl: "https://example.com",
+      testPattern: ".*",
+      ai: {
+        provider: "anthropic",
+        apiKey: "explicit-api-key",
+      },
+    };
   });
 
   describe("with invalid config option", () => {

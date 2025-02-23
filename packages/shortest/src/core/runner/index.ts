@@ -21,13 +21,12 @@ import { TokenUsageSchema } from "@/types/ai";
 import { CacheEntry } from "@/types/cache";
 import { getErrorDetails } from "@/utils/errors";
 
-const STATUSES = ["pending", "running", "passed", "failed"] as const;
-// eslint-disable-next-line zod/require-zod-schema-types
-export type TestStatus = (typeof STATUSES)[number];
+const TestStatusSchema = z.enum(["pending", "running", "passed", "failed"]);
+export type TestStatus = z.infer<typeof TestStatusSchema>;
 
 export const TestResultSchema = z.object({
   test: z.any() as z.ZodType<TestFunction>,
-  status: z.enum(STATUSES),
+  status: TestStatusSchema,
   reason: z.string(),
   tokenUsage: TokenUsageSchema,
 });
@@ -35,7 +34,7 @@ export type TestResult = z.infer<typeof TestResultSchema>;
 
 export const FileResultSchema = z.object({
   filePath: z.string(),
-  status: z.enum(STATUSES),
+  status: TestStatusSchema,
   reason: z.string(),
 });
 export type FileResult = z.infer<typeof FileResultSchema>;
@@ -59,29 +58,6 @@ export class TestRunner {
 
   async initialize() {
     this.browserManager = new BrowserManager(this.config);
-  }
-
-  private async findTestFiles(pattern?: string): Promise<string[]> {
-    this.log.trace("Finding test files", { pattern });
-    const testPattern = pattern || this.config.testPattern || "**/*.test.ts";
-
-    const files = await glob(testPattern, {
-      cwd: this.cwd,
-      absolute: true,
-    });
-
-    if (files.length === 0) {
-      this.reporter.error(
-        "Test Discovery",
-        `No test files found matching: ${testPattern}`,
-      );
-      this.log.error("No test files found matching", {
-        pattern: testPattern,
-      });
-      process.exit(1);
-    }
-
-    return files;
   }
 
   private async createTestContext(
@@ -390,16 +366,21 @@ export class TestRunner {
     }
   }
 
-  async runTests(testPattern?: string): Promise<boolean> {
-    await this.initialize();
-    const files = await this.findTestFiles(testPattern);
-
+  async execute(testPattern: string): Promise<boolean> {
+    this.log.trace("Finding test files", { testPattern });
+    const files = await glob(testPattern, {
+      cwd: this.cwd,
+      absolute: true,
+    });
     if (files.length === 0) {
       this.reporter.error(
         "Test Discovery",
-        `No test files found matching the pattern: ${testPattern || this.config.testPattern}`,
+        `No test files found matching the pattern ${testPattern}`,
       );
-      process.exit(1);
+      this.log.error("No test files found matching", {
+        pattern: testPattern,
+      });
+      return false;
     }
 
     this.reporter.onRunStart(files.length);
@@ -407,6 +388,7 @@ export class TestRunner {
       await this.executeTestFile(file);
     }
     this.reporter.onRunEnd();
+
     return this.reporter.allTestsPassed();
   }
 
