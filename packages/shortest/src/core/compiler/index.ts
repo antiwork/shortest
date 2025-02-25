@@ -31,9 +31,10 @@ export class TestCompiler {
       js: `
         import { fileURLToPath } from 'url';
         import { dirname } from 'path';
+        import { createRequire } from 'module';
+
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = dirname(__filename);
-        import { createRequire } from "module";
         const require = createRequire(import.meta.url);
       `,
     },
@@ -70,7 +71,15 @@ export class TestCompiler {
       },
       resolveExtensions: [".ts", ".js", ".mjs"],
       banner: {
-        js: 'import { createRequire } from "module";const require = createRequire(import.meta.url);',
+        js: `
+          import { fileURLToPath } from 'url';
+          import { dirname } from 'path';
+          import { createRequire } from 'module';
+
+          const __filename = fileURLToPath(import.meta.url);
+          const __dirname = dirname(__filename);
+          const require = createRequire(import.meta.url);
+        `,
       },
     });
 
