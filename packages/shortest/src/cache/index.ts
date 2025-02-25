@@ -32,6 +32,12 @@ export const cleanUpCache = async ({
 } = {}) => {
   const log = getLogger();
   log.debug("Cleaning up cache", { forcePurge });
+
+  if (!existsSync(dirPath)) {
+    log.debug("Cache directory does not exist", { dirPath });
+    return;
+  }
+
   const files = await fs.readdir(dirPath);
   const now = Date.now();
 
