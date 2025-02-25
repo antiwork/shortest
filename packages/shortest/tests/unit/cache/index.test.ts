@@ -104,5 +104,12 @@ describe("cache", () => {
 
       await expect(fs.access(nonJsonFile)).resolves.toBeUndefined();
     });
+
+    it("handles non-existent cache directory", async () => {
+      const nonExistentDir = path.join(CACHE_DIR_PATH, "non-existent");
+      await expect(
+        cleanUpCache({ dirPath: nonExistentDir }),
+      ).resolves.toBeUndefined();
+    });
   });
 });
