@@ -83,8 +83,8 @@ npx shortest -h
 3. Make sure all tests pass
 4. Request a review from maintainers
 5. After reviews begin, avoid force-pushing to your branch
-  - Force-pushing rewrites history and makes review threads hard to follow
-  - Don't worry about messy commits - we squash everything when merging to `main`
+   - Force-pushing rewrites history and makes review threads hard to follow
+   - Don't worry about messy commits - we squash everything when merging to `main`
 
 ## Style guide
 
