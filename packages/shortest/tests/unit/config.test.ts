@@ -89,7 +89,7 @@ describe("Config parsing", () => {
           },
         };
         expect(() => parseConfig(userConfig)).toThrowError(
-          /Invalid shortest\.config\nai\.apiKey: Required \(received: "undefined"\)/,
+          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.apiKey(?:\u001b\[\d+m)?: Required \(received: "undefined"\)/,
         );
       });
     });
@@ -174,7 +174,7 @@ describe("Config parsing", () => {
           },
         };
         expect(() => parseConfig(userConfig)).toThrowError(
-          /Invalid shortest\.config\nai\.provider: Invalid literal value, expected "anthropic" \(received: "unknown"\)/,
+          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.provider(?:\u001b\[\d+m)?: Invalid literal value, expected "anthropic" \(received: "unknown"\)/,
         );
       });
     });
@@ -186,7 +186,7 @@ describe("Config parsing", () => {
           ai: { ...baseConfig.ai, model: "invalid-model" as any },
         };
         expect(() => parseConfig(userConfig)).toThrowError(
-          /Invalid shortest\.config\nai\.model: Invalid enum value\. Expected 'claude-3-5-sonnet-20241022', received 'invalid-model'/,
+          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.model(?:\u001b\[\d+m)?: Invalid enum value\. Expected 'claude-3-5-sonnet-20241022', received 'invalid-model'(?:\s\(received: "invalid-model"\))?/,
         );
       });
     });
