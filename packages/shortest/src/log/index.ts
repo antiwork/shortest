@@ -20,6 +20,7 @@
 
 import { LogConfig } from "@/log/config";
 import { Log } from "@/log/log";
+
 export { Log };
 export { LogGroup } from "@/log/group";
 

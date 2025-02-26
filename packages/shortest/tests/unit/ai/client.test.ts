@@ -247,7 +247,7 @@ describe("AIClient", () => {
 
           await expect(client.runAction("test prompt")).rejects.toMatchObject({
             message: expectedMessage,
-            name: "AIError",
+            name: "ShortestError",
             type: expectedType,
           });
         },

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { Log } from "@/log/log";
 import { LogOutput } from "@/log/output";
+import { ConfigError } from "@/utils/errors";
 
 vi.mock("@/log/output", () => ({
   LogOutput: {
@@ -28,6 +29,12 @@ describe("Log", () => {
         level: "debug",
         format: "terminal",
       });
+    });
+
+    it("throws ConfigError when invalid config is provided", () => {
+      expect(() => new Log({ level: "invalid-level" as any })).toThrow(
+        ConfigError,
+      );
     });
   });
 

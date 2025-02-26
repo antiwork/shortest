@@ -1,10 +1,10 @@
 import { detect, resolveCommand } from "package-manager-detector";
-
+import { ShortestError } from "@/utils/errors";
 export const getInstallationCommand = async () => {
   const packageManager = await detect();
 
   if (!packageManager) {
-    throw new Error("No package manager detected");
+    throw new ShortestError("No package manager detected");
   }
 
   const command = resolveCommand(packageManager.agent, "execute", [
@@ -14,8 +14,8 @@ export const getInstallationCommand = async () => {
   ]);
 
   if (!command) {
-    throw new Error(
-      "Failed to resolve playwright browser installation command",
+    throw new ShortestError(
+      "Failed to resolve Playwright browser installation command",
     );
   }
 

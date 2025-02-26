@@ -2,6 +2,7 @@ import pc from "picocolors";
 import { LogFormat, LOG_LEVELS } from "@/log/config";
 import { LogEvent } from "@/log/event";
 import { LogGroup } from "@/log/group";
+import { ConfigError } from "@/utils/errors";
 
 /**
  * Internal class for log output formatting and rendering.
@@ -60,7 +61,10 @@ export class LogOutput {
         output = LogOutput.renderForReporter(event, group);
         return process.stdout.write(`${output}\n`);
       default:
-        throw new Error(`Unsupported log format: ${format}`);
+        throw new ConfigError(
+          "invalid-config",
+          `Unsupported log format: ${format}`,
+        );
     }
   }
 

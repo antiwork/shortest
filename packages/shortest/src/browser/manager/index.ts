@@ -4,6 +4,7 @@ import pc from "picocolors";
 import { Browser, BrowserContext, chromium } from "playwright";
 import { getLogger, Log } from "@/log/index";
 import { ShortestConfig } from "@/types/config";
+import { ShortestError } from "@/utils/errors";
 import { getInstallationCommand } from "@/utils/platform";
 
 export class BrowserManager {
@@ -67,7 +68,7 @@ export class BrowserManager {
 
   async clearContext(): Promise<BrowserContext> {
     if (!this.context) {
-      throw new Error("No context available");
+      throw new ShortestError("No context available");
     }
 
     // Clear all browser state

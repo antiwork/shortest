@@ -14,7 +14,7 @@ import {
   CLIOptions,
 } from "@/types";
 import { parseConfig } from "@/utils/config";
-import { ConfigError } from "@/utils/errors";
+import { ConfigError, ShortestError } from "@/utils/errors";
 // to include the global expect in the generated d.ts file
 import "./globals";
 
@@ -97,7 +97,8 @@ export const initializeConfig = async ({
   }
 
   if (configs.length > 1) {
-    throw new Error(
+    throw new ConfigError(
+      "multiple-config",
       `Multiple config files found: ${configs.map((c) => c.file).join(", ")}. Please keep only one.`,
     );
   }
@@ -109,7 +110,10 @@ export const initializeConfig = async ({
 
 export const getConfig = (): ShortestStrictConfig => {
   if (!globalConfig) {
-    throw new Error("Config not initialized. Call initializeConfig() first");
+    throw new ConfigError(
+      "no-config",
+      "Config not initialized. Call initializeConfig() first",
+    );
   }
   return globalConfig;
 };
@@ -139,7 +143,7 @@ const createTestChain = (
     // Return chain for the last test
     const lastTest = tests[tests.length - 1];
     if (!lastTest.name) {
-      throw new Error("Test name is required");
+      throw new ShortestError("Test name is required");
     }
     return createTestChain(lastTest.name, payloadOrFn, fn);
   }
@@ -156,13 +160,19 @@ const createTestChain = (
     registry.currentFileTests.push(test);
     return {
       expect: () => {
-        throw new Error("expect() cannot be called on direct execution test");
+        throw new ShortestError(
+          "expect() cannot be called on direct execution test",
+        );
       },
       after: () => {
-        throw new Error("after() cannot be called on direct execution test");
+        throw new ShortestError(
+          "after() cannot be called on direct execution test",
+        );
       },
       before: () => {
-        throw new Error("before() cannot be called on direct execution test");
+        throw new ShortestError(
+          "before() cannot be called on direct execution test",
+        );
       },
     };
   }

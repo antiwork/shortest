@@ -10,24 +10,6 @@ export interface AssertionError extends Error {
   };
 }
 
-export class CallbackError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "CallbackError";
-  }
-}
-
-export class AssertionCallbackError extends CallbackError {
-  constructor(
-    message: string,
-    public actual?: any,
-    public expected?: any,
-  ) {
-    super(message);
-    this.name = "AssertionCallbackError";
-  }
-}
-
 // eslint-disable-next-line zod/require-zod-schema-types
 export type TestContext = {
   page: Page;

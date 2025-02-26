@@ -1,12 +1,6 @@
 import { BrowserToolOptions, ActionInput, ToolResult } from "@/types/browser";
 import { BetaToolType } from "@/types/browser";
-
-export class ToolError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ToolError";
-  }
-}
+import { ToolError } from "@/utils/errors";
 
 export abstract class BaseBrowserTool {
   protected width: number;

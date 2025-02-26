@@ -1,8 +1,11 @@
 import pc from "picocolors";
+import { z } from "zod";
 import { LOG_LEVELS, LogLevel, LogConfig, LogConfigSchema } from "@/log/config";
 import { LogEvent } from "@/log/event";
 import { LogGroup } from "@/log/group";
 import { LogOutput } from "@/log/output";
+import { formatZodError } from "@/utils/errors";
+import { ConfigError } from "@/utils/errors";
 
 /**
  * Core logging class that handles log filtering, grouping, and output rendering.
@@ -34,7 +37,19 @@ export class Log {
   private currentGroup?: LogGroup;
 
   constructor(config: Partial<LogConfig> = {}) {
-    this.config = LogConfigSchema.parse(config);
+    try {
+      this.config = LogConfigSchema.parse(config);
+    } catch (error) {
+      console.log(error);
+      if (error instanceof z.ZodError) {
+        console.log("ZodError");
+        throw new ConfigError(
+          "invalid-config",
+          formatZodError(error, "Invalid shortest.config"),
+        );
+      }
+      throw error;
+    }
   }
 
   /**

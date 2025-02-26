@@ -5,7 +5,7 @@ import { getLogger, Log } from "@/log";
 import { CacheEntry, CacheStep } from "@/types/cache";
 import type { TestFunction } from "@/types/test";
 import { createHash } from "@/utils/create-hash";
-import { getErrorDetails } from "@/utils/errors";
+import { getErrorDetails, ShortestError } from "@/utils/errors";
 
 // Shared process handlers registration
 let handlersRegistered = false;
@@ -55,7 +55,7 @@ export class TestCache {
   private currentCacheFileName: string | undefined = undefined; // e.g. "2025-02-22T12-34-56-a1b2c3d4.json"
   private get currentCacheFilePath(): string {
     if (!this.currentCacheFileName) {
-      throw new Error("currentCacheFilePath is not set");
+      throw new ShortestError("currentCacheFilePath is not set");
     }
     return path.join(this.cacheDir, this.currentCacheFileName);
   }

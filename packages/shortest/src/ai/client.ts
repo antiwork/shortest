@@ -20,7 +20,12 @@ import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import { ToolResult } from "@/types";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
-import { getErrorDetails, AIError, AIErrorType } from "@/utils/errors";
+import {
+  getErrorDetails,
+  AIError,
+  AIErrorType,
+  asShortestError,
+} from "@/utils/errors";
 import { sleep } from "@/utils/sleep";
 
 /**
@@ -139,7 +144,7 @@ export class AIClient {
       } catch (error: any) {
         this.log.error("Action failed", getErrorDetails(error));
         if (this.isNonRetryableError(error)) {
-          throw error;
+          throw asShortestError(error);
         }
         retries++;
         this.log.trace("Retry attempt", { retries, maxRetries: MAX_RETRIES });
@@ -231,7 +236,7 @@ export class AIClient {
           if (NoSuchToolError.isInstance(error)) {
             this.log.error("Tool is not supported");
           }
-          throw error;
+          throw asShortestError(error);
         }
 
         this.log.trace("Request completed", {

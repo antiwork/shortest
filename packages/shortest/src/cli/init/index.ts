@@ -8,6 +8,7 @@ import { DOT_SHORTEST_DIR_NAME } from "@/cache";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
 import { addToEnv } from "@/utils/add-to-env";
 import { addToGitignore } from "@/utils/add-to-gitignore";
+import { ShortestError } from "@/utils/errors";
 
 export default async function main() {
   console.log(pc.blue("Setting up Shortest..."));
@@ -115,7 +116,9 @@ export const getInstallCmd = async () => {
   );
 
   if (!command) {
-    throw new Error(`Unsupported package manager: ${packageManager.agent}`);
+    throw new ShortestError(
+      `Unsupported package manager: ${packageManager.agent}`,
+    );
   }
 
   const cmdString = `${command.command} ${command.args.join(" ")}`;

@@ -17,7 +17,7 @@ import {
 import { join } from "path";
 import { Page } from "playwright";
 import * as actions from "@/browser/actions";
-import { BaseBrowserTool, ToolError } from "@/browser/core";
+import { BaseBrowserTool } from "@/browser/core";
 import { GitHubTool } from "@/browser/integrations/github";
 import { MailosaurTool } from "@/browser/integrations/mailosaur";
 import { BrowserManager } from "@/browser/manager";
@@ -31,9 +31,7 @@ import {
   ShortestConfig,
 } from "@/types";
 import { ActionInput, ToolResult, BetaToolType } from "@/types/browser";
-import { CallbackError } from "@/types/test";
-import { AssertionCallbackError } from "@/types/test";
-import { getErrorDetails } from "@/utils/errors";
+import { getErrorDetails, ToolError, TestError } from "@/utils/errors";
 
 export class BrowserTool extends BaseBrowserTool {
   private page: Page;
@@ -383,13 +381,13 @@ export class BrowserTool extends BaseBrowserTool {
             // Check if it's an assertion error from jest/expect
             if (error && (error as any).matcherResult) {
               const assertionError = error as any;
-              throw new AssertionCallbackError(
-                assertionError.message,
-                assertionError.matcherResult.actual,
-                assertionError.matcherResult.expected,
-              );
+              throw new TestError("assertion-failed", assertionError.message, {
+                actual: assertionError.matcherResult.actual,
+                expected: assertionError.matcherResult.expected,
+              });
             }
-            throw new CallbackError(
+            throw new TestError(
+              "callback-execution-failed",
               error instanceof Error ? error.message : String(error),
             );
           }
@@ -593,7 +591,7 @@ export class BrowserTool extends BaseBrowserTool {
     } catch (error) {
       this.log.error("Browser action failed", getErrorDetails(error));
 
-      if (error instanceof AssertionCallbackError) {
+      if (error instanceof TestError && error.type === "assertion-failed") {
         return {
           output: `Assertion failed: ${error.message}${
             error.actual !== undefined
@@ -602,7 +600,10 @@ export class BrowserTool extends BaseBrowserTool {
           }`,
         };
       }
-      if (error instanceof CallbackError) {
+      if (
+        error instanceof TestError &&
+        error.type === "callback-execution-failed"
+      ) {
         return {
           output: `Callback execution failed: ${error.message}`,
         };

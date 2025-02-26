@@ -8,7 +8,7 @@ import { getConfig, initializeConfig } from "@/index";
 import { LogLevel } from "@/log/config";
 import { getLogger } from "@/log/index";
 import { CLIOptions } from "@/types";
-import { getErrorDetails } from "@/utils/errors";
+import { getErrorDetails, ShortestError } from "@/utils/errors";
 
 process.removeAllListeners("warning");
 process.on("warning", (warning) => {
@@ -197,8 +197,11 @@ const main = async () => {
     const success = await runner.execute(config.testPattern);
     process.exitCode = success ? 0 : 1;
   } catch (error: any) {
-    console.error(pc.red(error));
-    console.error(pc.red(error.name), error.message, getErrorDetails(error));
+    log.trace("Handling error for TestRunner");
+    if (!(error instanceof ShortestError)) throw error;
+
+    console.error(pc.red(error.name));
+    console.error(error.message, getErrorDetails(error));
     process.exitCode = 1;
   } finally {
     await cleanUpCache();
@@ -207,6 +210,10 @@ const main = async () => {
 };
 
 main().catch(async (error) => {
-  console.error(error, getErrorDetails(error));
+  const log = getLogger();
+  log.trace("Handling error on main()");
+  if (!(error instanceof ShortestError)) throw error;
+
+  console.error(pc.red(error.name), error.message);
   process.exit(1);
 });

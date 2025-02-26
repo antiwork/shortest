@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import { authenticator } from "otplib";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { BrowserToolInterface } from "@/types/browser";
+import { ConfigError, ShortestError } from "@/utils/errors";
 
 export class GitHubTool {
   private totpSecret: string;
@@ -22,7 +23,8 @@ export class GitHubTool {
     this.totpSecret = secret || process.env.GITHUB_TOTP_SECRET || "";
 
     if (!this.totpSecret) {
-      throw new Error(
+      throw new ConfigError(
+        "invalid-config",
         "GITHUB_TOTP_SECRET is required in .env file or via --secret flag",
       );
     }
@@ -30,7 +32,8 @@ export class GitHubTool {
 
   private validateSecret() {
     if (!this.totpSecret) {
-      throw new Error(
+      throw new ConfigError(
+        "invalid-config",
         "GITHUB_TOTP_SECRET is required in .env file or via --secret flag",
       );
     }
@@ -43,7 +46,7 @@ export class GitHubTool {
       const timeRemaining = authenticator.timeRemaining();
       return { code, timeRemaining };
     } catch (error) {
-      throw new Error(`Failed to generate TOTP code: ${error}`);
+      throw new ShortestError(`Failed to generate TOTP code: ${error}`);
     }
   }
 

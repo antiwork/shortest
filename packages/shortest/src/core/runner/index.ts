@@ -18,7 +18,12 @@ import {
   ShortestStrictConfig,
 } from "@/types";
 import { TokenUsageSchema } from "@/types/ai";
-import { CacheError, getErrorDetails } from "@/utils/errors";
+import {
+  CacheError,
+  getErrorDetails,
+  ShortestError,
+  asShortestError,
+} from "@/utils/errors";
 
 const TestStatusSchema = z.enum(["pending", "running", "passed", "failed"]);
 export type TestStatus = z.infer<typeof TestStatusSchema>;
@@ -292,8 +297,8 @@ export class TestRunner {
         this.log.trace("Launching browser");
         context = await this.browserManager.launch();
       } catch (error) {
-        this.log.error("Browser initialization failed", getErrorDetails(error));
-        throw error;
+        this.log.error("Browser launching failed", getErrorDetails(error));
+        throw asShortestError(error);
       }
       this.log.trace("Creating test context");
       const testContext = await this.createTestContext(context);
@@ -346,16 +351,15 @@ export class TestRunner {
         this.reporter.onFileEnd(fileResult);
       }
     } catch (error) {
+      this.log.trace("Handling error for executeTestFile");
+      if (!(error instanceof ShortestError)) throw error;
       this.testContext = null; // Reset on error
-      if (error instanceof Error) {
-        const fileResult: FileResult = {
-          filePath: file,
-          status: "failed",
-          reason: error.message,
-        };
-
-        this.reporter.onFileEnd(fileResult);
-      }
+      const fileResult: FileResult = {
+        filePath: file,
+        status: "failed",
+        reason: error.message,
+      };
+      this.reporter.onFileEnd(fileResult);
     }
   }
 
