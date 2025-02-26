@@ -40,9 +40,7 @@ export class Log {
     try {
       this.config = LogConfigSchema.parse(config);
     } catch (error) {
-      console.log(error);
       if (error instanceof z.ZodError) {
-        console.log("ZodError");
         throw new ConfigError(
           "invalid-config",
           formatZodError(error, "Invalid shortest.config"),
