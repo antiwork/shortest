@@ -54,6 +54,27 @@ npm install /path/to/antiwork-shortest-{version}.tgz
 npx shortest -h
 ```
 
+## Feature implementation process
+
+We prioritize issues from the current milestone. Check the [roadmap](https://github.com/orgs/anti-work/projects/5/views/3?query=sort%3Aupdated-desc+is%3Aopen) to see which issues we're focusing on right now.
+
+### Issue states
+
+- **Scoping needed**: The issue requires an implementation plan before development can start. If you want to work on this issue, first create an implementation plan outlining the approach.
+- **Building needed**: The issue has been scoped and is ready for development. You can start implementing it immediately. If you have any clarifying questions, post a comment on the issue.
+
+### Implementation plan
+
+To have an issue moved from _Scoping needed_ to _Building needed_, create an implementation plan that outlines:
+  - technical approach
+  - key components and interfaces
+  - potential challenges
+  - testing strategy
+
+[Create a discussion](https://github.com/anti-work/shortest/discussions/new?category=general) to get feedback on the implementation plan from maintainers before beginning development.
+
+> [!IMPORTANT]
+> We recommend waiting until an issue has moved to _Building needed_ before submitting a PR. PRs for issues in the _Scoping needed_ state might need significant rework or may be put on hold until proper scoping is complete.
 ## Pull requests
 
 1. Update documentation if you're changing behavior
@@ -62,8 +83,8 @@ npx shortest -h
 4. Make sure all tests pass
 5. Request a review from maintainers
 6. After reviews begin, avoid force-pushing to your branch
-   - Force-pushing rewrites history and makes review threads hard to follow
-   - Don't worry about messy commits - we squash everything when merging to `main`
+  - Force-pushing rewrites history and makes review threads hard to follow
+  - Don't worry about messy commits - we squash everything when merging to `main`
 
 ## Style guide
 
