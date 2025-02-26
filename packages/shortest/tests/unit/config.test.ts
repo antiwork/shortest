@@ -224,7 +224,7 @@ describe("Config parsing", () => {
           };
           delete userConfig.ai;
           expect(() => parseConfig(userConfig)).toThrowError(
-            "Invalid shortest.config\nai: Required",
+            /Invalid shortest\.config\nai: Required \(received: "undefined"\)/,
           );
         });
       });
@@ -237,7 +237,7 @@ describe("Config parsing", () => {
       baseUrl: "not-a-url",
     };
     expect(() => parseConfig(userConfig)).toThrowError(
-      "Invalid shortest.config\nbaseUrl: must be a valid URL",
+      /Invalid shortest\.config\nbaseUrl: must be a valid URL/,
     );
   });
 
@@ -247,7 +247,7 @@ describe("Config parsing", () => {
       testPattern: null as any,
     };
     expect(() => parseConfig(userConfig)).toThrowError(
-      "Invalid shortest.config\ntestPattern: Expected string, received null",
+      /Invalid shortest\.config\ntestPattern: Expected string, received null \(received: "null"\)/,
     );
   });
 
@@ -257,7 +257,7 @@ describe("Config parsing", () => {
       mailosaur: { apiKey: "key" } as any,
     };
     expect(() => parseConfig(userConfig)).toThrowError(
-      "Invalid shortest.config\nmailosaur.serverId: Required",
+      /Invalid shortest\.config\nmailosaur\.serverId: Required \(received: "undefined"\)/,
     );
   });
 });
