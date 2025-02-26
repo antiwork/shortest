@@ -1,54 +1,8 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [0.4.1] - 2025-01-07
-
-### Added
-- Update readme with CLI example by @Harry Roper
-- Update README with non-engineer introduction and example tests by @devin-ai-integration[bot]
-- Add token usage details in summary by @khalatevarun
-- Add baseURL configuration to BrowserManager context by @PedroAVJ
-- Update test command example with directory path by @devin-ai-integration[bot]
-- Move AI processing logic to more appropriate location by @PedroAVJ
-
-### Fixed
-- Improve AI handling of newly opened tabs by @rmarescu
-
-## [0.4.0] - 2025-01-02
-
-### Added
-- Chained testing by @crabest
-- 'before' function support by @slavingia
-- Bash tool by @gladyshcodes
-
-### Changed
-- Adjusted the prompt to expect successful test execution by @crabest
-- Updated Copyright year from 2024 to 2025 by @crabest
-- Refactored config to detect test.ts files instead of files under test directory by @khalatevarun
-- Improved index.d.ts generation by @amk-dev
-- Updated shortest.config.ts by @slavingia
-- Updated npm readme by @m2rads
-
-### Removed
-- Removed yarn support by @m2rads
-
-**Full Changelog**: https://github.com/anti-work/shortest/compare/v0.3.0...v0.4.0
-
-## [0.3.0] - 2024-12-30
-
-### Changes
-- Added Caching
-
-## [0.2.1] - 2024-12-27
-
-## Added
-- Mailosaur integration with error handling for email validation
-- Browser-based email preview functionality
-- Test execution delay utility (sleep_milliseconds)
+> [!NOTE]
+> Releases for version v0.2.1 and newer are maintained on the [GitHub Releases page](https://github.com/anti-work/shortest/releases).
+> Older versions are kept here for historical purposes.
 
 ## [0.1.1] - 2024-12-24
 
@@ -142,10 +96,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Browser automation using Playwright
 - CLI tool for running tests
 - Support for ESM and CommonJS
-
-### PeeDependencies
-- Playwright ^1.42.1
-- Anthropic AI SDK 0.32.0
-- esbuild ^0.20.1
-- expect ^29.7.0
-- dotenv ^16.4.5
