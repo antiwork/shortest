@@ -1,9 +1,9 @@
 import * as fs from "fs/promises";
 import path from "path";
 import { CACHE_DIR_PATH } from "@/cache";
+import { TestCase } from "@/core/runner/test-case";
 import { getLogger, Log } from "@/log";
 import { CacheEntry, CacheStep } from "@/types/cache";
-import type { TestFunction } from "@/types/test";
 import { createHash } from "@/utils/create-hash";
 import { getErrorDetails, ShortestError } from "@/utils/errors";
 
@@ -69,14 +69,14 @@ export class TestCache {
   private lockAcquired = false;
   private steps: CacheStep[] = [];
   private identifier: string;
-  private test: TestFunction;
+  private test: TestCase;
   private static activeCaches: Set<TestCache>;
 
   /**
    * Creates a new test cache instance
-   * @param {TestFunction} test - Test function to cache results for
+   * @param {TestCase} test - Test case to cache results for
    */
-  constructor(test: TestFunction, cacheDir = CACHE_DIR_PATH) {
+  constructor(test: TestCase, cacheDir = CACHE_DIR_PATH) {
     this.log = getLogger();
     this.log.trace("Initializing TestCache");
     this.test = test;

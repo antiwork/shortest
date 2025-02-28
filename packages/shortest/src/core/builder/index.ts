@@ -1,7 +1,7 @@
-import type { TestFunction } from "@/types";
+import { TestCase } from "@/core/runner/test-case";
 
 export class TestBuilder {
-  static generatePrompt(test: TestFunction): string {
+  static generatePrompt(test: TestCase): string {
     const lines = [`Test: "${test.name}"`];
 
     if (test.payload) {
@@ -27,7 +27,7 @@ export class TestBuilder {
     return lines.filter(Boolean).join("\n");
   }
 
-  static async parseModule(_compiledModule: any): Promise<TestFunction[]> {
+  static async parseModule(_compiledModule: any): Promise<TestCase[]> {
     // Get tests from global registry
     const registry = (global as any).__shortest__.registry;
     const tests = Array.from(registry.tests.values()).flat();
@@ -35,6 +35,6 @@ export class TestBuilder {
     // Clear registry after getting tests
     registry.tests.clear();
 
-    return tests as TestFunction[];
+    return tests as TestCase[];
   }
 }

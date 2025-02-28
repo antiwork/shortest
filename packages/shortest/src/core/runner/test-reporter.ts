@@ -1,7 +1,8 @@
 import pc from "picocolors";
 import { FileResult, TestResult, TestStatus } from "@/core/runner/index";
+import { TestCase } from "@/core/runner/test-case";
 import { getLogger, Log } from "@/log/index";
-import { AssertionError, TestFunction } from "@/types/test";
+import { AssertionError } from "@/types/test";
 
 export class TestReporter {
   private startTime: number = Date.now();
@@ -41,7 +42,7 @@ export class TestReporter {
     this.testsCount += testsCount;
   }
 
-  onTestStart(test: TestFunction) {
+  onTestStart(test: TestCase) {
     this.log.trace("onTestStart called");
     this.log.setGroup(test.name);
     this.reporterLog.info(this.getStatusIcon("running"), test.name);

@@ -1,5 +1,5 @@
+import { TestCase } from "@/core/runner/test-case";
 import { BrowserAction, ActionInput } from "@/types/browser";
-import { TestFunction } from "@/types/test";
 
 export interface CacheAction {
   type: "tool_use" | "text";
@@ -20,7 +20,7 @@ export interface CacheEntry {
     timestamp: number;
     version: string;
   };
-  test: Pick<TestFunction, "name" | "filePath">;
+  test: Pick<TestCase, "name" | "filePath">;
   data: {
     steps?: CacheStep[];
   };

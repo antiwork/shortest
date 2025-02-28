@@ -4,9 +4,9 @@ import { expect as jestExpect } from "expect";
 import { APIRequest } from "@/browser/core/api-request";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
 import { TestCompiler } from "@/core/compiler";
+import { createTestCase, TestCase } from "@/core/runner/test-case";
 import { getLogger } from "@/log";
 import {
-  TestFunction,
   TestAPI,
   TestContext,
   TestChain,
@@ -31,13 +31,13 @@ if (!global.__shortest__) {
   global.__shortest__ = {
     expect: jestExpect,
     registry: {
-      tests: new Map<string, TestFunction[]>(),
+      tests: new Map<string, TestCase[]>(),
       currentFileTests: [],
       beforeAllFns: [],
       afterAllFns: [],
       beforeEachFns: [],
       afterEachFns: [],
-      directTestCounter: 0,
+      directTestCount: 0,
     },
   };
 
@@ -129,11 +129,11 @@ const createTestChain = (
   // Handle array of test names
   if (Array.isArray(nameOrFn)) {
     const tests = nameOrFn.map((name) => {
-      const test: TestFunction = {
+      const test = createTestCase({
         name: normalizeName(name),
         filePath: "",
         expectations: [],
-      };
+      });
 
       const existingTests = registry.tests.get(name) || [];
       registry.tests.set(name, [...existingTests, test]);
@@ -151,13 +151,13 @@ const createTestChain = (
 
   // Handle direct execution
   if (typeof nameOrFn === "function") {
-    registry.directTestCounter++;
-    const test: TestFunction = {
-      name: `Direct Test #${registry.directTestCounter}`,
+    registry.directTestCount++;
+    const test = createTestCase({
+      name: `Direct Test #${registry.directTestCount}`,
       filePath: "",
       directExecution: true,
       fn: nameOrFn,
-    };
+    });
     registry.currentFileTests.push(test);
     return {
       expect: () => {
@@ -179,17 +179,18 @@ const createTestChain = (
   }
 
   // Rest of existing createTestChain implementation...
-  const test: TestFunction = {
-    name: normalizeName(nameOrFn),
+  const name = normalizeName(nameOrFn as string);
+  const testCase = createTestCase({
+    name,
     filePath: "",
     payload: typeof payloadOrFn === "function" ? undefined : payloadOrFn,
     fn: typeof payloadOrFn === "function" ? payloadOrFn : fn,
     expectations: [],
-  };
+  });
 
-  let existingTests = registry.tests.get(nameOrFn) || [];
-  registry.tests.set(nameOrFn, [...existingTests, test]);
-  registry.currentFileTests.push(test);
+  let existingTests = registry.tests.get(name) || [];
+  registry.tests.set(name, [...existingTests, testCase]);
+  registry.currentFileTests.push(testCase);
 
   const chain: TestChain = {
     expect(
@@ -199,8 +200,7 @@ const createTestChain = (
     ) {
       // Handle direct execution for expect
       if (typeof descriptionOrFn === "function") {
-        test.expectations ||= [];
-        test.expectations.push({
+        testCase.expectations.push({
           directExecution: true,
           fn: descriptionOrFn,
         });
@@ -208,20 +208,21 @@ const createTestChain = (
       }
 
       // Existing expect implementation...
-      test.expectations ||= [];
-      test.expectations.push({
+      testCase.expectations ||= [];
+      testCase.expectations.push({
         description: descriptionOrFn,
         payload: typeof payloadOrFn === "function" ? undefined : payloadOrFn,
         fn: typeof payloadOrFn === "function" ? payloadOrFn : fn,
+        directExecution: false,
       });
       return chain;
     },
     before(fn: (context: TestContext) => void | Promise<void>) {
-      test.beforeFn = (context) => Promise.resolve(fn(context));
+      testCase.beforeFn = (context) => Promise.resolve(fn(context));
       return chain;
     },
     after(fn: (context: TestContext) => void | Promise<void>) {
-      test.afterFn = (context) => Promise.resolve(fn(context));
+      testCase.afterFn = (context) => Promise.resolve(fn(context));
       return chain;
     },
   };

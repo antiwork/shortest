@@ -1,10 +1,11 @@
 import type { Expect } from "expect";
-import type { TestFunction, TestHookFunction } from "@/types/test";
+import { TestCase } from "@/core/runner/test-case";
+import type { TestHookFunction } from "@/types/test";
 
 export interface ShortestGlobals {
   expect: Expect;
   registry: {
-    tests: Map<string, TestFunction[]>;
+    tests: Map<string, TestCase[]>;
     beforeAllFns: TestHookFunction[];
     afterAllFns: TestHookFunction[];
     beforeEachFns: TestHookFunction[];

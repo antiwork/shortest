@@ -3,8 +3,8 @@ import path from "path";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { CACHE_DIR_PATH } from "@/cache";
 import { TestCache } from "@/cache/test-cache";
+import { TestCase } from "@/core/runner/test-case";
 import { CacheEntry, CacheStep } from "@/types/cache";
-import { TestFunction } from "@/types/test";
 import { createHash } from "@/utils/create-hash";
 
 describe("TestCache", () => {
@@ -13,11 +13,11 @@ describe("TestCache", () => {
   }
 
   let testCache: TestCache;
-  const mockTest: TestFunction = {
-    name: "test",
-    filePath: "test.ts",
+  const mockTest = new TestCase({
+    name: "Test Cache Mock",
+    filePath: "/path/to/test.ts",
     fn: () => Promise.resolve(),
-  };
+  });
 
   beforeEach<TestContext>(async (context) => {
     // Create and store the unique test directory in the context

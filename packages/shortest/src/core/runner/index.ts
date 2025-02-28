@@ -9,18 +9,14 @@ import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
 import { TestCache } from "@/cache";
 import { TestCompiler } from "@/core/compiler";
+import { TestCase } from "@/core/runner/test-case";
 import {
   EXPRESSION_PLACEHOLDER,
   parseShortestTestFile,
 } from "@/core/runner/test-file-parser";
 import { TestReporter } from "@/core/runner/test-reporter";
 import { getLogger, Log } from "@/log";
-import {
-  TestFunction,
-  TestContext,
-  BrowserActionEnum,
-  ShortestStrictConfig,
-} from "@/types";
+import { TestContext, BrowserActionEnum, ShortestStrictConfig } from "@/types";
 import { TokenUsageSchema } from "@/types/ai";
 import {
   CacheError,
@@ -33,7 +29,7 @@ const TestStatusSchema = z.enum(["pending", "running", "passed", "failed"]);
 export type TestStatus = z.infer<typeof TestStatusSchema>;
 
 export const TestResultSchema = z.object({
-  test: z.any() as z.ZodType<TestFunction>,
+  test: z.any() as z.ZodType<TestCase>,
   status: TestStatusSchema,
   reason: z.string(),
   tokenUsage: TokenUsageSchema,
@@ -105,7 +101,7 @@ export class TestRunner {
   }
 
   private async executeTest(
-    test: TestFunction,
+    test: TestCase,
     context: BrowserContext,
     skipCache: boolean = false,
   ): Promise<TestResult> {
@@ -286,10 +282,10 @@ export class TestRunner {
   }
 
   private async filterTestsByLineNumber(
-    tests: TestFunction[],
+    tests: TestCase[],
     file: string,
     lineNumber: number,
-  ): Promise<TestFunction[]> {
+  ): Promise<TestCase[]> {
     const testLocations = parseShortestTestFile(file);
     const escapeRegex = (str: string) =>
       str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -456,7 +452,7 @@ export class TestRunner {
   }
 
   private async runCachedTest(
-    test: TestFunction,
+    test: TestCase,
     browserTool: BrowserTool,
     testCache: TestCache,
   ): Promise<TestResult> {

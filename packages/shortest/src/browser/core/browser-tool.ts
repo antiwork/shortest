@@ -22,14 +22,10 @@ import { GitHubTool } from "@/browser/integrations/github";
 import { MailosaurTool } from "@/browser/integrations/mailosaur";
 import { BrowserManager } from "@/browser/manager";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
+import { TestCase } from "@/core/runner/test-case";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger, Log } from "@/log/index";
-import {
-  TestContext,
-  BrowserToolConfig,
-  TestFunction,
-  ShortestConfig,
-} from "@/types";
+import { TestContext, BrowserToolConfig, ShortestConfig } from "@/types";
 import { ActionInput, ToolResult, BetaToolType } from "@/types/browser";
 import { getErrorDetails, ToolError, TestError } from "@/utils/errors";
 
@@ -353,7 +349,7 @@ export class BrowserTool extends BaseBrowserTool {
           }
 
           const testContext = this.testContext;
-          const currentTest = testContext.currentTest as TestFunction;
+          const currentTest = testContext.currentTest as TestCase;
 
           const currentStepIndex = testContext.currentStepIndex ?? 0;
 
