@@ -3,7 +3,7 @@ import path from "path";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { CACHE_DIR_PATH } from "@/cache";
 import { TestCache } from "@/cache/test-cache";
-import { TestCase } from "@/core/runner/test-case";
+import { createTestCase } from "@/core/runner/test-case";
 import { CacheEntry, CacheStep } from "@/types/cache";
 import { createHash } from "@/utils/create-hash";
 
@@ -13,7 +13,7 @@ describe("TestCache", () => {
   }
 
   let testCache: TestCache;
-  const mockTest = new TestCase({
+  const mockTest = createTestCase({
     name: "Test Cache Mock",
     filePath: "/path/to/test.ts",
     fn: () => Promise.resolve(),
