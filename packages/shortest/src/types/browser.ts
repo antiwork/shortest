@@ -13,27 +13,27 @@ export interface BrowserToolInterface {
   getPage(): Page;
 }
 
-export enum BrowserActionEnum {
-  MouseMove = "mouse_move",
-  LeftClick = "left_click",
-  LeftClickDrag = "left_click_drag",
-  RightClick = "right_click",
-  MiddleClick = "middle_click",
-  DoubleClick = "double_click",
-  Screenshot = "screenshot",
-  CursorPosition = "cursor_position",
-  GithubLogin = "github_login",
-  ClearSession = "clear_session",
-  Type = "type",
-  Key = "key",
-  RunCallback = "run_callback",
-  Navigate = "navigate",
-  Sleep = "sleep",
-  CheckMail = "check_email",
+export enum InternalActionEnum {
+  MOUSE_MOVE = "mouse_move",
+  LEFT_CLICK = "left_click",
+  LEFT_CLICK_DRAG = "left_click_drag",
+  RIGHT_CLICK = "right_click",
+  MIDDLE_CLICK = "middle_click",
+  DOUBLE_CLICK = "double_click",
+  SCREENSHOT = "screenshot",
+  CURSOR_POSITION = "cursor_position",
+  GITHUB_LOGIN = "github_login",
+  CLEAR_SESSION = "clear_session",
+  TYPE = "type",
+  KEY = "key",
+  RUN_CALLBACK = "run_callback",
+  NAVIGATE = "navigate",
+  SLEEP = "sleep",
+  CHECK_EMAIL = "check_email",
 }
 
 // eslint-disable-next-line zod/require-zod-schema-types
-export type BrowserAction = `${BrowserActionEnum}`;
+export type BrowserAction = `${InternalActionEnum}`;
 
 export interface BrowserToolOptions {
   width: number;

@@ -614,6 +614,32 @@ export class BrowserTool extends BaseBrowserTool {
     }
   }
 
+  /**
+   * Converts browser tool execution results to standardized content format.
+   * Handles image data and text output formatting.
+   *
+   * @param {ToolResult} result - Raw tool execution result
+   * @returns {Array<{type: string, data?: string, text?: string, mimeType?: string}>} Formatted content
+   *
+   * @private
+   */
+  public resultToToolResultContent(result: ToolResult) {
+    return result.base64_image
+      ? [
+          {
+            type: "image" as const,
+            data: result.base64_image,
+            mimeType: "image/jpeg",
+          },
+        ]
+      : [
+          {
+            type: "text" as const,
+            text: result.output!,
+          },
+        ];
+  }
+
   private async getMetadata(): Promise<any> {
     const metadata: any = {
       window_info: {},

@@ -8,7 +8,18 @@ export const cliOptionsSchema = z.object({
 });
 export type CLIOptions = z.infer<typeof cliOptionsSchema>;
 
-const ANTHROPIC_MODELS = ["claude-3-5-sonnet-20241022"] as const;
+/**
+ * List of Anthropic models that are supported by the AI client.
+ *
+ * @see https://sdk.vercel.ai/providers/ai-sdk-providers/anthropic#model-capabilities
+ * @see https://docs.anthropic.com/en/docs/about-claude/models/all-models
+ */
+export const ANTHROPIC_MODELS = [
+  "claude-3-5-sonnet-20241022",
+  "claude-3-5-sonnet-latest",
+] as const;
+export const anthropicModelSchema = z.enum(ANTHROPIC_MODELS);
+export type AnthropicModel = z.infer<typeof anthropicModelSchema>;
 
 const aiSchema = z
   .object({

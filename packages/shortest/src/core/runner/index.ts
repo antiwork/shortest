@@ -18,7 +18,7 @@ import { getLogger, Log } from "@/log";
 import {
   TestFunction,
   TestContext,
-  BrowserActionEnum,
+  InternalActionEnum,
   ShortestStrictConfig,
 } from "@/types";
 import { TokenUsageSchema } from "@/types/ai";
@@ -29,12 +29,12 @@ import {
   asShortestError,
 } from "@/utils/errors";
 
-const TestStatusSchema = z.enum(["pending", "running", "passed", "failed"]);
-export type TestStatus = z.infer<typeof TestStatusSchema>;
+const testStatusSchema = z.enum(["pending", "running", "passed", "failed"]);
+export type TestStatus = z.infer<typeof testStatusSchema>;
 
 export const TestResultSchema = z.object({
   test: z.any() as z.ZodType<TestFunction>,
-  status: TestStatusSchema,
+  status: testStatusSchema,
   reason: z.string(),
   tokenUsage: TokenUsageSchema,
 });
@@ -42,7 +42,7 @@ export type TestResult = z.infer<typeof TestResultSchema>;
 
 export const FileResultSchema = z.object({
   filePath: z.string(),
-  status: TestStatusSchema,
+  status: testStatusSchema,
   reason: z.string(),
 });
 export type FileResult = z.infer<typeof FileResultSchema>;
@@ -472,7 +472,7 @@ export class TestRunner {
         ?.filter(
           (step) =>
             step.action?.input.action !==
-            BrowserActionEnum.Screenshot.toString(),
+            InternalActionEnum.SCREENSHOT.toString(),
         );
 
       if (!steps || steps.length === 0) {
@@ -483,7 +483,7 @@ export class TestRunner {
       for (const step of steps) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         if (
-          step.action?.input.action === BrowserActionEnum.MouseMove &&
+          step.action?.input.action === InternalActionEnum.MOUSE_MOVE &&
           // @ts-expect-error Interface and actual values differ
           step.action.input.coordinate
         ) {

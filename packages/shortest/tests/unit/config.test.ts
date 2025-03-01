@@ -186,7 +186,7 @@ describe("Config parsing", () => {
           ai: { ...baseConfig.ai, model: "invalid-model" as any },
         };
         expect(() => parseConfig(userConfig)).toThrowError(
-          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.model(?:\u001b\[\d+m)?: Invalid enum value\. Expected 'claude-3-5-sonnet-20241022', received 'invalid-model'(?:\s\(received: "invalid-model"\))?/,
+          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.model(?:\u001b\[\d+m)?: Invalid enum value\. Expected 'claude-3-5-sonnet-20241022' | 'claude-3-5-sonnet-latest', received 'invalid-model'(?:\s\(received: "invalid-model"\))?/,
         );
       });
     });

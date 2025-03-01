@@ -1,25 +1,22 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { LanguageModelV1FinishReason } from "@ai-sdk/provider";
 import {
   CoreMessage,
-  CoreTool,
+  Tool,
   generateText,
   LanguageModelV1,
   NoSuchToolError,
-  tool,
 } from "ai";
-import { z } from "zod";
 
 import { SYSTEM_PROMPT } from "@/ai/prompts";
 import { createProvider } from "@/ai/provider";
 import { AIJSONResponse, extractJsonPayload } from "@/ai/utils/json";
-import { BashTool } from "@/browser/core/bash-tool";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { TestCache } from "@/cache/test-cache";
 import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
-import { ToolResult } from "@/types";
+import { createToolRegistry, ToolRegistry } from "@/tools/index";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
+import { AIConfig } from "@/types/config";
 import {
   getErrorDetails,
   AIError,
@@ -87,8 +84,9 @@ export class AIClient {
   private log: Log;
   private usage: TokenUsage;
   private apiRequestCount: number = 0;
-  private _tools: Record<string, CoreTool> | null = null;
-
+  private toolRegistry: ToolRegistry;
+  private _tools: Record<string, Tool> | null = null;
+  private configAi: AIConfig;
   constructor({
     browserTool,
     testCache,
@@ -99,9 +97,11 @@ export class AIClient {
     this.log = getLogger();
     this.log.trace("Initializing AIClient");
     this.client = createProvider(getConfig().ai);
+    this.configAi = getConfig().ai;
     this.browserTool = browserTool;
     this.testCache = testCache;
     this.usage = TokenUsageSchema.parse({});
+    this.toolRegistry = createToolRegistry();
     this.log.trace(
       "Available tools",
       Object.fromEntries(
@@ -297,108 +297,17 @@ export class AIClient {
    *
    * @private
    */
-  private get tools(): Record<string, CoreTool> {
+  private get tools(): Record<string, Tool> {
     if (this._tools) return this._tools;
 
-    this._tools = {
-      computer: anthropic.tools.computer_20241022({
-        displayWidthPx: 1920,
-        displayHeightPx: 1080,
-        displayNumber: 0,
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      bash: anthropic.tools.bash_20241022({
-        execute: async ({ command }) => await new BashTool().execute(command),
-        experimental_toToolResultContent(result) {
-          return [
-            {
-              type: "text",
-              text: result,
-            },
-          ];
-        },
-      }),
-      github_login: tool({
-        description: "Handle GitHub OAuth login with 2FA",
-        parameters: z.object({
-          action: z.literal("github_login"),
-          username: z.string(),
-          password: z.string(),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      check_email: tool({
-        description: "View received email in new browser tab",
-        parameters: z.object({
-          action: z.literal("check_email"),
-          email: z.string().describe("Email content or address to check for"),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      sleep: tool({
-        description: "Pause test execution for specified duration",
-        parameters: z.object({
-          action: z.literal("sleep"),
-          duration: z.number().min(0).max(60000),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      run_callback: tool({
-        description: "Run callback function for current test step",
-        parameters: z.object({
-          action: z.literal("run_callback"),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-      navigate: tool({
-        description: "Navigate to URLs in new browser tabs",
-        parameters: z.object({
-          action: z.literal("navigate"),
-          url: z.string().url().describe("The URL to navigate to"),
-        }),
-        execute: this.browserTool.execute.bind(this.browserTool),
-        experimental_toToolResultContent:
-          this.browserToolResultToToolResultContent,
-      }),
-    };
+    this._tools = this.toolRegistry.getTools(
+      this.configAi.provider,
+      this.configAi.model,
+      this.browserTool,
+    );
+    // console.log("🐸🐸 tools", this._tools);
 
     return this._tools;
-  }
-
-  /**
-   * Converts browser tool execution results to standardized content format.
-   * Handles image data and text output formatting.
-   *
-   * @param {ToolResult} result - Raw tool execution result
-   * @returns {Array<{type: string, data?: string, text?: string, mimeType?: string}>} Formatted content
-   *
-   * @private
-   */
-  private browserToolResultToToolResultContent(result: ToolResult) {
-    return result.base64_image
-      ? [
-          {
-            type: "image" as const,
-            data: result.base64_image,
-            mimeType: "image/jpeg",
-          },
-        ]
-      : [
-          {
-            type: "text" as const,
-            text: result.output!,
-          },
-        ];
   }
 
   /**
