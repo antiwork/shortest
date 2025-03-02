@@ -1,3 +1,4 @@
+import { BrowserContextOptions } from "playwright";
 import { z } from "zod";
 
 export const cliOptionsSchema = z.object({
@@ -8,7 +9,18 @@ export const cliOptionsSchema = z.object({
 });
 export type CLIOptions = z.infer<typeof cliOptionsSchema>;
 
-const ANTHROPIC_MODELS = ["claude-3-5-sonnet-20241022"] as const;
+/**
+ * List of Anthropic models that are supported by the AI client.
+ *
+ * @see https://sdk.vercel.ai/providers/ai-sdk-providers/anthropic#model-capabilities
+ * @see https://docs.anthropic.com/en/docs/about-claude/models/all-models
+ */
+export const ANTHROPIC_MODELS = [
+  "claude-3-5-sonnet-20241022",
+  "claude-3-5-sonnet-latest",
+] as const;
+export const anthropicModelSchema = z.enum(ANTHROPIC_MODELS);
+export type AnthropicModel = z.infer<typeof anthropicModelSchema>;
 
 const aiSchema = z
   .object({
@@ -41,10 +53,18 @@ const mailosaurSchema = z
 
 const testPatternSchema = z.string().default("**/*.test.ts");
 
+const browserSchema = z.object({
+  /**
+   * @see https://playwright.dev/docs/api/class-browser#browser-new-context
+   */
+  contextOptions: z.custom<BrowserContextOptions>().optional(),
+});
+
 export const configSchema = z
   .object({
     headless: z.boolean().default(true),
     baseUrl: z.string().url("must be a valid URL"),
+    browser: browserSchema.strict().partial().default(browserSchema.parse({})),
     testPattern: testPatternSchema,
     anthropicKey: z.string().optional(),
     ai: aiSchema,
@@ -54,6 +74,7 @@ export const configSchema = z
   .strict();
 
 export const userConfigSchema = configSchema.extend({
+  browser: browserSchema.optional(),
   testPattern: testPatternSchema.optional(),
   ai: aiSchema.strict().partial().optional(),
   caching: cachingSchema.strict().partial().optional(),

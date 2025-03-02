@@ -36,6 +36,7 @@ describe("initializeConfig", () => {
     expect(config).toEqual({
       headless: true,
       baseUrl: "https://example.com",
+      browser: {},
       testPattern: ".*",
       ai: {
         provider: "anthropic",
@@ -70,6 +71,7 @@ describe("initializeConfig", () => {
     expect(config).toEqual({
       headless: true,
       baseUrl: "https://example.com",
+      browser: {},
       testPattern: ".*",
       ai: {
         provider: "anthropic",
@@ -154,6 +156,7 @@ describe("initializeConfig", () => {
       expect(config).toEqual({
         headless: true,
         baseUrl: "https://other.example.com",
+        browser: {},
         testPattern: "**/*.test.ts",
         ai: {
           provider: "anthropic",
