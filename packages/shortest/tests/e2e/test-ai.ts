@@ -3,7 +3,7 @@ import * as playwright from "playwright";
 import { request } from "playwright";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
-import { TestCase } from "@/core";
+import { createTestCase } from "@/core/runner/test-case";
 import { getConfig, initializeConfig } from "@/index";
 
 export const main = async () => {
@@ -36,7 +36,7 @@ export const main = async () => {
     };
 
     // Mock test data with callback
-    const mockTest = new TestCase({
+    const mockTest = createTestCase({
       name: "Test with callback",
       filePath: "test-ai.ts",
       fn: async () => {
