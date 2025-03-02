@@ -3,7 +3,6 @@ import { z } from "zod";
 import { createTestCase } from "@/core/runner/test-case";
 import { ShortestError } from "@/utils/errors";
 
-// Mock the createHash utility
 vi.mock("@/utils/create-hash", () => ({
   createHash: vi.fn(() => "mocked-hash"),
 }));

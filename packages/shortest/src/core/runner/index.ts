@@ -353,7 +353,6 @@ export class TestRunner {
           process.exit(1);
         }
       }
-      this.log.trace("Tests to run", { testsToRun });
       let context;
       try {
         this.log.trace("Launching browser");
