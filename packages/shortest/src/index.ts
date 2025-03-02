@@ -33,6 +33,7 @@ if (!global.__shortest__) {
     registry: {
       tests: new Map<string, TestCase[]>(),
       currentFileTests: [],
+      currentFilePath: "",
       beforeAllFns: [],
       afterAllFns: [],
       beforeEachFns: [],
@@ -129,16 +130,16 @@ const createTestChain = (
   // Handle array of test names
   if (Array.isArray(nameOrFn)) {
     const tests = nameOrFn.map((name) => {
-      const test = createTestCase({
+      const testCase = createTestCase({
         name: normalizeName(name),
-        filePath: "",
+        filePath: registry.currentFilePath,
         expectations: [],
       });
 
       const existingTests = registry.tests.get(name) || [];
-      registry.tests.set(name, [...existingTests, test]);
-      registry.currentFileTests.push(test);
-      return test;
+      registry.tests.set(name, [...existingTests, testCase]);
+      registry.currentFileTests.push(testCase);
+      return testCase;
     });
 
     // Return chain for the last test
@@ -152,13 +153,13 @@ const createTestChain = (
   // Handle direct execution
   if (typeof nameOrFn === "function") {
     registry.directTestCount++;
-    const test = createTestCase({
+    const testCase = createTestCase({
       name: `Direct Test #${registry.directTestCount}`,
-      filePath: "",
+      filePath: registry.currentFilePath,
       directExecution: true,
       fn: nameOrFn,
     });
-    registry.currentFileTests.push(test);
+    registry.currentFileTests.push(testCase);
     return {
       expect: () => {
         throw new ShortestError(
@@ -182,7 +183,7 @@ const createTestChain = (
   const name = normalizeName(nameOrFn as string);
   const testCase = createTestCase({
     name,
-    filePath: "",
+    filePath: registry.currentFilePath,
     payload: typeof payloadOrFn === "function" ? undefined : payloadOrFn,
     fn: typeof payloadOrFn === "function" ? payloadOrFn : fn,
     expectations: [],

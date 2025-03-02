@@ -4,7 +4,6 @@ import { CACHE_DIR_PATH } from "@/cache";
 import { TestCase } from "@/core/runner/test-case";
 import { getLogger, Log } from "@/log";
 import { CacheEntry, CacheStep } from "@/types/cache";
-import { createHash } from "@/utils/create-hash";
 import { getErrorDetails, ShortestError } from "@/utils/errors";
 
 // Shared process handlers registration
@@ -68,23 +67,20 @@ export class TestCache {
   private readonly BASE_LOCK_DELAY_MS = 10;
   private lockAcquired = false;
   private steps: CacheStep[] = [];
-  private identifier: string;
-  private test: TestCase;
+  private testCase: TestCase;
   private static activeCaches: Set<TestCache>;
 
   /**
    * Creates a new test cache instance
    * @param {TestCase} test - Test case to cache results for
    */
-  constructor(test: TestCase, cacheDir = CACHE_DIR_PATH) {
+  constructor(testCase: TestCase, cacheDir = CACHE_DIR_PATH) {
     this.log = getLogger();
     this.log.trace("Initializing TestCache");
-    this.test = test;
-    // Low collision risk for datasets under 65,000 tests
-    this.identifier = createHash(test, { length: 8 });
+    this.testCase = testCase;
     this.cacheDir = cacheDir;
-    this.cacheFileNameSuffix = `_${this.identifier}.json`;
-    this.lockFileName = `${this.identifier}.lock`;
+    this.cacheFileNameSuffix = `_${this.testCase.identifier}.json`;
+    this.lockFileName = `${this.testCase.identifier}.lock`;
 
     // Register shared handlers and track this instance
     TestCache.activeCaches =
@@ -122,12 +118,12 @@ export class TestCache {
    */
   async get(): Promise<CacheEntry | null> {
     this.log.trace("Retrieving cache", {
-      identifier: this.identifier,
+      identifier: this.testCase.identifier,
     });
 
     if (!(await this.acquireLock())) {
       this.log.error("Failed to acquire lock for cache retrieval", {
-        identifier: this.identifier,
+        identifier: this.testCase.identifier,
       });
       return null;
     }
@@ -138,13 +134,15 @@ export class TestCache {
       );
 
       if (!files.length) {
-        this.log.trace("No cache file found", { identifier: this.identifier });
+        this.log.trace("No cache file found", {
+          identifier: this.testCase.identifier,
+        });
         return null;
       }
 
       if (files.length > 1) {
         this.log.warn("Multiple cache files detected, using the first one", {
-          identifier: this.identifier,
+          identifier: this.testCase.identifier,
           files,
         });
       }
@@ -161,12 +159,12 @@ export class TestCache {
       const err = error as NodeJS.ErrnoException;
       if (err.code === "ENOENT") {
         this.log.trace("Cache file not found during read", {
-          identifier: this.identifier,
+          identifier: this.testCase.identifier,
         });
         return null;
       }
       this.log.error("Failed to read cache", {
-        identifier: this.identifier,
+        identifier: this.testCase.identifier,
         ...getErrorDetails(error),
       });
       return null;
@@ -182,13 +180,13 @@ export class TestCache {
    */
   async set(): Promise<void> {
     this.log.trace("Setting cache", {
-      identifier: this.identifier,
+      identifier: this.testCase.identifier,
       stepCount: this.steps.length,
     });
 
     if (!(await this.acquireLock())) {
       this.log.error("Failed to acquire lock for set", {
-        identifier: this.identifier,
+        identifier: this.testCase.identifier,
       });
       return;
     }
@@ -203,8 +201,8 @@ export class TestCache {
           version: "1",
         },
         test: {
-          name: this.test.name,
-          filePath: this.test.filePath,
+          name: this.testCase.name,
+          filePath: this.testCase.filePath,
         },
         data: {
           steps: this.steps,

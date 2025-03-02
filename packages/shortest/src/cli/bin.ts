@@ -167,7 +167,7 @@ const main = async () => {
     .filter((arg) => !isValidArg(arg));
 
   if (invalidFlags.length > 0) {
-    console.error("Invalid argument(s)", { invalidFlags });
+    console.error(pc.red("Invalid argument(s)"), { invalidFlags });
     process.exit(1);
   }
 

@@ -66,7 +66,7 @@ describe("TestCache", () => {
     it<TestContext>("returns null on invalid JSON", async ({ cacheDir }) => {
       const cacheFilePath = path.join(
         cacheDir,
-        `${testCache["identifier"]}.json`,
+        `${testCache["testCase"].identifier}.json`,
       );
       await fs.writeFile(cacheFilePath, "invalid json");
 
@@ -117,11 +117,11 @@ describe("TestCache", () => {
   describe("delete", () => {
     it<TestContext>("removes cache and lock files", async ({ cacheDir }) => {
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const cacheFileName = `${timestamp}_${testCache["identifier"]}.json`;
+      const cacheFileName = `${timestamp}_${testCache["testCase"].identifier}.json`;
       const cacheFilePath = path.join(cacheDir, cacheFileName);
       const lockFilePath = path.join(
         cacheDir,
-        `${testCache["identifier"]}.lock`,
+        `${testCache["testCase"].identifier}.lock`,
       );
 
       await fs.mkdir(path.dirname(cacheFilePath), { recursive: true });
@@ -163,7 +163,7 @@ describe("TestCache", () => {
     }) => {
       const lockFilePath = path.join(
         cacheDir,
-        `${testCache["identifier"]}.lock`,
+        `${testCache["testCase"].identifier}.lock`,
       );
 
       await testCache.set();

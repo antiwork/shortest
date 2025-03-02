@@ -325,15 +325,15 @@ export class TestRunner {
     return filteredTests;
   }
 
-  private async executeTestFile(file: string, lineNumber?: number) {
+  private async executeTestFile(filePath: string, lineNumber?: number) {
+    const registry = (global as any).__shortest__.registry;
     try {
-      this.log.trace("Executing test file", { file, lineNumber });
-      const registry = (global as any).__shortest__.registry;
+      this.log.trace("Executing test file", { filePath, lineNumber });
       registry.tests.clear();
       registry.currentFileTests = [];
-
-      const filePathWithoutCwd = file.replace(this.cwd + "/", "");
-      const compiledPath = await this.compiler.compileFile(file);
+      const filePathWithoutCwd = filePath.replace(this.cwd + "/", "");
+      registry.currentFilePath = filePathWithoutCwd;
+      const compiledPath = await this.compiler.compileFile(filePath);
 
       this.log.trace("Importing compiled file", { compiledPath });
       await import(pathToFileURL(compiledPath).href);
@@ -342,7 +342,7 @@ export class TestRunner {
       if (lineNumber) {
         testsToRun = await this.filterTestsByLineNumber(
           registry.currentFileTests,
-          file,
+          filePath,
           lineNumber,
         );
         if (testsToRun.length === 0) {
@@ -353,7 +353,7 @@ export class TestRunner {
           process.exit(1);
         }
       }
-
+      this.log.trace("Tests to run", { testsToRun });
       let context;
       try {
         this.log.trace("Launching browser");
@@ -403,7 +403,7 @@ export class TestRunner {
         registry.beforeEachFns = [];
         registry.afterEachFns = [];
         const fileResult: FileResult = {
-          filePath: file,
+          filePath,
           status: "passed",
           reason: "",
         };
@@ -412,13 +412,15 @@ export class TestRunner {
     } catch (error) {
       this.log.trace("Handling error for executeTestFile");
       if (!(error instanceof ShortestError)) throw error;
-      this.testContext = null; // Reset on error
       const fileResult: FileResult = {
-        filePath: file,
+        filePath,
         status: "failed",
         reason: error.message,
       };
       this.reporter.onFileEnd(fileResult);
+    } finally {
+      registry.currentFilePath = "";
+      this.testContext = null;
     }
   }
 
