@@ -88,8 +88,12 @@ describe("test-case", () => {
         if (error instanceof ShortestError) {
           const errorMessage = error.message;
           expect(errorMessage).toContain("Invalid TestCase format");
-          expect(errorMessage).toContain("name: Required");
-          expect(errorMessage).toContain("filePath: Required");
+          expect(errorMessage).toContain(
+            'name: Required (received: "undefined")',
+          );
+          expect(errorMessage).toContain(
+            'filePath: Required (received: "undefined")',
+          );
         } else {
           throw error;
         }
@@ -102,7 +106,9 @@ describe("test-case", () => {
         if (error instanceof ShortestError) {
           const errorMessage = error.message;
           expect(errorMessage).toContain("Invalid TestCase format");
-          expect(errorMessage).toContain("filePath: Required");
+          expect(errorMessage).toContain(
+            'filePath: Required (received: "undefined")',
+          );
         } else {
           throw error;
         }
