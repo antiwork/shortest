@@ -86,7 +86,8 @@ describe("test-case", () => {
         fail("Expected error was not thrown");
       } catch (error) {
         if (error instanceof ShortestError) {
-          const errorMessage = error.message;
+          // Strip ANSI color codes from the error message
+          const errorMessage = error.message.replace(/\u001b\[\d+m/g, "");
           expect(errorMessage).toContain("Invalid TestCase format");
           expect(errorMessage).toContain(
             'name: Required (received: "undefined")',
@@ -104,7 +105,8 @@ describe("test-case", () => {
         fail("Expected error was not thrown");
       } catch (error) {
         if (error instanceof ShortestError) {
-          const errorMessage = error.message;
+          // Strip ANSI color codes from the error message
+          const errorMessage = error.message.replace(/\u001b\[\d+m/g, "");
           expect(errorMessage).toContain("Invalid TestCase format");
           expect(errorMessage).toContain(
             'filePath: Required (received: "undefined")',
