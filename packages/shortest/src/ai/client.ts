@@ -305,7 +305,6 @@ export class AIClient {
       this.configAi.model,
       this.browserTool,
     );
-    // console.log("🐸🐸 tools", this._tools);
 
     return this._tools;
   }
