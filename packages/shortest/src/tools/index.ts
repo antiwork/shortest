@@ -29,6 +29,13 @@ const toolToRegisterSchema = z.union([
 ]);
 type ToolToRegister = z.infer<typeof toolToRegisterSchema>;
 
+/**
+ * Creates and configures a new ToolRegistry with all available tools
+ *
+ * @returns Configured ToolRegistry instance with all tools registered
+ *
+ * @private
+ */
 export const createToolRegistry = (): ToolRegistry => {
   const toolRegistry = new ToolRegistry();
   const toolsToRegister: Record<string, ToolToRegister> = {

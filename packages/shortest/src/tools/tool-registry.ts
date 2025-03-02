@@ -4,14 +4,15 @@ import { BrowserTool } from "@/browser/core/browser-tool";
 import { getLogger, Log } from "@/log";
 import { AnthropicModel } from "@/types/config";
 import { ShortestError } from "@/utils/errors";
+
+const TOOL_ENTRY_CATEGORIES = ["provider", "custom"] as const;
+const toolEntryCategorySchema = z.enum(TOOL_ENTRY_CATEGORIES);
+const toolFactoryNoArgSchema = z.function().args().returns(z.custom<Tool>());
+
 const toolFactoryWithArgSchema = z
   .function()
   .args(z.custom<BrowserTool>())
   .returns(z.custom<Tool>());
-
-export const TOOL_ENTRY_CATEGORIES = ["provider", "custom"] as const;
-const toolEntryCategorySchema = z.enum(TOOL_ENTRY_CATEGORIES);
-const toolFactoryNoArgSchema = z.function().args().returns(z.custom<Tool>());
 export const toolFactorySchema = z.union([
   toolFactoryWithArgSchema,
   toolFactoryNoArgSchema,
@@ -56,6 +57,11 @@ const ANTHROPIC_TOOL_VERSION_MAP: Record<
   },
 };
 
+/**
+ * Registry for managing and retrieving tools for AI models
+ *
+ * @private
+ */
 export class ToolRegistry {
   private tools: Map<string, ToolEntry> = new Map();
   private log: Log;
@@ -64,6 +70,13 @@ export class ToolRegistry {
     this.log = getLogger();
   }
 
+  /**
+   * Registers a new tool with the registry
+   *
+   * @param key - Unique identifier for the tool
+   * @param entry - Tool entry configuration
+   * @throws Error if a tool with the same key is already registered
+   */
   public registerTool(key: string, entry: ToolEntry) {
     if (this.tools.has(key)) {
       throw new Error(`Tool with key '${key}' already registered`);
@@ -71,27 +84,37 @@ export class ToolRegistry {
     this.tools.set(key, entry);
   }
 
+  /**
+   * Retrieves all tools for a specific provider and model
+   *
+   * @param provider - The provider name
+   * @param model - The Anthropic model to get tools for
+   * @param browserTool - Browser tool instance
+   * @returns Record of tool name to Tool instance
+   *
+   * @private
+   */
   public getTools(
     provider: string,
     model: AnthropicModel,
     browserTool: BrowserTool,
   ): Record<string, Tool> {
     const selectedTools: Record<string, Tool> = {};
-
     const providerTools = this.getProviderTools(provider, model, browserTool);
     const customTools = this.getCustomTools(browserTool);
-
     Object.assign(selectedTools, providerTools, customTools);
-
-    this.tools.forEach((entry, key) => {
-      if (!key.startsWith(`${provider}_`)) {
-        selectedTools[entry.name] = entry.factory(browserTool);
-      }
-    });
 
     return selectedTools;
   }
 
+  /**
+   * Retrieves all custom tools
+   *
+   * @param browserTool - Browser tool instance
+   * @returns Record of tool name to Tool instance
+   *
+   * @private
+   */
   private getCustomTools(browserTool: BrowserTool): Record<string, Tool> {
     const tools: Record<string, Tool> = {};
 
@@ -105,6 +128,16 @@ export class ToolRegistry {
     return tools;
   }
 
+  /**
+   * Retrieves all provider-specific tools
+   *
+   * @param provider - The provider name
+   * @param model - The Anthropic model to get tools for
+   * @param browserTool - Browser tool instance
+   * @returns Record of tool name to Tool instance
+   *
+   * @private
+   */
   private getProviderTools(
     provider: string,
     model: AnthropicModel,
@@ -137,6 +170,17 @@ export class ToolRegistry {
     return tools;
   }
 
+  /**
+   * Retrieves a specific provider tool entry
+   *
+   * @param provider - The provider name
+   * @param model - The Anthropic model
+   * @param toolType - Type of tool to retrieve
+   * @returns Tool entry configuration
+   * @throws ShortestError if tool not found
+   *
+   * @private
+   */
   private getProviderToolEntry(
     provider: string,
     model: AnthropicModel,
@@ -152,6 +196,15 @@ export class ToolRegistry {
     );
   }
 
+  /**
+   * Generates the key used to look up tool entries
+   * @param provider - The provider name
+   * @param model - The Anthropic model
+   * @param toolType - Type of tool
+   * @returns Tool entry key string
+   *
+   * @private
+   */
   private getToolEntryKey(
     provider: string,
     model: AnthropicModel,

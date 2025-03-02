@@ -143,36 +143,6 @@ describe("ToolRegistry", () => {
       expect(Object.keys(tools).length).toBe(3);
     });
 
-    it("includes non-provider tools regardless of provider", () => {
-      const otherProviderToolEntry = {
-        name: "otherProvider",
-        category: "provider" as const,
-        factory: (_browserTool: BrowserTool) => createMockTool("otherProvider"),
-      };
-
-      registry.registerTool("other_computer_20241022", otherProviderToolEntry);
-
-      const correctProviderToolEntry = {
-        name: "computer",
-        category: "provider" as const,
-        factory: (_browserTool: BrowserTool) => createMockTool("computer"),
-      };
-
-      registry.registerTool(
-        "anthropic_computer_20241022",
-        correctProviderToolEntry,
-      );
-
-      const tools = registry.getTools(
-        "anthropic",
-        "claude-3-5-sonnet-latest",
-        mockBrowserTool,
-      );
-
-      expect(tools).toHaveProperty("computer");
-      expect(tools).toHaveProperty("otherProvider");
-    });
-
     it("handles missing provider tools gracefully", () => {
       const customToolEntry = {
         name: "customTool",
