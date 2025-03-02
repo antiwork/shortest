@@ -1,3 +1,4 @@
+import { BrowserContextOptions } from "playwright";
 import { z } from "zod";
 
 export const cliOptionsSchema = z.object({
@@ -41,10 +42,18 @@ const mailosaurSchema = z
 
 const testPatternSchema = z.string().default("**/*.test.ts");
 
+const browserSchema = z.object({
+  /**
+   * @see https://playwright.dev/docs/api/class-browser#browser-new-context
+   */
+  contextOptions: z.custom<BrowserContextOptions>().optional(),
+});
+
 export const configSchema = z
   .object({
     headless: z.boolean().default(true),
     baseUrl: z.string().url("must be a valid URL"),
+    browser: browserSchema.strict().partial().default(browserSchema.parse({})),
     testPattern: testPatternSchema,
     anthropicKey: z.string().optional(),
     ai: aiSchema,
@@ -54,6 +63,7 @@ export const configSchema = z
   .strict();
 
 export const userConfigSchema = configSchema.extend({
+  browser: browserSchema.optional(),
   testPattern: testPatternSchema.optional(),
   ai: aiSchema.strict().partial().optional(),
   caching: cachingSchema.strict().partial().optional(),

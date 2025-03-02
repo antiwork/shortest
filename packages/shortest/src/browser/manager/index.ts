@@ -54,10 +54,13 @@ export class BrowserManager {
       }
     }
 
-    this.context = await this.browser.newContext({
+    const contextOptions = {
       viewport: { width: 1920, height: 1080 },
       baseURL: this.config.baseUrl,
-    });
+      ...this.config.browser?.contextOptions,
+    };
+    this.log.trace("Initializing browser context", { options: contextOptions });
+    this.context = await this.browser.newContext(contextOptions);
 
     const page = await this.context.newPage();
     await page.goto(this.normalizeUrl(this.config.baseUrl));

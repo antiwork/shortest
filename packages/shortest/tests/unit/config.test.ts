@@ -21,12 +21,14 @@ describe("Config parsing", () => {
       expect(Object.keys(config)).toEqual([
         "headless",
         "baseUrl",
+        "browser",
         "testPattern",
         "ai",
         "caching",
       ]);
       expect(config.headless).toBe(true);
       expect(config.baseUrl).toBe("https://example.com");
+      expect(config.browser).toEqual({});
       expect(config.testPattern).toBe("**/*.test.ts");
       expect(config.ai).toEqual({
         apiKey: "foo",
@@ -49,6 +51,35 @@ describe("Config parsing", () => {
         apiKey: "explicit-api-key",
       },
     };
+  });
+
+  describe("with invalid config.browser option", () => {
+    test("it throws an error", () => {
+      const userConfig = {
+        ...baseConfig,
+        browser: {
+          invalidBrowserOption: "value",
+        },
+      } as any;
+      expect(() => parseConfig(userConfig)).toThrowError(
+        "Unrecognized key(s) in object: 'invalidBrowserOption'",
+      );
+    });
+  });
+
+  describe("with config.browser.contextOptions option", () => {
+    test("it passes through", () => {
+      const userConfig = {
+        ...baseConfig,
+        browser: {
+          contextOptions: { ignoreHTTPSErrors: true },
+        },
+      };
+      const config = parseConfig(userConfig);
+      expect(config.browser?.contextOptions).toEqual({
+        ignoreHTTPSErrors: true,
+      });
+    });
   });
 
   describe("with invalid config option", () => {
