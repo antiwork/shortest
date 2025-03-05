@@ -51,7 +51,7 @@ export default {
   baseUrl: "http://localhost:3000",
   browser: {
     contextOptions: {
-      ignoreHTTPSErrors: true, // Optional: Configure Playwright browser context options
+      ignoreHTTPSErrors: true
     },
   },
   testPattern: "**/*.test.ts",
@@ -62,7 +62,7 @@ export default {
 ```
 Anthropic API key will default to `SHORTEST_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` environment variables. Can be overwritten via `ai.config.apiKey`.
 
-You can configure browser behavior using the `browser.contextOptions` property in your configuration file. This allows you to pass custom [Playwright browser context options](https://playwright.dev/docs/api/class-browser#browser-new-context).
+Optionally, you can configure browser behavior using the `browser.contextOptions` property in your configuration file. This allows you to pass custom [Playwright browser context options](https://playwright.dev/docs/api/class-browser#browser-new-context).
 
 2. Create test files using the pattern specified in the config: `app/login.test.ts`
 
