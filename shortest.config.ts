@@ -6,6 +6,7 @@ export default {
   testPattern: "app/**/*.test.ts",
   ai: {
     provider: "anthropic",
+    model: "claude-3-7-sonnet-latest",
   },
   mailosaur: {
     apiKey: process.env.MAILOSAUR_API_KEY!,

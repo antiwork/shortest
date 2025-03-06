@@ -171,20 +171,33 @@ describe("ToolRegistry", () => {
       };
 
       registry.registerTool("anthropic_computer_20241022", computerToolLatest);
+      registry.registerTool("anthropic_computer_20250124", computerToolLatest);
 
-      const toolsLatest = registry.getTools(
+      const tools35Latest = registry.getTools(
         "anthropic",
         "claude-3-5-sonnet-latest",
         mockBrowserTool,
       );
-      const toolsFixed = registry.getTools(
+      const tools35Fixed = registry.getTools(
         "anthropic",
         "claude-3-5-sonnet-20241022",
         mockBrowserTool,
       );
+      const tools37Latest = registry.getTools(
+        "anthropic",
+        "claude-3-7-sonnet-latest",
+        mockBrowserTool,
+      );
+      const tools37Fixed = registry.getTools(
+        "anthropic",
+        "claude-3-7-sonnet-20250219",
+        mockBrowserTool,
+      );
 
-      expect(toolsLatest).toHaveProperty("computer");
-      expect(toolsFixed).toHaveProperty("computer");
+      expect(tools35Latest).toHaveProperty("computer");
+      expect(tools35Fixed).toHaveProperty("computer");
+      expect(tools37Latest).toHaveProperty("computer");
+      expect(tools37Fixed).toHaveProperty("computer");
     });
   });
 

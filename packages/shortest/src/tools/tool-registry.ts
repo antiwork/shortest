@@ -36,15 +36,22 @@ export const anthropicToolTypeSchema = z.enum(["computer", "bash"]);
 export type AnthropicToolType = z.infer<typeof anthropicToolTypeSchema>;
 
 // eslint-disable-next-line zod/require-zod-schema-types
-export type AnthropicModelFamily = "claude-3-5";
+export type AnthropicModelFamily = "claude-3-5" | "claude-3-7";
 
+/**
+ * List of all Anthropic-defined tools for all models
+ *
+ * @see https://docs.anthropic.com/en/docs/agents-and-tools/computer-use#understand-anthropic-defined-tools
+ */
 // eslint-disable-next-line zod/require-zod-schema-types
-export type AnthropicToolVersion = "20241022";
+export type AnthropicToolVersion = "20241022" | "20250124";
 
 const ANTHROPIC_MODEL_TO_FAMILY: Record<AnthropicModel, AnthropicModelFamily> =
   {
     "claude-3-5-sonnet-latest": "claude-3-5",
     "claude-3-5-sonnet-20241022": "claude-3-5",
+    "claude-3-7-sonnet-latest": "claude-3-7",
+    "claude-3-7-sonnet-20250219": "claude-3-7",
   };
 
 const ANTHROPIC_TOOL_VERSION_MAP: Record<
@@ -54,6 +61,10 @@ const ANTHROPIC_TOOL_VERSION_MAP: Record<
   "claude-3-5": {
     computer: "20241022",
     bash: "20241022",
+  },
+  "claude-3-7": {
+    computer: "20250124",
+    bash: "20250124",
   },
 };
 

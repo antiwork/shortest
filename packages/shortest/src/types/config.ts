@@ -18,6 +18,8 @@ export type CLIOptions = z.infer<typeof cliOptionsSchema>;
 export const ANTHROPIC_MODELS = [
   "claude-3-5-sonnet-20241022",
   "claude-3-5-sonnet-latest",
+  "claude-3-7-sonnet-20250219",
+  "claude-3-7-sonnet-latest",
 ] as const;
 export const anthropicModelSchema = z.enum(ANTHROPIC_MODELS);
 export type AnthropicModel = z.infer<typeof anthropicModelSchema>;
