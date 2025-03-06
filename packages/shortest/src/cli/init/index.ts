@@ -20,12 +20,13 @@ export default async function main() {
       packageJson?.devDependencies?.["@antiwork/shortest"]
     ) {
       console.log(pc.green("✔ Package already installed"));
-      return;
     }
+    else {
     console.log("Installing @antiwork/shortest...");
     const installCmd = await getInstallCmd();
     execSync(installCmd, { stdio: "inherit" });
     console.log(pc.green("✔ Dependencies installed"));
+    }
 
     const configPath = join(process.cwd(), CONFIG_FILENAME);
     const exampleConfigPath = join(
