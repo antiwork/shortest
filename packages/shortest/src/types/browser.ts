@@ -35,6 +35,7 @@ export enum InternalActionEnum {
   LEFT_MOUSE_DOWN = "left_mouse_down",
   LEFT_MOUSE_UP = "left_mouse_up",
   WAIT = "wait",
+  SCROLL = "scroll",
 }
 
 // eslint-disable-next-line zod/require-zod-schema-types
@@ -57,6 +58,8 @@ export interface ActionInput {
   url?: string;
   duration?: number;
   email?: string;
+  scroll_amount?: number;
+  scroll_direction?: string;
 }
 
 export interface ToolResult {

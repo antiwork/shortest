@@ -522,6 +522,27 @@ export class BrowserTool extends BaseBrowserTool {
           output = `Waited for ${seconds} second${seconds !== 1 ? "s" : ""}`;
           break;
 
+        case InternalActionEnum.SCROLL:
+          if (
+            !input.coordinate ||
+            !input.scroll_amount ||
+            !input.scroll_direction
+          ) {
+            throw new ToolError("Missing args for scroll action");
+          }
+          await this.page.mouse.move(input.coordinate[0], input.coordinate[1]);
+          const deltaX =
+            (input.scroll_direction === "up"
+              ? -input.scroll_amount
+              : input.scroll_amount) || 0;
+          const deltaY =
+            (input.scroll_direction === "left"
+              ? -input.scroll_amount
+              : input.scroll_amount) || 0;
+          await this.page.mouse.wheel(deltaX, deltaY);
+          output = `Scrolled ${input.scroll_amount} clicks ${input.scroll_direction}`;
+          break;
+
         case InternalActionEnum.SLEEP: {
           const defaultDuration = 1000;
           const maxDuration = 60000;
