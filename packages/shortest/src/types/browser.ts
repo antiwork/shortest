@@ -20,6 +20,7 @@ export enum InternalActionEnum {
   RIGHT_CLICK = "right_click",
   MIDDLE_CLICK = "middle_click",
   DOUBLE_CLICK = "double_click",
+  TRIPLE_CLICK = "triple_click",
   SCREENSHOT = "screenshot",
   CURSOR_POSITION = "cursor_position",
   GITHUB_LOGIN = "github_login",
@@ -47,6 +48,7 @@ export interface BrowserToolOptions {
 
 export interface ActionInput {
   action: BrowserAction;
+  coordinate?: number[];
   coordinates?: number[];
   text?: string;
   username?: string;

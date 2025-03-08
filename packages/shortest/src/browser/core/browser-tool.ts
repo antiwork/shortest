@@ -206,11 +206,6 @@ export class BrowserTool extends BaseBrowserTool {
     await this.page.click(selector);
   }
 
-  public async clickAtCoordinates(x: number, y: number): Promise<void> {
-    this.log.debug("Clicking at coordinates", { x, y });
-    await actions.click(this.page, x, y);
-  }
-
   async execute(input: ActionInput): Promise<ToolResult> {
     try {
       this.log.setGroup(`🛠️ ${input.action}`);
@@ -221,9 +216,48 @@ export class BrowserTool extends BaseBrowserTool {
         case InternalActionEnum.LEFT_CLICK:
         case InternalActionEnum.RIGHT_CLICK:
         case InternalActionEnum.MIDDLE_CLICK:
-        case InternalActionEnum.DOUBLE_CLICK: {
-          const clickCoords = input.coordinates || this.lastMousePosition;
-          await this.clickAtCoordinates(clickCoords[0], clickCoords[1]);
+        case InternalActionEnum.DOUBLE_CLICK:
+        case InternalActionEnum.TRIPLE_CLICK: {
+          const clickCoords =
+            input.coordinate || input.coordinates || this.lastMousePosition;
+          const x = clickCoords[0];
+          const y = clickCoords[1];
+          const button = () => {
+            switch (input.action) {
+              case InternalActionEnum.LEFT_CLICK:
+              case InternalActionEnum.DOUBLE_CLICK:
+              case InternalActionEnum.TRIPLE_CLICK:
+                return "left";
+              case InternalActionEnum.RIGHT_CLICK:
+                return "right";
+              case InternalActionEnum.MIDDLE_CLICK:
+                return "middle";
+              default:
+                throw new ToolError(
+                  `Unsupported click action: ${input.action}`,
+                );
+            }
+          };
+          const clickCount = () => {
+            switch (input.action) {
+              case InternalActionEnum.DOUBLE_CLICK:
+                return 2;
+              case InternalActionEnum.TRIPLE_CLICK:
+                return 3;
+              default:
+                return 1;
+            }
+          };
+          this.log.debug("Clicking at coordinates", {
+            x,
+            y,
+            button: button(),
+            clickCount: clickCount(),
+          });
+          await actions.click(this.page, x, y, {
+            button: button(),
+            clickCount: clickCount(),
+          });
           output = `${input.action} at (${clickCoords[0]}, ${clickCoords[1]})`;
 
           // Get initial metadata before potential navigation
