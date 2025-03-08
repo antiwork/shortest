@@ -31,6 +31,8 @@ export enum InternalActionEnum {
   NAVIGATE = "navigate",
   SLEEP = "sleep",
   CHECK_EMAIL = "check_email",
+  LEFT_MOUSE_DOWN = "left_mouse_down",
+  LEFT_MOUSE_UP = "left_mouse_up",
 }
 
 // eslint-disable-next-line zod/require-zod-schema-types

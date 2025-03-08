@@ -272,6 +272,16 @@ export class BrowserTool extends BaseBrowserTool {
           output = `Dragged mouse to (${input.coordinates[0]}, ${input.coordinates[1]})`;
           break;
 
+        case InternalActionEnum.LEFT_MOUSE_DOWN:
+          await this.page.mouse.down();
+          output = "Pressed left mouse button";
+          break;
+
+        case InternalActionEnum.LEFT_MOUSE_UP:
+          await this.page.mouse.up();
+          output = "Released left mouse button";
+          break;
+
         case InternalActionEnum.CURSOR_POSITION:
           const position = await actions.getCursorPosition(this.page);
           output = `Cursor position: (${position[0]}, ${position[1]})`;
