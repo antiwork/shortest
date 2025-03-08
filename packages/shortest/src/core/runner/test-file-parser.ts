@@ -1,11 +1,14 @@
 import { readFileSync } from "fs";
+import { createRequire } from "module";
 import * as parser from "@babel/parser";
 import type { NodePath } from "@babel/traverse";
-import traverse from "@babel/traverse";
 import type * as t from "@babel/types";
 import * as babelTypes from "@babel/types";
 import { z } from "zod";
 import { getLogger } from "@/log";
+
+const require = createRequire(import.meta.url);
+const traverse = require("@babel/traverse").default;
 
 export const EXPRESSION_PLACEHOLDER = "${...}";
 
