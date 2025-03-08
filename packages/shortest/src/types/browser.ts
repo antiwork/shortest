@@ -34,6 +34,7 @@ export enum InternalActionEnum {
   CHECK_EMAIL = "check_email",
   LEFT_MOUSE_DOWN = "left_mouse_down",
   LEFT_MOUSE_UP = "left_mouse_up",
+  WAIT = "wait",
 }
 
 // eslint-disable-next-line zod/require-zod-schema-types

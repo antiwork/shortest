@@ -513,6 +513,15 @@ export class BrowserTool extends BaseBrowserTool {
           }
         }
 
+        case InternalActionEnum.WAIT:
+          if (!input.duration) {
+            throw new ToolError("Duration required for wait action");
+          }
+          const seconds = input.duration;
+          await this.page.waitForTimeout(seconds * 1000);
+          output = `Waited for ${seconds} second${seconds !== 1 ? "s" : ""}`;
+          break;
+
         case InternalActionEnum.SLEEP: {
           const defaultDuration = 1000;
           const maxDuration = 60000;

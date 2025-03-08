@@ -50,6 +50,6 @@ const actionMap: Record<string, InternalActionEnum> = {
   double_click: InternalActionEnum.DOUBLE_CLICK,
   triple_click: InternalActionEnum.TRIPLE_CLICK,
   // scroll: InternalActionEnum.SCROLL,
-  // wait: InternalActionEnum.WAIT,
+  wait: InternalActionEnum.WAIT,
   screenshot: InternalActionEnum.SCREENSHOT,
 };
