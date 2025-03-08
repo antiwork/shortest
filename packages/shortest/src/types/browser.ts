@@ -26,6 +26,7 @@ export enum InternalActionEnum {
   CLEAR_SESSION = "clear_session",
   TYPE = "type",
   KEY = "key",
+  HOLD_KEY = "hold_key",
   RUN_CALLBACK = "run_callback",
   NAVIGATE = "navigate",
   SLEEP = "sleep",
