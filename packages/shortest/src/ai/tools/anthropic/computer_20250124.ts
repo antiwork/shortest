@@ -1,6 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { Tool } from "ai";
 import { BrowserTool } from "@/browser/core/browser-tool";
+import { getLogger } from "@/log";
 import { InternalActionEnum } from "@/types/browser";
 
 /**
@@ -17,6 +18,11 @@ export const createAnthropicComputer20250124 = (
       const { action, ...restOfInput } = input;
       const internalAction = actionMap[action];
       if (!internalAction) {
+        const log = getLogger();
+        log.error(`Computer action not supported`, {
+          tool: "anthropic.computer_20250124",
+          action,
+        });
         return { output: `Action '${action}' not supported` };
       }
       return browserTool.execute({ action: internalAction, ...restOfInput });
@@ -31,7 +37,7 @@ export const createAnthropicComputer20250124 = (
  */
 const actionMap: Record<string, InternalActionEnum> = {
   key: InternalActionEnum.KEY,
-  // hold_key: InternalActionEnum.HOLD_KEY,
+  hold_key: InternalActionEnum.HOLD_KEY,
   type: InternalActionEnum.TYPE,
   cursor_position: InternalActionEnum.CURSOR_POSITION,
   mouse_move: InternalActionEnum.MOUSE_MOVE,
