@@ -817,15 +817,17 @@ export class BrowserTool extends BaseBrowserTool {
 
     writeFileSync(filePath, buffer);
     const filePathWithoutCwd = filePath.replace(process.cwd() + "/", "");
-    this.log.debug("📺", "Screenshot saved", { filePath: filePathWithoutCwd });
 
-    const metadata = {
+    const browserMetadata = await this.getMetadata();
+    this.log.trace("Screenshot saved", {
+      filePath: filePathWithoutCwd,
+      ...browserMetadata["window_info"],
+    });
+    return {
       output: "Screenshot taken",
       base64_image: buffer.toString("base64"),
-      metadata: await this.getMetadata(),
+      metadata: browserMetadata,
     };
-    this.log.trace("Screenshot details", metadata);
-    return metadata;
   }
 
   toToolParameters() {
