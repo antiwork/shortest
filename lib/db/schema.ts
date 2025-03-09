@@ -5,6 +5,7 @@ import {
   uniqueIndex,
   varchar,
   integer,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable(
@@ -49,10 +50,33 @@ export const pullRequests = pgTable(
     ),
   }),
 );
+
+export const repositoryConfigs = pgTable(
+  "repository_configs",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    owner: varchar("owner", { length: 255 }).notNull(),
+    repo: varchar("repo", { length: 255 }).notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    userRepoIdx: uniqueIndex("user_repo_idx").on(
+      table.userId,
+      table.owner,
+      table.repo,
+    ),
+  }),
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type PullRequest = typeof pullRequests.$inferSelect;
 export type NewPullRequest = typeof pullRequests.$inferInsert;
+export type RepositoryConfig = typeof repositoryConfigs.$inferSelect;
+export type NewRepositoryConfig = typeof repositoryConfigs.$inferInsert;
 
 export interface ExtendedPullRequest extends PullRequest {
   repository: {

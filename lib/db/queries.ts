@@ -1,9 +1,18 @@
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "./drizzle";
-import { users, User, NewUser, pullRequests, PullRequest } from "./schema";
+import {
+  users,
+  User,
+  NewUser,
+  pullRequests,
+  PullRequest,
+  repositoryConfigs,
+  RepositoryConfig,
+  NewRepositoryConfig,
+} from "./schema";
 
 export const updateUserSubscription = async (
   clerkId: string,
@@ -60,4 +69,95 @@ export const getPullRequests = async (): Promise<PullRequest[]> => {
 
   const user = await getUserByClerkId(userId);
   return db.select().from(pullRequests).where(eq(pullRequests.userId, user.id));
+};
+
+export const getRepositoryConfig = async (
+  userId: number,
+  owner: string,
+  repo: string,
+): Promise<RepositoryConfig | null> => {
+  const config = await db.query.repositoryConfigs.findFirst({
+    where: and(
+      eq(repositoryConfigs.userId, userId),
+      eq(repositoryConfigs.owner, owner),
+      eq(repositoryConfigs.repo, repo),
+    ),
+  });
+
+  return config || null;
+};
+
+export const getUserRepositoryConfigs = async (): Promise<
+  RepositoryConfig[]
+> => {
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
+  const user = await getUserByClerkId(userId);
+  return db
+    .select()
+    .from(repositoryConfigs)
+    .where(eq(repositoryConfigs.userId, user.id));
+};
+
+export const createOrUpdateRepositoryConfig = async (
+  config: Omit<NewRepositoryConfig, "userId" | "createdAt" | "updatedAt">,
+): Promise<RepositoryConfig> => {
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
+  const user = await getUserByClerkId(userId);
+  const existingConfig = await getRepositoryConfig(
+    user.id,
+    config.owner,
+    config.repo,
+  );
+
+  if (existingConfig) {
+    const [updatedConfig] = await db
+      .update(repositoryConfigs)
+      .set({
+        ...config,
+        updatedAt: new Date(),
+      })
+      .where(eq(repositoryConfigs.id, existingConfig.id))
+      .returning();
+
+    return updatedConfig;
+  }
+
+  const [newConfig] = await db
+    .insert(repositoryConfigs)
+    .values({
+      ...config,
+      userId: user.id,
+    })
+    .returning();
+
+  return newConfig;
+};
+
+export const deleteRepositoryConfig = async (id: number): Promise<void> => {
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
+  const user = await getUserByClerkId(userId);
+  const config = await db.query.repositoryConfigs.findFirst({
+    where: and(
+      eq(repositoryConfigs.id, id),
+      eq(repositoryConfigs.userId, user.id),
+    ),
+  });
+
+  if (!config) {
+    throw new Error("Repository configuration not found or access denied");
+  }
+
+  await db.delete(repositoryConfigs).where(eq(repositoryConfigs.id, id));
 };
