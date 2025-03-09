@@ -59,7 +59,6 @@ export class BrowserTool extends BaseBrowserTool {
     super(config);
     this.page = page;
     this.browserManager = browserManager;
-    // TODO: to change it into the cached json only
     this.screenshotDir = join(DOT_SHORTEST_DIR_PATH, "screenshots");
     mkdirSync(this.screenshotDir, { recursive: true });
     this.viewport = { width: config.width, height: config.height };
