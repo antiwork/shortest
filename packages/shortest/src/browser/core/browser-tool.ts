@@ -13,6 +13,7 @@ import {
   readdirSync,
   statSync,
   unlinkSync,
+  existsSync,
 } from "fs";
 import { join } from "path";
 import { Page } from "playwright";
@@ -21,7 +22,7 @@ import { BaseBrowserTool } from "@/browser/core";
 import { GitHubTool } from "@/browser/integrations/github";
 import { MailosaurTool } from "@/browser/integrations/mailosaur";
 import { BrowserManager } from "@/browser/manager";
-import { DOT_SHORTEST_DIR_PATH } from "@/cache";
+import { DOT_SHORTEST_DIR_PATH, CACHE_DIR_PATH } from "@/cache";
 import { TestCase } from "@/core/runner/test-case";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger, Log } from "@/log/index";
@@ -58,6 +59,7 @@ export class BrowserTool extends BaseBrowserTool {
     super(config);
     this.page = page;
     this.browserManager = browserManager;
+    // TODO: to change it into the cached json only
     this.screenshotDir = join(DOT_SHORTEST_DIR_PATH, "screenshots");
     mkdirSync(this.screenshotDir, { recursive: true });
     this.viewport = { width: config.width, height: config.height };
@@ -806,7 +808,33 @@ export class BrowserTool extends BaseBrowserTool {
 
   private async takeScreenshotWithMetadata(): Promise<ToolResult> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filePath = join(this.screenshotDir, `screenshot-${timestamp}.png`);
+    let screenshotPath: string;
+
+    // If we have a test context with a current test that is a TestCase, use test-specific directory
+    if (
+      this.testContext?.currentTest &&
+      "identifier" in this.testContext.currentTest
+    ) {
+      const testCase = this.testContext.currentTest as TestCase;
+      if (testCase.identifier) {
+        const testScreenshotDir = join(CACHE_DIR_PATH, testCase.identifier);
+
+        // Ensure the directory exists
+        mkdirSync(testScreenshotDir, { recursive: true });
+
+        // Save screenshot in test-specific directory
+        screenshotPath = join(testScreenshotDir, `screenshot-${timestamp}.png`);
+      } else {
+        // Fallback if identifier is undefined
+        screenshotPath = join(
+          this.screenshotDir,
+          `screenshot-${timestamp}.png`,
+        );
+      }
+    } else {
+      // Fallback to original location if no test context
+      screenshotPath = join(this.screenshotDir, `screenshot-${timestamp}.png`);
+    }
 
     const buffer = await this.page.screenshot({
       type: "jpeg",
@@ -815,14 +843,15 @@ export class BrowserTool extends BaseBrowserTool {
       fullPage: false,
     });
 
-    writeFileSync(filePath, buffer);
-    const filePathWithoutCwd = filePath.replace(process.cwd() + "/", "");
+    writeFileSync(screenshotPath, buffer);
+    const filePathWithoutCwd = screenshotPath.replace(process.cwd() + "/", "");
 
     const browserMetadata = await this.getMetadata();
     this.log.trace("Screenshot saved", {
       filePath: filePathWithoutCwd,
       ...browserMetadata["window_info"],
     });
+
     return {
       output: "Screenshot taken",
       base64_image: buffer.toString("base64"),
@@ -879,12 +908,36 @@ export class BrowserTool extends BaseBrowserTool {
 
   private cleanupScreenshots(): void {
     try {
-      const files = readdirSync(this.screenshotDir)
+      // Original cleanup for the main screenshots directory
+      this.cleanupScreenshotsInDir(this.screenshotDir);
+
+      // If we have a test context with a current test that is a TestCase, also clean up that specific directory
+      if (
+        this.testContext?.currentTest &&
+        "identifier" in this.testContext.currentTest
+      ) {
+        const testCase = this.testContext.currentTest as TestCase;
+        if (testCase.identifier) {
+          const testScreenshotDir = join(CACHE_DIR_PATH, testCase.identifier);
+          this.cleanupScreenshotsInDir(testScreenshotDir);
+        }
+      }
+    } catch (error) {
+      this.log.error("Failed to clean up screenshots", getErrorDetails(error));
+    }
+  }
+
+  // Helper method to clean up screenshots in a specific directory
+  private cleanupScreenshotsInDir(directory: string): void {
+    try {
+      if (!existsSync(directory)) return;
+
+      const files = readdirSync(directory)
         .filter((file) => file.endsWith(".png") || file.endsWith(".jpg"))
         .map((file) => ({
           name: file,
-          path: join(this.screenshotDir, file),
-          time: statSync(join(this.screenshotDir, file)).mtime.getTime(),
+          path: join(directory, file),
+          time: statSync(join(directory, file)).mtime.getTime(),
         }))
         .sort((a, b) => b.time - a.time); // newest first
 
@@ -907,7 +960,10 @@ export class BrowserTool extends BaseBrowserTool {
         }
       });
     } catch (error) {
-      this.log.error("Failed to clean up screenshots", getErrorDetails(error));
+      this.log.error(
+        "Failed to clean up screenshots directory",
+        getErrorDetails(error),
+      );
     }
   }
 
