@@ -58,9 +58,9 @@
     "node": ">=18"
   },
   "peerDependencies": {
-    "@ai-sdk/anthropic": "^1.1.9",
-    "@ai-sdk/provider": "^1.0.8",
-    "ai": "^4.1.45",
+    "@ai-sdk/anthropic": "^1.1.15",
+    "@ai-sdk/provider": "^1.0.10",
+    "ai": "^4.1.53",
     "@babel/parser": "^7.26.9",
     "@babel/traverse": "^7.26.9",
     "@babel/types": "^7.26.9",

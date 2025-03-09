@@ -20,16 +20,22 @@ export enum InternalActionEnum {
   RIGHT_CLICK = "right_click",
   MIDDLE_CLICK = "middle_click",
   DOUBLE_CLICK = "double_click",
+  TRIPLE_CLICK = "triple_click",
   SCREENSHOT = "screenshot",
   CURSOR_POSITION = "cursor_position",
   GITHUB_LOGIN = "github_login",
   CLEAR_SESSION = "clear_session",
   TYPE = "type",
   KEY = "key",
+  HOLD_KEY = "hold_key",
   RUN_CALLBACK = "run_callback",
   NAVIGATE = "navigate",
   SLEEP = "sleep",
   CHECK_EMAIL = "check_email",
+  LEFT_MOUSE_DOWN = "left_mouse_down",
+  LEFT_MOUSE_UP = "left_mouse_up",
+  WAIT = "wait",
+  SCROLL = "scroll",
 }
 
 // eslint-disable-next-line zod/require-zod-schema-types
@@ -44,6 +50,7 @@ export interface BrowserToolOptions {
 
 export interface ActionInput {
   action: BrowserAction;
+  coordinate?: number[];
   coordinates?: number[];
   text?: string;
   username?: string;
@@ -51,6 +58,8 @@ export interface ActionInput {
   url?: string;
   duration?: number;
   email?: string;
+  scroll_amount?: number;
+  scroll_direction?: string;
 }
 
 export interface ToolResult {

@@ -26,7 +26,12 @@ import { TestCase } from "@/core/runner/test-case";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger, Log } from "@/log/index";
 import { TestContext, BrowserToolConfig, ShortestConfig } from "@/types";
-import { ActionInput, ToolResult, BetaToolType } from "@/types/browser";
+import {
+  ActionInput,
+  ToolResult,
+  BetaToolType,
+  InternalActionEnum,
+} from "@/types/browser";
 import { getErrorDetails, ToolError, TestError } from "@/utils/errors";
 
 export class BrowserTool extends BaseBrowserTool {
@@ -201,11 +206,6 @@ export class BrowserTool extends BaseBrowserTool {
     await this.page.click(selector);
   }
 
-  public async clickAtCoordinates(x: number, y: number): Promise<void> {
-    this.log.debug("Clicking at coordinates", { x, y });
-    await actions.click(this.page, x, y);
-  }
-
   async execute(input: ActionInput): Promise<ToolResult> {
     try {
       this.log.setGroup(`🛠️ ${input.action}`);
@@ -213,12 +213,51 @@ export class BrowserTool extends BaseBrowserTool {
       let metadata = {};
 
       switch (input.action) {
-        case "left_click":
-        case "right_click":
-        case "middle_click":
-        case "double_click": {
-          const clickCoords = input.coordinates || this.lastMousePosition;
-          await this.clickAtCoordinates(clickCoords[0], clickCoords[1]);
+        case InternalActionEnum.LEFT_CLICK:
+        case InternalActionEnum.RIGHT_CLICK:
+        case InternalActionEnum.MIDDLE_CLICK:
+        case InternalActionEnum.DOUBLE_CLICK:
+        case InternalActionEnum.TRIPLE_CLICK: {
+          const clickCoords =
+            input.coordinate || input.coordinates || this.lastMousePosition;
+          const x = clickCoords[0];
+          const y = clickCoords[1];
+          const button = () => {
+            switch (input.action) {
+              case InternalActionEnum.LEFT_CLICK:
+              case InternalActionEnum.DOUBLE_CLICK:
+              case InternalActionEnum.TRIPLE_CLICK:
+                return "left";
+              case InternalActionEnum.RIGHT_CLICK:
+                return "right";
+              case InternalActionEnum.MIDDLE_CLICK:
+                return "middle";
+              default:
+                throw new ToolError(
+                  `Unsupported click action: ${input.action}`,
+                );
+            }
+          };
+          const clickCount = () => {
+            switch (input.action) {
+              case InternalActionEnum.DOUBLE_CLICK:
+                return 2;
+              case InternalActionEnum.TRIPLE_CLICK:
+                return 3;
+              default:
+                return 1;
+            }
+          };
+          this.log.debug("Clicking at coordinates", {
+            x,
+            y,
+            button: button(),
+            clickCount: clickCount(),
+          });
+          await actions.click(this.page, x, y, {
+            button: button(),
+            clickCount: clickCount(),
+          });
           output = `${input.action} at (${clickCoords[0]}, ${clickCoords[1]})`;
 
           // Get initial metadata before potential navigation
@@ -245,7 +284,7 @@ export class BrowserTool extends BaseBrowserTool {
           break;
         }
 
-        case "mouse_move":
+        case InternalActionEnum.MOUSE_MOVE:
           const coords = input.coordinates || (input as any).coordinate;
           if (!coords) {
             throw new ToolError("Coordinates required for mouse_move");
@@ -255,7 +294,7 @@ export class BrowserTool extends BaseBrowserTool {
           output = `Mouse moved to (${coords[0]}, ${coords[1]})`;
           break;
 
-        case "left_click_drag":
+        case InternalActionEnum.LEFT_CLICK_DRAG:
           if (!input.coordinates) {
             throw new ToolError("Coordinates required for left_click_drag");
           }
@@ -267,15 +306,25 @@ export class BrowserTool extends BaseBrowserTool {
           output = `Dragged mouse to (${input.coordinates[0]}, ${input.coordinates[1]})`;
           break;
 
-        case "cursor_position":
+        case InternalActionEnum.LEFT_MOUSE_DOWN:
+          await this.page.mouse.down();
+          output = "Pressed left mouse button";
+          break;
+
+        case InternalActionEnum.LEFT_MOUSE_UP:
+          await this.page.mouse.up();
+          output = "Released left mouse button";
+          break;
+
+        case InternalActionEnum.CURSOR_POSITION:
           const position = await actions.getCursorPosition(this.page);
           output = `Cursor position: (${position[0]}, ${position[1]})`;
           break;
 
-        case "screenshot":
+        case InternalActionEnum.SCREENSHOT:
           return await this.takeScreenshotWithMetadata();
 
-        case "type":
+        case InternalActionEnum.TYPE:
           if (!input.text) {
             throw new ToolError("Text required for type action");
           }
@@ -285,7 +334,7 @@ export class BrowserTool extends BaseBrowserTool {
           output = `Typed: ${input.text}`;
           break;
 
-        case "key": {
+        case InternalActionEnum.KEY: {
           if (!input.text) {
             throw new ToolError("Key required for key action");
           }
@@ -313,7 +362,31 @@ export class BrowserTool extends BaseBrowserTool {
           break;
         }
 
-        case "github_login": {
+        case InternalActionEnum.HOLD_KEY: {
+          if (!input.text) {
+            throw new ToolError("Key required for hold_key action");
+          }
+
+          if (!input.duration) {
+            throw new ToolError("Duration required for hold_key action");
+          }
+
+          const seconds = input.duration;
+          const delay = seconds / 1000;
+
+          const keyText = input.text.toLowerCase();
+          const keys = Array.isArray(actions.keyboardShortcuts[keyText])
+            ? actions.keyboardShortcuts[keyText]
+            : [actions.keyboardShortcuts[keyText] || input.text];
+
+          const parsedKeys = keys.join("+");
+          await this.page.keyboard.press(parsedKeys, { delay });
+
+          output = `Held key: ${parsedKeys} for ${seconds} second${seconds !== 1 ? "s" : ""}`;
+          break;
+        }
+
+        case InternalActionEnum.GITHUB_LOGIN: {
           if (!this.githubTool) {
             this.githubTool = new GitHubTool();
           }
@@ -328,7 +401,7 @@ export class BrowserTool extends BaseBrowserTool {
           break;
         }
 
-        case "clear_session":
+        case InternalActionEnum.CLEAR_SESSION:
           const newContext = await this.browserManager.recreateContext();
           this.page = newContext.pages()[0] || (await newContext.newPage());
           await this.page.evaluate(() => {
@@ -341,7 +414,7 @@ export class BrowserTool extends BaseBrowserTool {
             metadata: {},
           };
 
-        case "run_callback": {
+        case InternalActionEnum.RUN_CALLBACK: {
           if (!this.testContext?.currentTest) {
             throw new ToolError(
               "No test context available for callback execution",
@@ -389,7 +462,7 @@ export class BrowserTool extends BaseBrowserTool {
           }
         }
 
-        case "navigate": {
+        case InternalActionEnum.NAVIGATE: {
           if (!input.url) {
             throw new ToolError("URL required for navigation");
           }
@@ -440,7 +513,37 @@ export class BrowserTool extends BaseBrowserTool {
           }
         }
 
-        case "sleep": {
+        case InternalActionEnum.WAIT:
+          if (!input.duration) {
+            throw new ToolError("Duration required for wait action");
+          }
+          const seconds = input.duration;
+          await this.page.waitForTimeout(seconds * 1000);
+          output = `Waited for ${seconds} second${seconds !== 1 ? "s" : ""}`;
+          break;
+
+        case InternalActionEnum.SCROLL:
+          if (
+            !input.coordinate ||
+            !input.scroll_amount ||
+            !input.scroll_direction
+          ) {
+            throw new ToolError("Missing args for scroll action");
+          }
+          await this.page.mouse.move(input.coordinate[0], input.coordinate[1]);
+          const deltaX =
+            (input.scroll_direction === "up"
+              ? -input.scroll_amount
+              : input.scroll_amount) || 0;
+          const deltaY =
+            (input.scroll_direction === "left"
+              ? -input.scroll_amount
+              : input.scroll_amount) || 0;
+          await this.page.mouse.wheel(deltaX, deltaY);
+          output = `Scrolled ${input.scroll_amount} clicks ${input.scroll_direction}`;
+          break;
+
+        case InternalActionEnum.SLEEP: {
           const defaultDuration = 1000;
           const maxDuration = 60000;
           let duration = input.duration ?? defaultDuration;
@@ -461,7 +564,7 @@ export class BrowserTool extends BaseBrowserTool {
           break;
         }
 
-        case "check_email": {
+        case InternalActionEnum.CHECK_EMAIL: {
           if (!this.mailosaurTool) {
             const mailosaurAPIKey =
               this.config.mailosaur?.apiKey || process.env.MAILOSAUR_API_KEY;
@@ -714,15 +817,17 @@ export class BrowserTool extends BaseBrowserTool {
 
     writeFileSync(filePath, buffer);
     const filePathWithoutCwd = filePath.replace(process.cwd() + "/", "");
-    this.log.debug("📺", "Screenshot saved", { filePath: filePathWithoutCwd });
 
-    const metadata = {
+    const browserMetadata = await this.getMetadata();
+    this.log.trace("Screenshot saved", {
+      filePath: filePathWithoutCwd,
+      ...browserMetadata["window_info"],
+    });
+    return {
       output: "Screenshot taken",
       base64_image: buffer.toString("base64"),
-      metadata: await this.getMetadata(),
+      metadata: browserMetadata,
     };
-    this.log.trace("Screenshot details", metadata);
-    return metadata;
   }
 
   toToolParameters() {

@@ -481,10 +481,8 @@ export class TestRunner {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         if (
           step.action?.input.action === InternalActionEnum.MOUSE_MOVE &&
-          // @ts-expect-error Interface and actual values differ
           step.action.input.coordinate
         ) {
-          // @ts-expect-error
           const [x, y] = step.action.input.coordinate;
           const componentStr =
             await browserTool.getNormalizedComponentStringByCoords(x, y);

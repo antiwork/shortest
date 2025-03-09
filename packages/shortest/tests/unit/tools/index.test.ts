@@ -115,14 +115,16 @@ describe("tools/index", () => {
       const toolsMap = (registry as any).tools as Map<string, any>;
 
       expect(toolsMap.has("anthropic_computer_20241022")).toBe(true);
+      expect(toolsMap.has("anthropic_computer_20250124")).toBe(true);
       expect(toolsMap.has("anthropic_bash_20241022")).toBe(true);
+      expect(toolsMap.has("anthropic_bash_20250124")).toBe(true);
       expect(toolsMap.has("check_email")).toBe(true);
       expect(toolsMap.has("github_login")).toBe(true);
       expect(toolsMap.has("navigate")).toBe(true);
       expect(toolsMap.has("run_callback")).toBe(true);
       expect(toolsMap.has("sleep")).toBe(true);
 
-      expect(toolsMap.size).toBe(7);
+      expect(toolsMap.size).toBe(9);
     });
   });
 });

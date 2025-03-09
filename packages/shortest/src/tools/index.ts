@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createAnthropicBash20241022 } from "@/ai/tools/anthropic/bash_20241022";
+import { createAnthropicBash20250124 } from "@/ai/tools/anthropic/bash_20250124";
 import { createAnthropicComputer20241022 } from "@/ai/tools/anthropic/computer_20241022";
+import { createAnthropicComputer20250124 } from "@/ai/tools/anthropic/computer_20250124";
 import { createCheckEmailTool } from "@/ai/tools/custom/check_email";
 import { createGithubLoginTool } from "@/ai/tools/custom/github_login";
 import { createNavigateTool } from "@/ai/tools/custom/navigate";
@@ -44,10 +46,20 @@ export const createToolRegistry = (): ToolRegistry => {
       category: "provider",
       factory: createAnthropicComputer20241022,
     },
+    anthropic_computer_20250124: {
+      name: "computer",
+      category: "provider",
+      factory: createAnthropicComputer20250124,
+    },
     anthropic_bash_20241022: {
       name: "bash",
       category: "provider",
       factory: createAnthropicBash20241022,
+    },
+    anthropic_bash_20250124: {
+      name: "bash",
+      category: "provider",
+      factory: createAnthropicBash20250124,
     },
     check_email: {
       name: "check_email",

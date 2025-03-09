@@ -67,6 +67,10 @@ export const click = async (
   page: Page,
   x: number,
   y: number,
+  options: { button?: "left" | "right" | "middle"; clickCount?: number } = {
+    button: "left",
+    clickCount: 1,
+  },
 ): Promise<void> => {
   const scaledX = Math.round(x * scaleRatio.x);
   const scaledY = Math.round(y * scaleRatio.y);
@@ -75,7 +79,7 @@ export const click = async (
   const animationPromise = showClickAnimation(page, "left");
 
   await Promise.all([
-    page.mouse.click(scaledX, scaledY, { delay: 200 }), // delay to match animation duration
+    page.mouse.click(scaledX, scaledY, options),
     animationPromise,
   ]);
 };
