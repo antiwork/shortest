@@ -80,6 +80,68 @@ const createOrUpdateFile = async (
   }
 };
 
+const createBranch = async (
+  octokit: Awaited<ReturnType<typeof getOctokit>>,
+  owner: string,
+  repo: string,
+  baseBranch: string,
+  newBranchName: string,
+) => {
+  try {
+    const { data: ref } = await octokit.git.getRef({
+      owner,
+      repo,
+      ref: `heads/${baseBranch}`,
+    });
+
+    const sha = ref.object.sha;
+
+    await octokit.git.createRef({
+      owner,
+      repo,
+      ref: `refs/heads/${newBranchName}`,
+      sha,
+    });
+
+    return { success: true, branchName: newBranchName };
+  } catch (error: any) {
+    if (error.status === 422) {
+      throw new Error(`Branch ${newBranchName} already exists.`);
+    }
+    throw error;
+  }
+};
+
+const createPullRequest = async (
+  octokit: Awaited<ReturnType<typeof getOctokit>>,
+  owner: string,
+  repo: string,
+  baseBranch: string,
+  headBranch: string,
+  title: string,
+  body: string,
+) => {
+  try {
+    const { data: pullRequest } = await octokit.pulls.create({
+      owner,
+      repo,
+      title,
+      body,
+      head: headBranch,
+      base: baseBranch,
+    });
+
+    return {
+      success: true,
+      pullRequestNumber: pullRequest.number,
+      pullRequestUrl: pullRequest.html_url,
+    };
+  } catch (error) {
+    console.error("Error creating pull request:", error);
+    throw error;
+  }
+};
+
 export const POST = async (request: NextRequest) => {
   const { userId } = auth();
 
@@ -125,7 +187,6 @@ export default {
   testPattern: '${testPattern}',
   ai: {
     provider: "anthropic",
-    apiKey: process.env.ANTHROPIC_API_KEY
   },
   caching: {
     enabled: false,
@@ -142,7 +203,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
+      SHORTEST_ANTHROPIC_API_KEY: \${{ secrets.SHORTEST_ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v2
       - name: Set up Node.js
@@ -154,8 +215,11 @@ jobs:
       - name: Run Shortest tests
         run: npx shortest run`;
 
+    const branchName = `shortest-setup-${Date.now()}`;
+
     try {
-      // Create or update files serially to avoid conflicts
+      await createBranch(octokit, owner, repo, defaultBranch, branchName);
+
       await createOrUpdateFile(
         octokit,
         owner,
@@ -163,7 +227,7 @@ jobs:
         "shortest.config.ts",
         configContent,
         "Add Shortest configuration",
-        defaultBranch,
+        branchName,
       );
 
       await createOrUpdateFile(
@@ -173,16 +237,46 @@ jobs:
         ".github/workflows/shortest.yml",
         workflowContent,
         "Add Shortest workflow",
-        defaultBranch,
+        branchName,
       );
 
-      return NextResponse.json({ message: "Setup complete!" });
+      const prTitle = "Setup Shortest E2E Testing";
+      const prBody = `This PR sets up Shortest E2E testing for your repository.
+
+## Changes:
+- Added \`shortest.config.ts\` with your specified test pattern: \`${testPattern}\`
+- Added GitHub workflow to run tests ${triggers.onPush ? "on push to " + defaultBranch : ""}${triggers.onPush && triggers.onPullRequest ? " and " : ""}${triggers.onPullRequest ? "on pull requests" : ""}
+
+## Next Steps:
+1. Wait for the CI workflow to complete on this PR
+2. Review the configuration files and make any necessary adjustments
+3. If the CI workflow passes (green check), manually merge this PR to complete the setup
+4. If the CI workflow fails, check the logs to identify and fix any issues before merging
+
+Once this PR is merged, Shortest will be ready to use in your repository.`;
+
+      const { pullRequestNumber, pullRequestUrl } = await createPullRequest(
+        octokit,
+        owner,
+        repo,
+        defaultBranch,
+        branchName,
+        prTitle,
+        prBody,
+      );
+
+      return NextResponse.json({
+        message:
+          "Setup initiated successfully! A pull request has been created with the Shortest configuration. Please review and merge it after the CI checks pass.",
+        pullRequestNumber,
+        pullRequestUrl,
+        branchName,
+      });
     } catch (error) {
-      console.error("Error creating files:", error);
+      console.error("Error setting up Shortest via PR:", error);
       return NextResponse.json(
         {
-          error:
-            "Failed to create configuration files. Please check repository permissions and try again.",
+          error: "Failed to set up Shortest via PR",
           details: error instanceof Error ? error.message : "Unknown error",
         },
         { status: 500 },

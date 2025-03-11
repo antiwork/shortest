@@ -473,3 +473,79 @@ export const getLatestRunId = async (
     throw error;
   }
 };
+
+export const getPRWorkflowStatus = async (
+  owner: string,
+  repo: string,
+  pullNumber: number,
+): Promise<{
+  status: "pending" | "running" | "success" | "failure";
+  runId?: string;
+  runUrl?: string;
+}> => {
+  const octokit = await getOctokit();
+
+  try {
+    const { data: pr } = await octokit.pulls.get({
+      owner,
+      repo,
+      pull_number: pullNumber,
+    });
+
+    const branchName = pr.head.ref;
+
+    const { data: workflowRuns } =
+      await octokit.actions.listWorkflowRunsForRepo({
+        owner,
+        repo,
+        branch: branchName,
+        per_page: 1,
+      });
+
+    if (workflowRuns.total_count === 0) {
+      return { status: "pending" };
+    }
+
+    const latestRun = workflowRuns.workflow_runs[0];
+
+    if (
+      latestRun.status === "queued" ||
+      latestRun.status === "waiting" ||
+      latestRun.status === "pending"
+    ) {
+      return {
+        status: "pending",
+        runId: latestRun.id.toString(),
+        runUrl: latestRun.html_url,
+      };
+    }
+
+    if (latestRun.status === "in_progress") {
+      return {
+        status: "running",
+        runId: latestRun.id.toString(),
+        runUrl: latestRun.html_url,
+      };
+    }
+
+    if (latestRun.status === "completed") {
+      if (latestRun.conclusion === "success") {
+        return {
+          status: "success",
+          runId: latestRun.id.toString(),
+          runUrl: latestRun.html_url,
+        };
+      }
+      return {
+        status: "failure",
+        runId: latestRun.id.toString(),
+        runUrl: latestRun.html_url,
+      };
+    }
+
+    return { status: "pending" };
+  } catch (error) {
+    console.error("Error fetching PR workflow status:", error);
+    return { status: "pending" };
+  }
+};
