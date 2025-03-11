@@ -56,7 +56,7 @@ shortest('Login to the app using email and password', {
             <div className="mt-8 lg:mt-0 flex justify-center lg:justify-end">
               <SignedOut>
                 <a
-                  href="https://github.com/anti-work/shortest"
+                  href="https://github.com/antiwork/shortest"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

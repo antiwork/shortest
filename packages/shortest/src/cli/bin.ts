@@ -37,7 +37,7 @@ const VALID_PARAMS = ["--target", "--secret", "--log-level"];
 const showHelp = () => {
   console.log(`
 ${pc.bold("Shortest")} - AI-powered end-to-end testing framework
-${pc.dim("https://github.com/anti-work/shortest")}
+${pc.dim("https://github.com/antiwork/shortest")}
 
 ${pc.bold("Usage:")}
   $ shortest [options] [pattern]                  Run tests matching pattern (default: **/*.test.ts)
@@ -70,7 +70,7 @@ ${pc.bold("Examples:")}
   shortest --github-code --secret=<OTP_SECRET>    # Generate GitHub 2FA code
 
 ${pc.bold("Documentation:")}
-  ${pc.cyan("https://github.com/anti-work/shortest")}
+  ${pc.cyan("https://github.com/antiwork/shortest")}
 `);
 };
 

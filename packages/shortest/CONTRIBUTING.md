@@ -6,7 +6,7 @@ Thanks for your interest in contributing! This document will help you get starte
 
 1. Set up the repository
 ```bash
-git clone https://github.com/anti-work/shortest.git
+git clone https://github.com/antiwork/shortest.git
 cd shortest
 pnpm install
 ```
@@ -25,7 +25,7 @@ cp .env.example .env.local
 
 ## Feature implementation process
 
-We prioritize issues from the current milestone. Check the [roadmap](https://github.com/orgs/anti-work/projects/5/views/3?query=sort%3Aupdated-desc+is%3Aopen) to see which issues we're focusing on right now.
+We prioritize issues from the current milestone. Check the [roadmap](https://github.com/orgs/antiwork/projects/5/views/3?query=sort%3Aupdated-desc+is%3Aopen) to see which issues we're focusing on right now.
 
 ### Issue states
 
@@ -40,7 +40,7 @@ To have an issue moved from _Scoping needed_ to _Building needed_, create an imp
   - potential challenges
   - testing strategy
 
-[Create a discussion](https://github.com/anti-work/shortest/discussions/new?category=general) to get feedback on the implementation plan from maintainers before beginning development.
+[Create a discussion](https://github.com/antiwork/shortest/discussions/new?category=general) to get feedback on the implementation plan from maintainers before beginning development.
 
 > [!IMPORTANT]
 > We recommend waiting until an issue has moved to _Building needed_ before submitting a PR. PRs for issues in the _Scoping needed_ state might need significant rework or may be put on hold until proper scoping is complete.
@@ -119,6 +119,6 @@ feat(cli): Add mobile testing support
 
 ## Help
 
-- Check existing [discussions](https://github.com/anti-work/shortest/discussions)/[issues](https://github.com/anti-work/shortest/issues)/[PRs](https://github.com/anti-work/shortest/pulls) before creating new ones
+- Check existing [discussions](https://github.com/antiwork/shortest/discussions)/[issues](https://github.com/antiwork/shortest/issues)/[PRs](https://github.com/antiwork/shortest/pulls) before creating new ones
 - Start a discussion for questions or ideas
-- [Open an issue](https://github.com/anti-work/shortest/issues/new/choose) for bugs or problems
+- [Open an issue](https://github.com/antiwork/shortest/issues/new/choose) for bugs or problems
