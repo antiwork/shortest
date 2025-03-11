@@ -67,7 +67,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <SignedIn>
                 <nav className="flex items-center space-x-4">
                   <NavLink href="/dashboard">Dashboard</NavLink>
-                  <NavLink href="/dashboard/setup">Setup</NavLink>
+                  <NavLink href="/dashboard/projects">Projects</NavLink>
                 </nav>
               </SignedIn>
             </div>

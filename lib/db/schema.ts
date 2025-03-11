@@ -51,8 +51,8 @@ export const pullRequests = pgTable(
   }),
 );
 
-export const repositoryConfigs = pgTable(
-  "repository_configs",
+export const projects = pgTable(
+  "projects",
   {
     id: serial("id").primaryKey(),
     userId: integer("user_id").notNull(),
@@ -75,8 +75,8 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type PullRequest = typeof pullRequests.$inferSelect;
 export type NewPullRequest = typeof pullRequests.$inferInsert;
-export type RepositoryConfig = typeof repositoryConfigs.$inferSelect;
-export type NewRepositoryConfig = typeof repositoryConfigs.$inferInsert;
+export type Project = typeof projects.$inferSelect;
+export type NewProject = typeof projects.$inferInsert;
 
 export interface ExtendedPullRequest extends PullRequest {
   repository: {

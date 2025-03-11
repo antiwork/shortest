@@ -2,7 +2,7 @@
 
 import { Check, Loader2 } from "lucide-react";
 import { useState } from "react";
-import type { WizardData } from "./ShortestWizard";
+import type { WizardData } from "./wizard";
 import { Button } from "@/components/ui/button";
 
 interface ConfirmationProps {

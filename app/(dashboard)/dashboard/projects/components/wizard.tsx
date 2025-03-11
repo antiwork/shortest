@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { z } from "zod";
-import { Confirmation } from "./Confirmation";
-import { RepositorySelector } from "./RepositorySelector";
-import { TextInputStep } from "./TextInputStep";
-import { TriggerSelector } from "./TriggerSelector";
-import type { RepositoryConfig } from "@/lib/db/schema";
+import { Confirmation } from "./confirmation";
+import { RepositorySelector } from "./repo-selector";
+import { TextInputStep } from "./text-input-step";
+import { TriggerSelector } from "./trigger-selector";
+import type { Project } from "@/lib/db/schema";
 
 const RepositorySchema = z.object({
   full_name: z.string(),
@@ -28,13 +28,13 @@ export type WizardData = z.infer<typeof WizardDataSchema>;
 interface ShortestWizardProps {
   onComplete: () => void;
   onStepChange: (step: number) => void;
-  existingConfigs: RepositoryConfig[];
+  existingProjects: Project[];
 }
 
 const ShortestWizard = ({
   onComplete,
   onStepChange,
-  existingConfigs,
+  existingProjects,
 }: ShortestWizardProps) => {
   const [step, setStep] = useState(0);
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -75,7 +75,7 @@ const ShortestWizard = ({
           nextStep={nextStep}
           repositories={repositories}
           setRepositories={setRepositories}
-          existingConfigs={existingConfigs}
+          existingProjects={existingProjects}
         />
       )}
 

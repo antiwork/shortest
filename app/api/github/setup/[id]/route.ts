@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { deleteRepositoryConfig } from "@/lib/db/queries";
+import { deleteProject } from "@/lib/db/queries";
 
 export const DELETE = async (
   request: NextRequest,
@@ -21,7 +21,7 @@ export const DELETE = async (
       );
     }
 
-    await deleteRepositoryConfig(id);
+    await deleteProject(id);
     return NextResponse.json({ message: "Automation removed successfully" });
   } catch (error) {
     console.error("Error deleting automation:", error);

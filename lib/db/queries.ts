@@ -9,9 +9,9 @@ import {
   NewUser,
   pullRequests,
   PullRequest,
-  repositoryConfigs,
-  RepositoryConfig,
-  NewRepositoryConfig,
+  projects,
+  Project,
+  NewProject,
 } from "./schema";
 
 export const updateUserSubscription = async (
@@ -71,93 +71,85 @@ export const getPullRequests = async (): Promise<PullRequest[]> => {
   return db.select().from(pullRequests).where(eq(pullRequests.userId, user.id));
 };
 
-export const getRepositoryConfig = async (
+export const getProject = async (
   userId: number,
   owner: string,
   repo: string,
-): Promise<RepositoryConfig | null> => {
-  const config = await db.query.repositoryConfigs.findFirst({
+): Promise<Project | null> => {
+  const project = await db.query.projects.findFirst({
     where: and(
-      eq(repositoryConfigs.userId, userId),
-      eq(repositoryConfigs.owner, owner),
-      eq(repositoryConfigs.repo, repo),
+      eq(projects.userId, userId),
+      eq(projects.owner, owner),
+      eq(projects.repo, repo),
     ),
   });
 
-  return config || null;
+  return project || null;
 };
 
-export const getUserRepositoryConfigs = async (): Promise<
-  RepositoryConfig[]
-> => {
+export const getUserProjects = async (): Promise<Project[]> => {
   const { userId } = auth();
   if (!userId) {
     throw new Error("User not authenticated");
   }
 
   const user = await getUserByClerkId(userId);
-  return db
-    .select()
-    .from(repositoryConfigs)
-    .where(eq(repositoryConfigs.userId, user.id));
+  return db.select().from(projects).where(eq(projects.userId, user.id));
 };
 
-export const createOrUpdateRepositoryConfig = async (
-  config: Omit<NewRepositoryConfig, "userId" | "createdAt" | "updatedAt">,
-): Promise<RepositoryConfig> => {
+export const createOrUpdateProject = async (
+  projectData: Omit<NewProject, "userId" | "createdAt" | "updatedAt">,
+): Promise<Project> => {
   const { userId } = auth();
   if (!userId) {
     throw new Error("User not authenticated");
   }
 
   const user = await getUserByClerkId(userId);
-  const existingConfig = await getRepositoryConfig(
+  const existingProject = await getProject(
     user.id,
-    config.owner,
-    config.repo,
+    projectData.owner,
+    projectData.repo,
   );
 
-  if (existingConfig) {
-    const [updatedConfig] = await db
-      .update(repositoryConfigs)
+  if (existingProject) {
+    const [updatedProject] = await db
+      .update(projects)
       .set({
-        ...config,
+        ...projectData,
         updatedAt: new Date(),
       })
-      .where(eq(repositoryConfigs.id, existingConfig.id))
+      .where(eq(projects.id, existingProject.id))
       .returning();
 
-    return updatedConfig;
+    return updatedProject;
   }
 
-  const [newConfig] = await db
-    .insert(repositoryConfigs)
+  const [newProject] = await db
+    .insert(projects)
     .values({
-      ...config,
+      ...projectData,
       userId: user.id,
     })
     .returning();
 
-  return newConfig;
+  return newProject;
 };
 
-export const deleteRepositoryConfig = async (id: number): Promise<void> => {
+export const deleteProject = async (id: number): Promise<void> => {
   const { userId } = auth();
   if (!userId) {
     throw new Error("User not authenticated");
   }
 
   const user = await getUserByClerkId(userId);
-  const config = await db.query.repositoryConfigs.findFirst({
-    where: and(
-      eq(repositoryConfigs.id, id),
-      eq(repositoryConfigs.userId, user.id),
-    ),
+  const project = await db.query.projects.findFirst({
+    where: and(eq(projects.id, id), eq(projects.userId, user.id)),
   });
 
-  if (!config) {
-    throw new Error("Repository configuration not found or access denied");
+  if (!project) {
+    throw new Error("Project not found or access denied");
   }
 
-  await db.delete(repositoryConfigs).where(eq(repositoryConfigs.id, id));
+  await db.delete(projects).where(eq(projects.id, id));
 };

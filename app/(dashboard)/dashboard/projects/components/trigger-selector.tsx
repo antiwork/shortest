@@ -1,6 +1,6 @@
 "use client";
 
-import type { WizardData } from "./ShortestWizard";
+import type { WizardData } from "./wizard";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";

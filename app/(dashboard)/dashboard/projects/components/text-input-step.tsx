@@ -1,6 +1,6 @@
 "use client";
 
-import type { WizardData } from "./ShortestWizard";
+import type { WizardData } from "./wizard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -9,7 +9,7 @@ interface TextInputStepProps {
   setWizardData: (data: WizardData) => void;
   nextStep: () => void;
   prevStep: () => void;
-  field: keyof Pick<WizardData, "testFolder" | "testPattern">;
+  field: keyof Pick<WizardData, "testPattern">;
   placeholder: string;
 }
 

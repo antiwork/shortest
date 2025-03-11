@@ -2,7 +2,7 @@
 
 import { AlertCircle, Github, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Repository, WizardData } from "./ShortestWizard";
+import type { Repository, WizardData } from "./wizard";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { RepositoryConfig } from "@/lib/db/schema";
+import type { Project } from "@/lib/db/schema";
 
 interface RepositorySelectorProps {
   wizardData: WizardData;
@@ -19,7 +19,7 @@ interface RepositorySelectorProps {
   nextStep: () => void;
   repositories: Repository[];
   setRepositories: (repos: Repository[]) => void;
-  existingConfigs: RepositoryConfig[];
+  existingProjects: Project[];
 }
 
 const RepositorySelector = ({
@@ -28,7 +28,7 @@ const RepositorySelector = ({
   nextStep,
   repositories,
   setRepositories,
-  existingConfigs,
+  existingProjects,
 }: RepositorySelectorProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,11 +61,11 @@ const RepositorySelector = ({
   const handleSelect = (value: string) => {
     const selected = repositories.find((repo) => repo.full_name === value);
     const [owner, repo] = value.split("/");
-    const existingConfig = existingConfigs.find(
-      (config) => config.owner === owner && config.repo === repo,
+    const existingProject = existingProjects.find(
+      (project: Project) => project.owner === owner && project.repo === repo,
     );
 
-    if (existingConfig) {
+    if (existingProject) {
       setError("This repository already has QA automation configured");
       setWizardData({ ...wizardData, selectedRepo: null });
       return;
@@ -98,20 +98,21 @@ const RepositorySelector = ({
         <SelectContent>
           {repositories.map((repo) => {
             const [owner, repoName] = repo.full_name.split("/");
-            const hasExistingConfig = existingConfigs.some(
-              (config) => config.owner === owner && config.repo === repoName,
+            const hasExistingProject = existingProjects.some(
+              (project: Project) =>
+                project.owner === owner && project.repo === repoName,
             );
 
             return (
               <SelectItem
                 key={repo.full_name}
                 value={repo.full_name}
-                disabled={hasExistingConfig}
+                disabled={hasExistingProject}
                 className="pr-12"
               >
                 <div className="flex items-center justify-between w-full gap-4">
                   <span>{repo.full_name}</span>
-                  {hasExistingConfig && (
+                  {hasExistingProject && (
                     <span className="inline-flex items-center rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20 absolute right-2">
                       Already configured
                     </span>

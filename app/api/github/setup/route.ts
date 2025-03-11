@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createOrUpdateRepositoryConfig } from "@/lib/db/queries";
+import { createOrUpdateProject } from "@/lib/db/queries";
 import { getOctokit } from "@/lib/github";
 
 const SetupRequestSchema = z.object({
@@ -112,7 +112,7 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    await createOrUpdateRepositoryConfig({
+    await createOrUpdateProject({
       owner,
       repo,
     });

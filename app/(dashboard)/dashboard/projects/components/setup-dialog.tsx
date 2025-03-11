@@ -2,7 +2,7 @@
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ShortestWizard } from "./ShortestWizard";
+import { ShortestWizard } from "./wizard";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { RepositoryConfig } from "@/lib/db/schema";
+import type { Project } from "@/lib/db/schema";
 
 const steps = [
   {
@@ -34,10 +34,10 @@ const steps = [
 ];
 
 interface SetupDialogProps {
-  configs: RepositoryConfig[];
+  projects: Project[];
 }
 
-export const SetupDialog = ({ configs }: SetupDialogProps) => {
+export const SetupDialog = ({ projects }: SetupDialogProps) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -52,7 +52,7 @@ export const SetupDialog = ({ configs }: SetupDialogProps) => {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Set Up QA Automation
+          Add Project
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
@@ -64,7 +64,7 @@ export const SetupDialog = ({ configs }: SetupDialogProps) => {
           <ShortestWizard
             onComplete={handleComplete}
             onStepChange={setStep}
-            existingConfigs={configs}
+            existingProjects={projects}
           />
         </div>
       </DialogContent>

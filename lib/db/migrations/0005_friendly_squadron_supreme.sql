@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS "repository_configs" (
+CREATE TABLE IF NOT EXISTS "projects" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer NOT NULL,
 	"owner" varchar(255) NOT NULL,
@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS "repository_configs" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "user_repo_idx" ON "repository_configs" USING btree ("user_id","owner","repo");
+CREATE UNIQUE INDEX IF NOT EXISTS "user_repo_idx" ON "projects" USING btree ("user_id","owner","repo");
