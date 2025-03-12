@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 import pc from "picocolors";
 import { GitHubTool } from "@/browser/integrations/github";
-import { purgeLegacyCache, cleanUpCache } from "@/cache";
+import {
+  purgeLegacyCache,
+  cleanUpCache,
+  purgeLegacyScreenshots,
+} from "@/cache";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
 import { getConfig, initializeConfig } from "@/index";
@@ -196,6 +200,7 @@ const main = async () => {
   const config = getConfig();
 
   await purgeLegacyCache();
+  await purgeLegacyScreenshots();
 
   try {
     log.trace("Initializing TestRunner");

@@ -96,3 +96,30 @@ export const purgeLegacyCache = async ({
     }
   }
 };
+
+/**
+ * Removes legacy screenshots directory from older versions
+ *
+ * @param {{ dirPath?: string }} options - Cleanup options where dirPath is the path to the SHORTEST_DIR_NAME directory
+ * @private
+ */
+export const purgeLegacyScreenshots = async () => {
+  const log = getLogger();
+  const legacyScreenshotsPath = path.join(CACHE_DIR_PATH, "screenshots");
+
+  if (!existsSync(legacyScreenshotsPath)) {
+    return;
+  }
+
+  log.warn(`Purging legacy screenshots directory: ${legacyScreenshotsPath}`);
+
+  try {
+    await fs.rm(legacyScreenshotsPath, { recursive: true, force: true });
+    log.debug(`Legacy screenshots directory ${legacyScreenshotsPath} purged`);
+  } catch (error) {
+    log.error("Failed to purge legacy screenshots directory", {
+      path: legacyScreenshotsPath,
+      ...getErrorDetails(error),
+    });
+  }
+};
