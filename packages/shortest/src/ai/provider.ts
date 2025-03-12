@@ -12,12 +12,7 @@ import { setGlobalDispatcher, EnvHttpProxyAgent } from "undici";
 export const createProvider = (aiConfig: AIConfig): LanguageModelV1 => {
   switch (aiConfig.provider) {
     case "anthropic":
-      if (process.env.HTTPS_PROXY || process.env.HTTP_PROXY) {
-        // Apply proxy-related environment variables to the global fetch function using undici
-        // If using custom CA certificates, set the NODE_EXTRA_CA_CERTS environment variable
-        setGlobalDispatcher(new EnvHttpProxyAgent());
-      }
-      const anthropic = createAnthropic({ apiKey: aiConfig.apiKey, fetch: globalThis.fetch });
+      const anthropic = createAnthropic({ apiKey: aiConfig.apiKey });
       return anthropic(aiConfig.model) as LanguageModelV1;
     default:
       throw new AIError(

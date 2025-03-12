@@ -1,4 +1,11 @@
 import type { ShortestConfig } from "@antiwork/shortest";
+import { setGlobalDispatcher, EnvHttpProxyAgent } from "undici";
+
+if (process.env.HTTPS_PROXY || process.env.HTTP_PROXY) {
+  // Apply proxy-related environment variables to the global fetch function using undici
+  // If using custom CA certificates, set the NODE_EXTRA_CA_CERTS environment variable
+  setGlobalDispatcher(new EnvHttpProxyAgent());
+}
 
 export default {
   headless: false,
