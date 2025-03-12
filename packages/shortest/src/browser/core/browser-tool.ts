@@ -902,10 +902,8 @@ export class BrowserTool extends BaseBrowserTool {
 
   private cleanupScreenshots(): void {
     try {
-      // Original cleanup for the main screenshots directory
       this.cleanupScreenshotsInDir(this.screenshotDir);
 
-      // If we have a test context with a current test that is a TestCase, also clean up that specific directory
       if (
         this.testContext?.currentTest &&
         "identifier" in this.testContext.currentTest
