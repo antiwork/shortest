@@ -192,7 +192,9 @@ export class TestCache {
     }
 
     try {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const timestamp = this.testCase.startedAt
+        .toISOString()
+        .replace(/[:.]/g, "-");
       this.currentCacheFileName = `${timestamp}${this.cacheFileNameSuffix}`;
 
       const cacheEntry: CacheEntry = {

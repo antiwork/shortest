@@ -809,26 +809,19 @@ export class BrowserTool extends BaseBrowserTool {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     let screenshotPath: string;
 
-    if (
-      this.testContext?.currentTest &&
-      "identifier" in this.testContext.currentTest
-    ) {
-      const testCase = this.testContext.currentTest as TestCase;
-      if (testCase.identifier) {
-        const testScreenshotDir = join(CACHE_DIR_PATH, testCase.identifier);
+    const testCase = this.testContext?.currentTest as TestCase;
 
-        mkdirSync(testScreenshotDir, { recursive: true });
+    const testCaseStartedAtTimestamp = testCase?.startedAt
+      ?.toISOString()
+      .replace(/[:.]/g, "-");
 
-        screenshotPath = join(testScreenshotDir, `screenshot-${timestamp}.png`);
-      } else {
-        screenshotPath = join(
-          this.screenshotDir,
-          `screenshot-${timestamp}.png`,
-        );
-      }
-    } else {
-      screenshotPath = join(this.screenshotDir, `screenshot-${timestamp}.png`);
-    }
+    const testScreenshotDir = join(
+      CACHE_DIR_PATH,
+      `${testCaseStartedAtTimestamp}_${testCase.identifier}`,
+    );
+
+    mkdirSync(testScreenshotDir, { recursive: true });
+    screenshotPath = join(testScreenshotDir, `screenshot-${timestamp}.png`);
 
     const buffer = await this.page.screenshot({
       type: "jpeg",
