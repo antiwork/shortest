@@ -54,6 +54,8 @@ const TestCaseSchema = z
     beforeFn: TestCaseFunctionSchema.optional(),
     afterFn: TestCaseFunctionSchema.optional(),
     directExecution: z.boolean().optional().default(false),
+    identifier: z.string().optional(),
+    startedAt: z.date().optional(),
   })
   .strict()
   .transform((data) => {

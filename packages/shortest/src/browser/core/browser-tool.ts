@@ -893,6 +893,7 @@ export class BrowserTool extends BaseBrowserTool {
     this.testContext = newContext;
   }
 
+  // TODO: Remove this
   private cleanupScreenshots(): void {
     try {
       this.cleanupScreenshotsInDir(this.screenshotDir);
