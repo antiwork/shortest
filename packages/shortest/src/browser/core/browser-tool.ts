@@ -809,7 +809,6 @@ export class BrowserTool extends BaseBrowserTool {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     let screenshotPath: string;
 
-    // If we have a test context with a current test that is a TestCase, use test-specific directory
     if (
       this.testContext?.currentTest &&
       "identifier" in this.testContext.currentTest
@@ -818,20 +817,16 @@ export class BrowserTool extends BaseBrowserTool {
       if (testCase.identifier) {
         const testScreenshotDir = join(CACHE_DIR_PATH, testCase.identifier);
 
-        // Ensure the directory exists
         mkdirSync(testScreenshotDir, { recursive: true });
 
-        // Save screenshot in test-specific directory
         screenshotPath = join(testScreenshotDir, `screenshot-${timestamp}.png`);
       } else {
-        // Fallback if identifier is undefined
         screenshotPath = join(
           this.screenshotDir,
           `screenshot-${timestamp}.png`,
         );
       }
     } else {
-      // Fallback to original location if no test context
       screenshotPath = join(this.screenshotDir, `screenshot-${timestamp}.png`);
     }
 
