@@ -71,7 +71,6 @@ export class BrowserTool extends BaseBrowserTool {
     });
 
     this.initialize();
-    this.cleanupScreenshots();
   }
 
   private async initialize(): Promise<void> {
@@ -893,27 +892,6 @@ export class BrowserTool extends BaseBrowserTool {
     this.testContext = newContext;
   }
 
-  // TODO: Remove this
-  private cleanupScreenshots(): void {
-    try {
-      this.cleanupScreenshotsInDir(this.screenshotDir);
-
-      if (
-        this.testContext?.currentTest &&
-        "identifier" in this.testContext.currentTest
-      ) {
-        const testCase = this.testContext.currentTest as TestCase;
-        if (testCase.identifier) {
-          const testScreenshotDir = join(CACHE_DIR_PATH, testCase.identifier);
-          this.cleanupScreenshotsInDir(testScreenshotDir);
-        }
-      }
-    } catch (error) {
-      this.log.error("Failed to clean up screenshots", getErrorDetails(error));
-    }
-  }
-
-  // Helper method to clean up screenshots in a specific directory
   private cleanupScreenshotsInDir(directory: string): void {
     try {
       if (!existsSync(directory)) return;
