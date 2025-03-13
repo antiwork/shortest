@@ -1,6 +1,6 @@
-import { existsSync } from "fs";
+import { existsSync, readdirSync, rmdirSync, statSync, unlinkSync } from "fs";
 import * as fs from "fs/promises";
-import path from "path";
+import path, { join } from "path";
 import { TestCache } from "@/cache/test-cache";
 import { getLogger } from "@/log";
 import { CacheEntry } from "@/types/cache";
@@ -16,6 +16,8 @@ export const DOT_SHORTEST_DIR_PATH = path.join(
 export const CACHE_DIR_PATH = path.join(DOT_SHORTEST_DIR_PATH, "cache");
 
 export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_AGE_MS_FOR_SCREENSHOTS = 5 * 60 * 60 * 1000;
+const MAX_SCREENSHOTS = 10;
 
 /**
  * Removes expired cache entries and optionally purges all cache
@@ -38,6 +40,16 @@ export const cleanUpCache = async ({
     return;
   }
 
+  await cleanupJson(dirPath, forcePurge);
+
+  cleanupScreenshots(dirPath, forcePurge);
+};
+
+const cleanupJson = async (
+  dirPath: string,
+  forcePurge: boolean,
+): Promise<void> => {
+  const log = getLogger();
   const files = await fs.readdir(dirPath);
   const now = Date.now();
 
@@ -61,6 +73,62 @@ export const cleanUpCache = async ({
       await fs.unlink(filePath);
       log.error("Invalid cache file removed", { file: filePath });
     }
+  }
+};
+
+/**
+ * Cleans up screenshot files in the specified directory
+ *
+ * @param directory The directory containing screenshots
+ */
+const cleanupScreenshots = (directory: string, forcePurge: boolean): void => {
+  const log = getLogger();
+  let counter = 0;
+
+  try {
+    if (!existsSync(directory)) return;
+
+    // TODO: sort by time
+    const directories = readdirSync(directory).filter((file) =>
+      statSync(join(directory, file)).isDirectory(),
+    );
+
+    for (const dir of directories) {
+      const files = readdirSync(join(directory, dir))
+        .filter((file) => file.endsWith(".png") || file.endsWith(".jpg"))
+        .map((file) => ({
+          name: file,
+          path: join(directory, dir, file),
+          time: statSync(join(directory, dir, file)).mtime.getTime(),
+        }))
+        .sort((a, b) => b.time - a.time);
+
+      const now = Date.now();
+
+      files.forEach((file) => {
+        counter++;
+        const isOld = now - file.time > MAX_AGE_MS_FOR_SCREENSHOTS;
+        const isBeyondLimit = counter > MAX_SCREENSHOTS;
+
+        if (forcePurge || isOld || isBeyondLimit) {
+          try {
+            unlinkSync(file.path);
+            const dirPath = path.join(directory, dir);
+            if (readdirSync(dirPath).length === 0) {
+              rmdirSync(dirPath);
+            }
+            log.trace("Screenshot removed", { file: file.path });
+          } catch (error: unknown) {
+            log.error("Failed to delete screenshot", getErrorDetails(error));
+          }
+        }
+      });
+    }
+  } catch (error) {
+    log.error(
+      "Failed to clean up screenshots directory",
+      getErrorDetails(error),
+    );
   }
 };
 

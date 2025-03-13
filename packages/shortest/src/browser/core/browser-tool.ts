@@ -7,14 +7,7 @@ declare global {
   }
 }
 
-import {
-  writeFileSync,
-  mkdirSync,
-  readdirSync,
-  statSync,
-  unlinkSync,
-  existsSync,
-} from "fs";
+import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { Page } from "playwright";
 import * as actions from "@/browser/actions";
@@ -890,45 +883,6 @@ export class BrowserTool extends BaseBrowserTool {
 
   updateTestContext(newContext: TestContext) {
     this.testContext = newContext;
-  }
-
-  private cleanupScreenshotsInDir(directory: string): void {
-    try {
-      if (!existsSync(directory)) return;
-
-      const files = readdirSync(directory)
-        .filter((file) => file.endsWith(".png") || file.endsWith(".jpg"))
-        .map((file) => ({
-          name: file,
-          path: join(directory, file),
-          time: statSync(join(directory, file)).mtime.getTime(),
-        }))
-        .sort((a, b) => b.time - a.time); // newest first
-
-      const now = Date.now();
-      const fiveHoursMs = this.MAX_AGE_HOURS * 60 * 60 * 1000;
-
-      files.forEach((file, index) => {
-        const isOld = now - file.time > fiveHoursMs;
-        const isBeyondLimit = index >= this.MAX_SCREENSHOTS;
-
-        if (isOld || isBeyondLimit) {
-          try {
-            unlinkSync(file.path);
-          } catch (error: unknown) {
-            this.log.error(
-              "Failed to delete screenshot",
-              getErrorDetails(error),
-            );
-          }
-        }
-      });
-    } catch (error) {
-      this.log.error(
-        "Failed to clean up screenshots directory",
-        getErrorDetails(error),
-      );
-    }
   }
 
   async showCursor(): Promise<void> {
