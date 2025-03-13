@@ -15,7 +15,7 @@ import { BaseBrowserTool } from "@/browser/core";
 import { GitHubTool } from "@/browser/integrations/github";
 import { MailosaurTool } from "@/browser/integrations/mailosaur";
 import { BrowserManager } from "@/browser/manager";
-import { DOT_SHORTEST_DIR_PATH, CACHE_DIR_PATH } from "@/cache";
+import { CACHE_DIR_PATH } from "@/cache";
 import { TestCase } from "@/core/runner/test-case";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger, Log } from "@/log/index";
@@ -33,7 +33,6 @@ export class BrowserTool extends BaseBrowserTool {
   private browserManager: BrowserManager;
   protected readonly toolType: BetaToolType = "computer_20241022";
   protected readonly toolName: string = "computer";
-  private screenshotDir: string;
   private cursorVisible: boolean = true;
   private lastMousePosition: [number, number] = [0, 0];
   private githubTool?: GitHubTool;
@@ -52,8 +51,6 @@ export class BrowserTool extends BaseBrowserTool {
     super(config);
     this.page = page;
     this.browserManager = browserManager;
-    this.screenshotDir = join(DOT_SHORTEST_DIR_PATH, "screenshots");
-    mkdirSync(this.screenshotDir, { recursive: true });
     this.viewport = { width: config.width, height: config.height };
     this.testContext = config.testContext;
     this.log = getLogger();
