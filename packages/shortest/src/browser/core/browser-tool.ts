@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-import { writeFileSync, mkdirSync } from "fs";
+import * as fs from "fs/promises";
 import { join } from "path";
 import { Page } from "playwright";
 import * as actions from "@/browser/actions";
@@ -809,7 +809,7 @@ export class BrowserTool extends BaseBrowserTool {
       `${testCaseStartedAtTimestamp}_${testCase.identifier}`,
     );
 
-    mkdirSync(testScreenshotDir, { recursive: true });
+    await fs.mkdir(testScreenshotDir, { recursive: true });
     screenshotPath = join(testScreenshotDir, `screenshot-${timestamp}.png`);
 
     const buffer = await this.page.screenshot({
@@ -819,7 +819,7 @@ export class BrowserTool extends BaseBrowserTool {
       fullPage: false,
     });
 
-    writeFileSync(screenshotPath, buffer);
+    await fs.writeFile(screenshotPath, buffer);
     const filePathWithoutCwd = screenshotPath.replace(process.cwd() + "/", "");
 
     const browserMetadata = await this.getMetadata();
