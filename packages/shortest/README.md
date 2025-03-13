@@ -232,9 +232,9 @@ You can run Shortest in your CI/CD pipeline by running tests in headless mode. M
 
 ## Resources
 
-- Visit [GitHub](https://github.com/anti-work/shortest) for detailed docs
+- Visit [GitHub](https://github.com/antiwork/shortest) for detailed docs
 - [Contributing guide](./CONTRIBUTING.md)
-- [Changelog](https://github.com/anti-work/shortest/releases)
+- [Changelog](https://github.com/antiwork/shortest/releases)
 
 ### Prerequisites
 

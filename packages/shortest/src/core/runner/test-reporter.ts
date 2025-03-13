@@ -1,6 +1,7 @@
 import pc from "picocolors";
-import { FileResult, TestResult, TestStatus } from "@/core/runner/index";
+import { FileResult, TestStatus } from "@/core/runner/index";
 import { TestCase } from "@/core/runner/test-case";
+import { TestRun } from "@/core/runner/test-run";
 import { getLogger, Log } from "@/log/index";
 import { AssertionError } from "@/types/test";
 
@@ -49,9 +50,9 @@ export class TestReporter {
     this.reporterLog.setGroup(test.name);
   }
 
-  onTestEnd(testResult: TestResult) {
+  onTestEnd(testRun: TestRun) {
     this.log.trace("onTestEnd called");
-    switch (testResult.status) {
+    switch (testRun.status) {
       case "passed":
         this.passedTestsCount++;
         break;
@@ -60,33 +61,33 @@ export class TestReporter {
         break;
     }
     let testAICost = 0;
-    if (testResult.tokenUsage) {
-      this.totalPromptTokens += testResult.tokenUsage.promptTokens;
-      this.totalCompletionTokens += testResult.tokenUsage.completionTokens;
+    if (testRun.tokenUsage) {
+      this.totalPromptTokens += testRun.tokenUsage.promptTokens;
+      this.totalCompletionTokens += testRun.tokenUsage.completionTokens;
       testAICost = this.calculateCost(
-        testResult.tokenUsage.promptTokens,
-        testResult.tokenUsage.completionTokens,
+        testRun.tokenUsage.promptTokens,
+        testRun.tokenUsage.completionTokens,
       );
       this.aiCost += testAICost;
     }
-    const symbol = testResult.status === "passed" ? "✓" : "✗";
-    const color = testResult.status === "passed" ? pc.green : pc.red;
+    const symbol = testRun.status === "passed" ? "✓" : "✗";
+    const color = testRun.status === "passed" ? pc.green : pc.red;
 
-    this.reporterLog.info(`${color(`${symbol} ${testResult.status}`)}`);
-    if (testResult.tokenUsage.totalTokens > 0) {
+    this.reporterLog.info(`${color(`${symbol} ${testRun.status}`)}`);
+    if (testRun.tokenUsage.totalTokens > 0) {
       const cost = this.calculateCost(
-        testResult.tokenUsage.promptTokens,
-        testResult.tokenUsage.completionTokens,
+        testRun.tokenUsage.promptTokens,
+        testRun.tokenUsage.completionTokens,
       );
       this.reporterLog.info(
         pc.dim("↳"),
-        pc.dim(`${testResult.tokenUsage.totalTokens.toLocaleString()} tokens`),
+        pc.dim(`${testRun.tokenUsage.totalTokens.toLocaleString()} tokens`),
         pc.dim(`(≈ $${cost.toFixed(2)})`),
       );
     }
 
-    if (testResult.status === "failed") {
-      this.error("Reason", testResult.reason);
+    if (testRun.status === "failed") {
+      this.error("Reason", testRun.reason!);
     }
 
     this.reporterLog.resetGroup();
