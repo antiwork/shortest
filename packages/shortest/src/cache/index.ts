@@ -88,10 +88,13 @@ const cleanupScreenshots = (directory: string, forcePurge: boolean): void => {
   try {
     if (!existsSync(directory)) return;
 
-    // TODO: sort by time
-    const directories = readdirSync(directory).filter((file) =>
-      statSync(join(directory, file)).isDirectory(),
-    );
+    const directories = readdirSync(directory)
+      .filter((file) => statSync(join(directory, file)).isDirectory())
+      .sort((a, b) => {
+        const aTime = statSync(join(directory, a)).mtime.getTime();
+        const bTime = statSync(join(directory, b)).mtime.getTime();
+        return bTime - aTime;
+      });
 
     for (const dir of directories) {
       const files = readdirSync(join(directory, dir))
@@ -112,6 +115,9 @@ const cleanupScreenshots = (directory: string, forcePurge: boolean): void => {
 
         if (forcePurge || isOld || isBeyondLimit) {
           try {
+            if (isBeyondLimit) {
+              console.log("Removing screenshot", { file: file.path });
+            }
             unlinkSync(file.path);
             const dirPath = path.join(directory, dir);
             if (readdirSync(dirPath).length === 0) {
