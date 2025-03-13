@@ -1,9 +1,9 @@
-import { existsSync, readdirSync, rmdirSync, statSync, unlinkSync } from "fs";
 import * as fs from "fs/promises";
 import path, { join } from "path";
 import { TestCache } from "@/cache/test-cache";
 import { getLogger } from "@/log";
 import { CacheEntry } from "@/types/cache";
+import { directoryExists } from "@/utils/directory-exists";
 import { getErrorDetails } from "@/utils/errors";
 
 export { TestCache };
@@ -35,14 +35,14 @@ export const cleanUpCache = async ({
   const log = getLogger();
   log.debug("Cleaning up cache", { forcePurge });
 
-  if (!existsSync(dirPath)) {
+  if (!(await directoryExists(dirPath))) {
     log.debug("Cache directory does not exist", { dirPath });
     return;
   }
 
   await cleanupJson(dirPath, forcePurge);
 
-  cleanupScreenshots(dirPath, forcePurge);
+  await cleanupScreenshots(dirPath, forcePurge);
 };
 
 const cleanupJson = async (
@@ -81,34 +81,54 @@ const cleanupJson = async (
  *
  * @param directory The directory containing screenshots
  */
-const cleanupScreenshots = (directory: string, forcePurge: boolean): void => {
+const cleanupScreenshots = async (
+  directory: string,
+  forcePurge: boolean,
+): Promise<void> => {
   const log = getLogger();
   let counter = 0;
 
   try {
-    if (!existsSync(directory)) return;
+    if (!(await directoryExists(directory))) return;
 
-    const directories = readdirSync(directory)
-      .filter((file) => statSync(join(directory, file)).isDirectory())
-      .sort((a, b) => {
-        const aTime = statSync(join(directory, a)).mtime.getTime();
-        const bTime = statSync(join(directory, b)).mtime.getTime();
-        return bTime - aTime;
-      });
+    const dirEntries = await fs.readdir(directory, { withFileTypes: true });
+    const directories = await Promise.all(
+      dirEntries
+        .filter((dirent) => dirent.isDirectory())
+        .map(async (dirent) => {
+          const dirPath = join(directory, dirent.name);
+          const stats = await fs.stat(dirPath);
+          return {
+            name: dirent.name,
+            path: dirPath,
+            time: stats.mtime.getTime(),
+          };
+        }),
+    );
+
+    directories.sort((a, b) => b.time - a.time);
 
     for (const dir of directories) {
-      const files = readdirSync(join(directory, dir))
-        .filter((file) => file.endsWith(".png") || file.endsWith(".jpg"))
-        .map((file) => ({
-          name: file,
-          path: join(directory, dir, file),
-          time: statSync(join(directory, dir, file)).mtime.getTime(),
-        }))
-        .sort((a, b) => b.time - a.time);
+      const fileEntries = await fs.readdir(join(directory, dir.name));
+      const fileStats = await Promise.all(
+        fileEntries
+          .filter((file) => file.endsWith(".png") || file.endsWith(".jpg"))
+          .map(async (file) => {
+            const filePath = join(directory, dir.name, file);
+            const stats = await fs.stat(filePath);
+            return {
+              name: file,
+              path: filePath,
+              time: stats.mtime.getTime(),
+            };
+          }),
+      );
+
+      fileStats.sort((a, b) => b.time - a.time);
 
       const now = Date.now();
 
-      files.forEach((file) => {
+      for (const file of fileStats) {
         counter++;
         const isOld = now - file.time > MAX_AGE_MS_FOR_SCREENSHOTS;
         const isBeyondLimit = counter > MAX_SCREENSHOTS;
@@ -118,17 +138,18 @@ const cleanupScreenshots = (directory: string, forcePurge: boolean): void => {
             if (isBeyondLimit) {
               console.log("Removing screenshot", { file: file.path });
             }
-            unlinkSync(file.path);
-            const dirPath = path.join(directory, dir);
-            if (readdirSync(dirPath).length === 0) {
-              rmdirSync(dirPath);
+            await fs.unlink(file.path);
+            const dirPath = path.join(directory, dir.name);
+            const remainingFiles = await fs.readdir(dirPath);
+            if (remainingFiles.length === 0) {
+              await fs.rmdir(dirPath);
             }
             log.trace("Screenshot removed", { file: file.path });
           } catch (error: unknown) {
             log.error("Failed to delete screenshot", getErrorDetails(error));
           }
         }
-      });
+      }
     }
   } catch (error) {
     log.error(
@@ -152,7 +173,7 @@ export const purgeLegacyCache = async ({
   const log = getLogger();
   const legacyCachePath = path.join(dirPath, "cache.json");
 
-  if (!existsSync(legacyCachePath)) {
+  if (!(await directoryExists(legacyCachePath))) {
     return;
   }
 
@@ -181,7 +202,7 @@ export const purgeLegacyScreenshots = async () => {
   const log = getLogger();
   const legacyScreenshotsPath = path.join(CACHE_DIR_PATH, "screenshots");
 
-  if (!existsSync(legacyScreenshotsPath)) {
+  if (!(await directoryExists(legacyScreenshotsPath))) {
     return;
   }
 
