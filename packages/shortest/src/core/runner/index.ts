@@ -15,26 +15,17 @@ import {
   parseShortestTestFile,
 } from "@/core/runner/test-file-parser";
 import { TestReporter } from "@/core/runner/test-reporter";
+import { TestRun } from "@/core/runner/test-run";
 import { getLogger, Log } from "@/log";
 import { TestContext, InternalActionEnum, ShortestStrictConfig } from "@/types";
-import { TokenUsageSchema } from "@/types/ai";
 import {
   CacheError,
   getErrorDetails,
   ShortestError,
   asShortestError,
 } from "@/utils/errors";
-
 const testStatusSchema = z.enum(["pending", "running", "passed", "failed"]);
 export type TestStatus = z.infer<typeof testStatusSchema>;
-
-export const TestResultSchema = z.object({
-  test: z.any() as z.ZodType<TestCase>,
-  status: testStatusSchema,
-  reason: z.string(),
-  tokenUsage: TokenUsageSchema,
-});
-export type TestResult = z.infer<typeof TestResultSchema>;
 
 export const FileResultSchema = z.object({
   filePath: z.string(),
@@ -101,35 +92,31 @@ export class TestRunner {
   }
 
   private async executeTest(
-    test: TestCase,
+    testCase: TestCase,
     context: BrowserContext,
     skipCache: boolean = false,
-  ): Promise<TestResult> {
+  ): Promise<TestRun> {
     this.log.trace("Executing test", {
-      name: test.name,
-      filePath: test.filePath,
-      payload: test.payload,
+      name: testCase.name,
+      filePath: testCase.filePath,
+      payload: testCase.payload,
       skipCache,
     });
+    const testRun = new TestRun(testCase);
+    testRun.markRunning();
     // If it's direct execution, skip AI
-    if (test.directExecution) {
+    if (testCase.directExecution) {
       try {
         const testContext = await this.createTestContext(context);
-        await test.fn?.(testContext);
-        return {
-          test,
-          status: "passed",
-          reason: "Direct execution successful",
-          tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
-        };
+        await testCase.fn?.(testContext);
+        testRun.markPassed({ reason: "Direct execution successful" });
+        return testRun;
       } catch (error) {
-        return {
-          test,
-          status: "failed",
+        testRun.markFailed({
           reason:
             error instanceof Error ? error.message : "Direct execution failed",
-          tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
-        };
+        });
+        return testRun;
       }
     }
 
@@ -140,7 +127,7 @@ export class TestRunner {
       height: 1080,
       testContext: {
         ...testContext,
-        currentTest: test,
+        currentTest: testCase,
         currentStepIndex: 0,
       },
     });
@@ -149,42 +136,28 @@ export class TestRunner {
       action: "screenshot",
     });
 
-    const testCache = new TestCache(test);
+    const testCache = new TestCache(testCase);
     await testCache.initialize();
     if (this.config.caching.enabled && !skipCache) {
       try {
-        const result = await this.runCachedTest(test, browserTool, testCache);
-        if (test.afterFn) {
+        await this.runCachedTest(testRun, browserTool, testCache);
+        if (testCase.afterFn) {
           try {
-            await test.afterFn(testContext);
+            await testCase.afterFn(testContext);
           } catch (error) {
-            return {
-              test,
-              status: "failed",
+            testRun.markFailed({
               reason:
-                result?.status === "failed"
-                  ? `AI: ${result.reason}, After: ${
+                testRun.status === "failed"
+                  ? `AI: ${testRun.reason}, After: ${
                       error instanceof Error ? error.message : String(error)
                     }`
                   : error instanceof Error
                     ? error.message
                     : String(error),
-              tokenUsage: {
-                completionTokens: 0,
-                promptTokens: 0,
-                totalTokens: 0,
-              },
-            };
+            });
           }
         }
-        return {
-          ...result,
-          tokenUsage: {
-            completionTokens: 0,
-            promptTokens: 0,
-            totalTokens: 0,
-          },
-        };
+        return testRun;
       } catch (error) {
         if (!(error instanceof CacheError)) throw error;
         this.log.error(
@@ -196,7 +169,7 @@ export class TestRunner {
         }
         const page = browserTool.getPage();
         await page.goto(initialState.metadata?.window_info?.url!);
-        return await this.executeTest(test, context, true);
+        return await this.executeTest(testCase, context, true);
       }
     } else {
       this.log.trace("Skipping cache", {
@@ -206,16 +179,14 @@ export class TestRunner {
     }
 
     // Execute before function if present
-    if (test.beforeFn) {
+    if (testCase.beforeFn) {
       try {
-        await test.beforeFn(testContext);
+        await testCase.beforeFn(testContext);
       } catch (error) {
-        return {
-          test,
-          status: "failed",
+        testRun.markFailed({
           reason: error instanceof Error ? error.message : String(error),
-          tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
-        };
+        });
+        return testRun;
       }
     }
 
@@ -224,22 +195,22 @@ export class TestRunner {
       this.log.setGroup("🤖");
       // Build prompt with initial state and screenshot
       const prompt = [
-        `Test: "${test.name}"`,
-        test.payload ? `Context: ${JSON.stringify(test.payload)}` : "",
-        `Callback function: ${test.fn ? " [HAS_CALLBACK]" : " [NO_CALLBACK]"}`,
+        `Test: "${testCase.name}"`,
+        testCase.payload ? `Context: ${JSON.stringify(testCase.payload)}` : "",
+        `Callback function: ${testCase.fn ? " [HAS_CALLBACK]" : " [NO_CALLBACK]"}`,
 
         // Add expectations if they exist
-        ...(test.expectations?.length
+        ...(testCase.expectations?.length
           ? [
               "\nExpect:",
-              ...test.expectations.map(
+              ...testCase.expectations.map(
                 (exp, i) =>
                   `${i + 1}. ${exp.description}${
                     exp.fn ? " [HAS_CALLBACK]" : "[NO_CALLBACK]"
                   }`,
               ),
             ]
-          : ["\nExpect:", `1. "${test.name}" expected to be successful`]),
+          : ["\nExpect:", `1. "${testCase.name}" expected to be successful`]),
 
         "\nCurrent Page State:",
         `URL: ${initialState.metadata?.window_info?.url || "unknown"}`,
@@ -253,13 +224,11 @@ export class TestRunner {
       this.log.resetGroup();
     }
 
-    if (test.afterFn) {
+    if (testCase.afterFn) {
       try {
-        await test.afterFn(testContext);
+        await testCase.afterFn(testContext);
       } catch (error) {
-        return {
-          test,
-          status: "failed",
+        testRun.markFailed({
           reason:
             aiResponse.response.status === "failed"
               ? `AI: ${aiResponse.response.reason}, After: ${
@@ -269,16 +238,29 @@ export class TestRunner {
                 ? error.message
                 : String(error),
           tokenUsage: aiResponse.metadata.usage,
-        };
+        });
+        return testRun;
       }
     }
-
-    return {
-      test,
-      status: aiResponse.response.status,
-      reason: aiResponse.response.reason,
-      tokenUsage: aiResponse.metadata.usage,
-    };
+    switch (aiResponse.response.status) {
+      case "passed":
+        testRun.markPassed({
+          reason: aiResponse.response.reason,
+          tokenUsage: aiResponse.metadata.usage,
+        });
+        break;
+      case "failed":
+        testRun.markFailed({
+          reason: aiResponse.response.reason,
+          tokenUsage: aiResponse.metadata.usage,
+        });
+        break;
+      default:
+        throw new ShortestError(
+          `Unexpected AI response status: ${aiResponse.response.status}`,
+        );
+    }
+    return testRun;
   }
 
   private async filterTestsByLineNumber(
@@ -374,15 +356,15 @@ export class TestRunner {
 
         // Execute tests in order they were defined
         this.log.info(`Running ${testsToRun.length} test(s)`);
-        for (const test of testsToRun) {
+        for (const testCase of testsToRun) {
           // Execute beforeEach hooks with shared context
           for (const hook of registry.beforeEachFns) {
             await hook(testContext);
           }
 
-          this.reporter.onTestStart(test);
-          const testResult = await this.executeTest(test, context);
-          this.reporter.onTestEnd(testResult);
+          this.reporter.onTestStart(testCase);
+          const testRun = await this.executeTest(testCase, context);
+          this.reporter.onTestEnd(testRun);
 
           // Execute afterEach hooks with shared context
           for (const hook of registry.afterEachFns) {
@@ -453,10 +435,10 @@ export class TestRunner {
   }
 
   private async runCachedTest(
-    test: TestCase,
+    testRun: TestRun,
     browserTool: BrowserTool,
     testCache: TestCache,
-  ): Promise<TestResult> {
+  ): Promise<TestRun> {
     try {
       this.log.setGroup("💾");
       this.log.trace("Executing test from cache");
@@ -510,12 +492,10 @@ export class TestRunner {
       }
 
       this.log.debug("Successfully executed all cached steps");
-      return {
-        test,
-        status: "passed",
+      testRun.markPassed({
         reason: "All actions successfully replayed from cache",
-        tokenUsage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
-      };
+      });
+      return testRun;
     } finally {
       this.log.resetGroup();
     }
