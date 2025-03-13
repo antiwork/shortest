@@ -42,8 +42,6 @@ const TestCaseExpectationsSchema = z.object({
  *
  * @see {@link TestContext} for the context object passed to test functions
  */
-// TODO: Make this schema script to have data.identifier as a required field
-// Not required but it will be there since we transform the data
 const TestCaseSchema = z
   .object({
     name: z.string(),
