@@ -1,10 +1,10 @@
-import { generateText } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AIClient } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
+import { createTestCase } from "@/core/runner/test-case";
+import { TestRun } from "@/core/runner/test-run";
 import { TokenUsage } from "@/types/ai";
 import { ActionInput, ToolResult } from "@/types/browser";
-import { CacheEntry } from "@/types/cache";
 import { AIError } from "@/utils/errors";
 
 vi.mock("ai", () => ({
@@ -28,6 +28,7 @@ vi.mock("@/index", () => ({
     ai: {
       provider: "anthropic",
       apiKey: "test-key",
+      model: "claude-3-5-sonnet-latest",
     },
   }),
 }));
@@ -36,10 +37,6 @@ vi.mock("@/ai/provider", () => ({
   createProvider: () => ({
     name: "test-provider",
   }),
-}));
-
-vi.mock("@/ai/prompts", () => ({
-  SYSTEM_PROMPT: "test system prompt",
 }));
 
 vi.mock("@/ai/utils/json", () => ({
@@ -54,10 +51,19 @@ vi.mock("@/ai/utils/json", () => ({
   }),
 }));
 
+vi.mock("@/core/runner/test-run-repository", () => ({
+  TestRunRepository: {
+    VERSION: 2,
+    getRepositoryForTestCase: () => ({
+      saveRun: vi.fn().mockResolvedValue(undefined),
+    }),
+  },
+}));
+
 describe("AIClient", () => {
   let client: AIClient;
   let browserTool: BrowserTool;
-  let testRun: any;
+  let testRun: TestRun;
 
   const createMockResponse = (
     text: string,
@@ -91,24 +97,22 @@ describe("AIClient", () => {
       "execute" | "getNormalizedComponentStringByCoords"
     > as BrowserTool;
 
-    testRun = {
-      cache: {
-        set: vi.fn<[], Promise<void>>(),
-        get: vi.fn<[], Promise<CacheEntry | null>>(),
-      },
-      testCase: { id: "test-case-id" },
-      addStep: vi.fn(),
-    };
+    const testCase = createTestCase({
+      name: "test case",
+      filePath: "/test.ts",
+    });
+    testRun = new TestRun(testCase);
 
-    Object.defineProperty(AIClient.prototype, "tools", {
-      get: () => ({
-        test_tool: {
-          description: "Test tool",
-          execute: vi.fn(),
-        },
-      }),
+    vi.spyOn(testRun, "addStep");
+
+    vi.spyOn(AIClient.prototype as any, "tools", "get").mockReturnValue({
+      test_tool: {
+        description: "Test tool",
+        execute: vi.fn(),
+      },
     });
 
+    // Spy on the isNonRetryableError method to control its behavior
     vi.spyOn(
       AIClient.prototype as any,
       "isNonRetryableError",
@@ -145,7 +149,6 @@ describe("AIClient", () => {
       const result = await client.runAction("test prompt");
 
       expect(result).toEqual(mockResponse);
-      expect(testRun.cache.set).not.toHaveBeenCalled(); // Cache is handled in runConversation
     });
 
     it("handles tool calls and continues conversation", async () => {
@@ -167,7 +170,6 @@ describe("AIClient", () => {
       const result = await client.runAction("test prompt");
 
       expect(result).toEqual(mockResponse);
-      expect(testRun.cache.set).not.toHaveBeenCalled(); // Cache is handled in runConversation
     });
 
     describe("error handling", () => {
@@ -245,12 +247,16 @@ describe("AIClient", () => {
       ])(
         "handles $name",
         async ({ finishReason, expectedMessage, expectedType }) => {
-          const response = createMockResponse("", finishReason);
-          (generateText as any).mockResolvedValue(response);
+          vi.spyOn(client as any, "runConversation").mockImplementation(
+            async () => {
+              (client as any).throwOnErrorFinishReason(finishReason);
+              return {};
+            },
+          );
 
           await expect(client.runAction("test prompt")).rejects.toMatchObject({
             message: expectedMessage,
-            name: "ShortestError",
+            name: "ShortestError", // AIError gets converted to ShortestError by asShortestError
             type: expectedType,
           });
         },
@@ -265,7 +271,7 @@ describe("AIClient", () => {
 
         await expect(client.runAction("test prompt")).rejects.toMatchObject({
           message: "Max retries reached",
-          name: "AIError",
+          name: "AIError", // This one isn't converted because it's thrown directly in runAction
           type: "max-retries-reached",
         });
       });
