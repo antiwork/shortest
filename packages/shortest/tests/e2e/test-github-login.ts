@@ -1,7 +1,11 @@
 import pc from "picocolors";
+import * as playwright from "playwright";
+import { request } from "playwright";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { GitHubTool } from "@/browser/integrations/github";
 import { BrowserManager } from "@/browser/manager";
+import { createTestCase } from "@/core/runner/test-case";
+import { TestRun } from "@/core/runner/test-run";
 import { getConfig, initializeConfig } from "@/index";
 
 export const main = async () => {
@@ -13,9 +17,38 @@ export const main = async () => {
     console.log(pc.cyan("\n🚀 First browser launch..."));
     let context = await browserManager.launch();
     let page = context.pages()[0];
+
+    const testCase = createTestCase({
+      name: "GitHub Login Test",
+      filePath: "tests/e2e/test-github-login.ts",
+    });
+    const testRun = new TestRun(testCase);
+    testRun.markRunning();
+
     let browserTool = new BrowserTool(page, browserManager, {
       width: 1920,
       height: 1080,
+      testContext: {
+        page,
+        browser: browserManager.getBrowser()!,
+        testRun,
+        currentStepIndex: 0,
+        playwright: {
+          ...playwright,
+          request: {
+            ...request,
+            newContext: async (options?: {
+              extraHTTPHeaders?: Record<string, string>;
+            }) => {
+              const requestContext = await request.newContext({
+                baseURL: getConfig().baseUrl,
+                ...options,
+              });
+              return requestContext;
+            },
+          },
+        },
+      },
     });
 
     console.log(pc.cyan("\n🧹 Clearing initial session..."));
@@ -31,6 +64,27 @@ export const main = async () => {
     browserTool = new BrowserTool(page, browserManager, {
       width: 1920,
       height: 1080,
+      testContext: {
+        page,
+        browser: browserManager.getBrowser()!,
+        testRun,
+        currentStepIndex: 0,
+        playwright: {
+          ...playwright,
+          request: {
+            ...request,
+            newContext: async (options?: {
+              extraHTTPHeaders?: Record<string, string>;
+            }) => {
+              const requestContext = await request.newContext({
+                baseURL: getConfig().baseUrl,
+                ...options,
+              });
+              return requestContext;
+            },
+          },
+        },
+      },
     });
 
     // Continue with fresh page reference
@@ -62,9 +116,30 @@ export const main = async () => {
     const newPage = newContext.pages()[0];
 
     // Create new browser tool instance
-    browserTool = new BrowserTool(newPage, browserManager, {
+    browserTool = new BrowserTool(page, browserManager, {
       width: 1920,
       height: 1080,
+      testContext: {
+        page,
+        browser: browserManager.getBrowser()!,
+        testRun,
+        currentStepIndex: 0,
+        playwright: {
+          ...playwright,
+          request: {
+            ...request,
+            newContext: async (options?: {
+              extraHTTPHeaders?: Record<string, string>;
+            }) => {
+              const requestContext = await request.newContext({
+                baseURL: getConfig().baseUrl,
+                ...options,
+              });
+              return requestContext;
+            },
+          },
+        },
+      },
     });
 
     console.log(pc.cyan("\n🔍 Checking login state..."));

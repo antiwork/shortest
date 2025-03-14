@@ -1,6 +1,10 @@
 import pc from "picocolors";
+import * as playwright from "playwright";
+import { request } from "playwright";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
+import { createTestCase } from "@/core/runner/test-case";
+import { TestRun } from "@/core/runner/test-run";
 import { getConfig, initializeConfig } from "@/index";
 
 export const main = async () => {
@@ -12,9 +16,37 @@ export const main = async () => {
     const context = await browserManager.launch();
     const page = context.pages()[0];
 
+    const testCase = createTestCase({
+      name: "Keyboard Test",
+      filePath: "tests/e2e/test-keyboard.ts",
+    });
+    const testRun = new TestRun(testCase);
+    testRun.markRunning();
+
     const browserTool = new BrowserTool(page, browserManager, {
       width: 1920,
       height: 1080,
+      testContext: {
+        page,
+        browser: browserManager.getBrowser()!,
+        testRun,
+        currentStepIndex: 0,
+        playwright: {
+          ...playwright,
+          request: {
+            ...request,
+            newContext: async (options?: {
+              extraHTTPHeaders?: Record<string, string>;
+            }) => {
+              const requestContext = await request.newContext({
+                baseURL: getConfig().baseUrl,
+                ...options,
+              });
+              return requestContext;
+            },
+          },
+        },
+      },
     });
 
     // Test 1: Test Page_Down key (exactly as AI sends it)
