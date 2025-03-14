@@ -1,3 +1,4 @@
+import { existsSync } from "fs";
 import * as fs from "fs/promises";
 import path from "path";
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -8,11 +9,23 @@ import { CacheEntry } from "@/types/cache";
 // Mock fs.existsSync before importing
 vi.mock("fs", () => ({
   existsSync: vi.fn(),
+  Dirent: class {
+    name: string;
+    constructor(name: string) {
+      this.name = name;
+    }
+    isFile() {
+      return true;
+    }
+    isDirectory() {
+      return false;
+    }
+  },
 }));
 
 // Mock fs/promises
 vi.mock("fs/promises", () => ({
-  readdir: vi.fn(),
+  readdir: vi.fn<[], Promise<string[]>>(),
   readFile: vi.fn(),
   unlink: vi.fn(),
   rm: vi.fn(),
@@ -28,9 +41,6 @@ vi.mock("@/log", () => ({
     error: vi.fn(),
   })),
 }));
-
-// Import existsSync after mocking
-import { existsSync } from "fs";
 
 describe("cleanUpCache", () => {
   const TEST_CACHE_DIR = "/test-cache-dir";
@@ -66,8 +76,8 @@ describe("cleanUpCache", () => {
     vi.mocked(fs.readdir).mockResolvedValue([
       "test1.json",
       "test2.json",
-      "not-json-file.txt"
-    ]);
+      "not-json-file.txt",
+    ] as any);
 
     const outdatedEntry: CacheEntry = {
       metadata: {
@@ -136,9 +146,7 @@ describe("cleanUpCache", () => {
 
   it("should remove cache files when test file no longer exists", async () => {
     vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(fs.readdir).mockResolvedValue([
-      "test1.json"
-    ]);
+    vi.mocked(fs.readdir).mockResolvedValue(["test1.json"] as any);
 
     const validVersionButMissingTestFile: CacheEntry = {
       metadata: {
@@ -157,9 +165,7 @@ describe("cleanUpCache", () => {
       data: {},
     };
 
-    vi.mocked(existsSync)
-      .mockReturnValueOnce(true)
-      .mockReturnValueOnce(false);
+    vi.mocked(existsSync).mockReturnValueOnce(true).mockReturnValueOnce(false);
 
     vi.mocked(fs.readFile).mockResolvedValueOnce(
       JSON.stringify(validVersionButMissingTestFile),
@@ -181,9 +187,7 @@ describe("cleanUpCache", () => {
 
   it("should handle and remove invalid cache files", async () => {
     vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(fs.readdir).mockResolvedValue([
-      "invalid.json"
-    ]);
+    vi.mocked(fs.readdir).mockResolvedValue(["invalid.json"] as any);
 
     vi.mocked(fs.readFile).mockRejectedValueOnce(new Error("Invalid JSON"));
 

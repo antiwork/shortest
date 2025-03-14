@@ -21,7 +21,6 @@ describe("test-case", () => {
         expectations: [],
         directExecution: false,
         identifier: "mocked-hash",
-        startedAt: expect.any(Date),
       });
     });
 
