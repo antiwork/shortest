@@ -1,10 +1,22 @@
 import pc from "picocolors";
+import * as playwright from "playwright";
+import { request } from "playwright";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
+import { createTestCase } from "@/core/runner/test-case";
+import { TestRun } from "@/core/runner/test-run";
 import { getConfig } from "@/index";
 
 export const main = async () => {
   const browserManager = new BrowserManager(getConfig());
+
+  const testCase = createTestCase({
+    name: "Mouse Coordinate Test",
+    filePath: "tests/e2e/test-browser.ts",
+  });
+
+  const testRun = new TestRun(testCase);
+  testRun.markRunning();
 
   try {
     console.log(pc.cyan("🚀 Launching browser..."));
@@ -14,6 +26,27 @@ export const main = async () => {
     const browserTool = new BrowserTool(page, browserManager, {
       width: 1920,
       height: 1080,
+      testContext: {
+        page,
+        browser: browserManager.getBrowser()!,
+        testRun,
+        currentStepIndex: 0,
+        playwright: {
+          ...playwright,
+          request: {
+            ...request,
+            newContext: async (options?: {
+              extraHTTPHeaders?: Record<string, string>;
+            }) => {
+              const requestContext = await request.newContext({
+                baseURL: getConfig().baseUrl,
+                ...options,
+              });
+              return requestContext;
+            },
+          },
+        },
+      },
     });
 
     // Navigate to a page with a sign in button
@@ -73,9 +106,19 @@ export const main = async () => {
     console.log(pc.yellow("\nFinal Screenshot Result:"), finalResult);
     console.log(pc.yellow("Metadata:"), finalResult.metadata);
 
+    // Mark the test as passed
+    testRun.markPassed({
+      reason: "All coordinate tests completed successfully",
+    });
     console.log(pc.green("\n✅ All coordinate tests completed"));
   } catch (error) {
     console.error(pc.red("❌ Test failed:"), error);
+
+    // Mark the test as failed
+    testRun.markFailed({
+      reason: error instanceof Error ? error.message : String(error),
+    });
+
     throw error;
   } finally {
     console.log(pc.cyan("\n🧹 Cleaning up..."));
