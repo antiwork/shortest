@@ -46,6 +46,7 @@ export class TestRun {
   public version: number = TestRunRepository.VERSION;
   public timestamp: number;
   public fromCache: boolean = false;
+
   /**
    * Creates a new test run instance
    * @param {TestCase} testCase - Test case to execute
@@ -143,11 +144,7 @@ export class TestRun {
    *
    * @private
    */
-  static fromCacheFile(
-    testCase: TestCase,
-    file: string,
-    cacheEntry: CacheEntry,
-  ): TestRun {
+  static fromCacheFile(testCase: TestCase, cacheEntry: CacheEntry): TestRun {
     const testRun = new TestRun(testCase);
     testRun.runId = cacheEntry.metadata.runId;
     testRun.timestamp = cacheEntry.metadata.timestamp;

@@ -60,11 +60,8 @@ const registerSharedProcessHandlers = (log: Log) => {
  * @private
  */
 export class TestRunRepository {
-  /** Current version of the repository format */
   public static VERSION = 2;
-  /** Set of active repositories for cleanup on process exit */
   public static activeRepositories: Set<TestRunRepository>;
-  /** Map of repositories by test case identifier for singleton access */
   private static repositoriesByIdentifier = new Map<
     string,
     TestRunRepository
@@ -87,25 +84,16 @@ export class TestRunRepository {
     return TestRunRepository.repositoriesByIdentifier.get(key)!;
   }
 
-  /** Test case this repository is associated with */
   private readonly testCase: TestCase;
-  /** Name of the lock file used to prevent concurrent access */
   private readonly lockFileName: string;
-  /** Path to the global cache directory */
   private readonly globalCacheDir: string;
-  /** Path to the lock file */
   private get lockFilePath(): string {
     return path.join(this.globalCacheDir, this.lockFileName);
   }
-  /** Logger instance */
   private readonly log: Log;
-  /** Maximum number of lock acquisition attempts */
   private readonly MAX_LOCK_ATTEMPTS = 10;
-  /** Base delay between lock acquisition attempts in milliseconds */
   private readonly BASE_LOCK_DELAY_MS = 10;
-  /** Whether this repository has acquired a lock */
   private lockAcquired = false;
-  /** Cached test runs to avoid repeated disk access */
   private testRuns: TestRun[] | null = null;
 
   /**
@@ -155,9 +143,7 @@ export class TestRunRepository {
         const filePath = path.join(this.globalCacheDir, file);
         const content = await fs.readFile(filePath, "utf-8");
         const cacheEntry = JSON.parse(content) as CacheEntry;
-        loadedTestRuns.push(
-          TestRun.fromCacheFile(this.testCase, file, cacheEntry),
-        );
+        loadedTestRuns.push(TestRun.fromCacheFile(this.testCase, cacheEntry));
       } catch (error) {
         this.log.error("Failed to load test run from cache", {
           file,
