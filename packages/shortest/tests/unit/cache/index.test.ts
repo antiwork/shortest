@@ -6,7 +6,6 @@ import { cleanUpCache } from "@/cache";
 import { TestRunRepository } from "@/core/runner/test-run-repository";
 import { CacheEntry } from "@/types/cache";
 
-// Mock fs.existsSync before importing
 vi.mock("fs", () => ({
   existsSync: vi.fn(),
   Dirent: class {
@@ -23,7 +22,6 @@ vi.mock("fs", () => ({
   },
 }));
 
-// Mock fs/promises
 vi.mock("fs/promises", () => ({
   readdir: vi.fn<[], Promise<string[]>>(),
   readFile: vi.fn(),
@@ -31,7 +29,6 @@ vi.mock("fs/promises", () => ({
   rm: vi.fn(),
 }));
 
-// Mock getLogger
 vi.mock("@/log", () => ({
   getLogger: vi.fn(() => ({
     setGroup: vi.fn(),
