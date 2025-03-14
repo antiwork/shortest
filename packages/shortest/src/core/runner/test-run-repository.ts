@@ -7,7 +7,13 @@ import { getLogger, Log } from "@/log";
 import { CacheEntry } from "@/types/cache";
 import { getErrorDetails } from "@/utils/errors";
 
-// Shared process handlers registration
+/**
+ * Registers shared process handlers for graceful cleanup of test repositories
+ *
+ * @param {Log} log - Logger instance
+ * @returns {Set<TestRunRepository>} Set of active repositories
+ * @private
+ */
 let handlersRegistered = false;
 const registerSharedProcessHandlers = (log: Log) => {
   if (handlersRegistered) return TestRunRepository.activeRepositories;
@@ -33,14 +39,43 @@ const registerSharedProcessHandlers = (log: Log) => {
   return activeRepositories;
 };
 
+/**
+ * Manages test run persistence, caching, and retention policies
+ *
+ * This class handles storing and retrieving test runs, managing file locks
+ * to prevent concurrent access issues, and applying retention policies to
+ * limit disk usage.
+ *
+ * @class
+ * @example
+ * ```typescript
+ * const repository = TestRunRepository.getRepositoryForTestCase(testCase);
+ * const testRun = new TestRun(testCase);
+ * await repository.saveRun(testRun);
+ * ```
+ *
+ * @see {@link TestRun} for test run structure
+ * @see {@link TestCase} for test case structure
+ *
+ * @private
+ */
 export class TestRunRepository {
+  /** Current version of the repository format */
   public static VERSION = 2;
+  /** Set of active repositories for cleanup on process exit */
   public static activeRepositories: Set<TestRunRepository>;
+  /** Map of repositories by test case identifier for singleton access */
   private static repositoriesByIdentifier = new Map<
     string,
     TestRunRepository
   >();
 
+  /**
+   * Gets or creates a repository for the specified test case
+   *
+   * @param {TestCase} testCase - Test case to get repository for
+   * @returns {TestRunRepository} Repository instance
+   */
   public static getRepositoryForTestCase(
     testCase: TestCase,
   ): TestRunRepository {
@@ -52,21 +87,32 @@ export class TestRunRepository {
     return TestRunRepository.repositoriesByIdentifier.get(key)!;
   }
 
+  /** Test case this repository is associated with */
   private readonly testCase: TestCase;
+  /** Name of the lock file used to prevent concurrent access */
   private readonly lockFileName: string;
+  /** Path to the global cache directory */
   private readonly globalCacheDir: string;
+  /** Path to the lock file */
   private get lockFilePath(): string {
     return path.join(this.globalCacheDir, this.lockFileName);
   }
+  /** Logger instance */
   private readonly log: Log;
+  /** Maximum number of lock acquisition attempts */
   private readonly MAX_LOCK_ATTEMPTS = 10;
+  /** Base delay between lock acquisition attempts in milliseconds */
   private readonly BASE_LOCK_DELAY_MS = 10;
+  /** Whether this repository has acquired a lock */
   private lockAcquired = false;
+  /** Cached test runs to avoid repeated disk access */
   private testRuns: TestRun[] | null = null;
 
   /**
-   * Creates a new test cache instance
-   * @param {TestCase} test - Test case to cache results for
+   * Creates a new test run repository instance
+   *
+   * @param {TestCase} testCase - Test case to manage runs for
+   * @param {string} cacheDir - Directory to store cache files in
    */
   constructor(testCase: TestCase, cacheDir = CACHE_DIR_PATH) {
     this.log = getLogger();
@@ -84,6 +130,11 @@ export class TestRunRepository {
     TestRunRepository.activeRepositories.add(this);
   }
 
+  /**
+   * Gets all test runs for the associated test case
+   *
+   * @returns {Promise<TestRun[]>} Array of test runs
+   */
   async getRuns(): Promise<TestRun[]> {
     if (this.testRuns !== null) {
       return this.testRuns;
@@ -118,10 +169,20 @@ export class TestRunRepository {
     return this.testRuns;
   }
 
+  /**
+   * Resets the cached test runs to force reloading from disk
+   *
+   * @private
+   */
   private resetTestRuns() {
     this.testRuns = null;
   }
 
+  /**
+   * Gets the most recent passed test run
+   *
+   * @returns {Promise<TestRun | null>} Latest passed test run or null if none exists
+   */
   async getLatestPassedRun(): Promise<TestRun | null> {
     const testRuns = await this.getRuns();
     const validTestRuns = testRuns.filter(
@@ -135,6 +196,12 @@ export class TestRunRepository {
       : null;
   }
 
+  /**
+   * Saves a test run to the cache
+   *
+   * @param {TestRun} testRun - Test run to save
+   * @returns {Promise<void>}
+   */
   async saveRun(testRun: TestRun): Promise<void> {
     if (!(await this.acquireLock())) {
       this.log.error("Failed to acquire lock for saving run");
@@ -172,6 +239,12 @@ export class TestRunRepository {
     }
   }
 
+  /**
+   * Deletes a test run and its associated files
+   *
+   * @param {TestRun} testRun - Test run to delete
+   * @returns {Promise<void>}
+   */
   async deleteRun(testRun: TestRun): Promise<void> {
     this.log.trace("Deleting test run", {
       runId: testRun.runId,
@@ -204,6 +277,14 @@ export class TestRunRepository {
     }
   }
 
+  /**
+   * Applies retention policy to limit disk usage
+   *
+   * Keeps only the latest passed run, or if no passed runs exist,
+   * keeps only the most recent run.
+   *
+   * @returns {Promise<void>}
+   */
   async applyRetentionPolicy(): Promise<void> {
     this.log.setGroup("🗑️");
     this.log.trace("Applying test run repository retention policy", {
@@ -300,6 +381,9 @@ export class TestRunRepository {
 
   /**
    * Acquires a lock for cache file access
+   *
+   * Uses exponential backoff to retry lock acquisition
+   *
    * @returns {Promise<boolean>} True if lock was acquired, false otherwise
    * @private
    */
@@ -356,7 +440,8 @@ export class TestRunRepository {
 
   /**
    * Releases previously acquired lock
-   * @private
+   *
+   * @returns {Promise<void>}
    */
   public async releaseLock(): Promise<void> {
     if (this.lockAcquired) {
@@ -377,6 +462,7 @@ export class TestRunRepository {
 
   /**
    * Checks if a process is still running
+   *
    * @param {number} pid - Process ID to check
    * @returns {boolean} True if process is alive, false otherwise
    * @private
@@ -394,14 +480,34 @@ export class TestRunRepository {
     }
   }
 
+  /**
+   * Gets the file path for a test run's cache file
+   *
+   * @param {TestRun} testRun - Test run to get file path for
+   * @returns {string} Path to the cache file
+   * @private
+   */
   private getTestRunFilePath(testRun: TestRun): string {
     return path.join(this.globalCacheDir, `${testRun.runId}.json`);
   }
 
+  /**
+   * Gets the directory path for a test run's artifacts
+   *
+   * @param {TestRun} testRun - Test run to get directory path for
+   * @returns {string} Path to the test run directory
+   * @private
+   */
   private getTestRunDirPath(testRun: TestRun): string {
     return path.join(this.globalCacheDir, testRun.runId);
   }
 
+  /**
+   * Ensures the test run directory exists and returns its path
+   *
+   * @param {TestRun} testRun - Test run to ensure directory for
+   * @returns {Promise<string>} Path to the test run directory
+   */
   public async ensureTestRunDirPath(testRun: TestRun): Promise<string> {
     const runDirPath = path.join(this.globalCacheDir, testRun.runId);
     await fs.mkdir(runDirPath, { recursive: true });

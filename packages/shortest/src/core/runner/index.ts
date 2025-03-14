@@ -132,7 +132,6 @@ export class TestRunner {
       }
     }
 
-    // Use the shared context
     const testContext = await this.createTestContext(testRun);
     const browserTool = new BrowserTool(testContext.page, this.browserManager, {
       width: 1920,
@@ -185,7 +184,6 @@ export class TestRunner {
       });
     }
 
-    // Execute before function if present
     if (testCase.beforeFn) {
       try {
         await testCase.beforeFn(testContext);
@@ -384,12 +382,10 @@ export class TestRunner {
           }
           this.reporter.onTestEnd(testRun);
 
-          // Execute afterEach hooks with shared context
           for (const hook of registry.afterEachFns) {
             await hook(testContext);
           }
 
-          // After test execution
           await TestRunRepository.getRepositoryForTestCase(testCase).saveRun(
             testRun,
           );
@@ -406,7 +402,6 @@ export class TestRunner {
           }
         }
 
-        // Execute afterAll hooks with shared context
         for (const hook of registry.afterAllFns) {
           await hook(testContext);
         }
@@ -486,7 +481,7 @@ export class TestRunner {
         );
       }
       const steps = latestRun.steps
-        // do not take screenshots in cached mode
+        // Do not take screenshots in cached mode
         ?.filter(
           (step) =>
             step.action?.input.action !==

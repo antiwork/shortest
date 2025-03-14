@@ -38,9 +38,7 @@ const TestCaseExpectationsSchema = z.object({
  * @property {Function} [afterFn] - Optional cleanup function to run after the test
  * @property {boolean} [directExecution] - Whether to execute test directly (defaults to false)
  * @property {string} identifier - Unique identifier for the test case (auto-generated)
- * @property {Date} startedAt - Timestamp when the test case was started (auto-generated)
  *
- * @see {@link TestContext} for the context object passed to test functions
  */
 const TestCaseSchema = z
   .object({
@@ -53,17 +51,15 @@ const TestCaseSchema = z
     afterFn: TestCaseFunctionSchema.optional(),
     directExecution: z.boolean().optional().default(false),
     identifier: z.string().optional(),
-    startedAt: z.date().optional(),
   })
   .strict()
   .transform((data) => {
-    // Generate hash and add timestamp in a single transform
     const hashInput = `${data.name}:${data.filePath}:${JSON.stringify(data.expectations)}`;
 
     return {
       ...data,
+      // Low collision risk for datasets under 65,000 tests
       identifier: createHash(hashInput, { length: 8 }),
-      startedAt: new Date(),
     };
   });
 export type TestCase = z.infer<typeof TestCaseSchema>;

@@ -45,9 +45,6 @@ export class TestRun {
   public runId: string;
   public version: number = TestRunRepository.VERSION;
   public timestamp: number;
-  get testVersion(): number {
-    return this.version;
-  }
   public fromCache: boolean = false;
   /**
    * Creates a new test run instance

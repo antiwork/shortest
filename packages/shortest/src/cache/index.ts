@@ -126,7 +126,6 @@ export const purgeLegacyCache = async ({
 /**
  * Removes legacy screenshots directory from older versions
  *
- * @param {{ dirPath?: string }} options - Cleanup options where dirPath is the path to the SHORTEST_DIR_NAME directory
  * @private
  */
 export const purgeLegacyScreenshots = async () => {
