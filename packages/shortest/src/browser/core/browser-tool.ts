@@ -15,6 +15,7 @@ import { BaseBrowserTool } from "@/browser/core";
 import { GitHubTool } from "@/browser/integrations/github";
 import { MailosaurTool } from "@/browser/integrations/mailosaur";
 import { BrowserManager } from "@/browser/manager";
+import { TestRunRepository } from "@/core/runner/test-run-repository";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger, Log } from "@/log/index";
 import { TestContext, BrowserToolConfig, ShortestConfig } from "@/types";
@@ -25,7 +26,6 @@ import {
   InternalActionEnum,
 } from "@/types/browser";
 import { getErrorDetails, ToolError, TestError } from "@/utils/errors";
-import { TestRunRepository } from "@/core/runner/test-run-repository";
 
 export class BrowserTool extends BaseBrowserTool {
   private page: Page;

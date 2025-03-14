@@ -3,7 +3,6 @@ import { AIClient } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { createTestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";
-import { TokenUsage } from "@/types/ai";
 import { ActionInput, ToolResult } from "@/types/browser";
 import { AIError } from "@/utils/errors";
 
@@ -64,24 +63,6 @@ describe("AIClient", () => {
   let client: AIClient;
   let browserTool: BrowserTool;
   let testRun: TestRun;
-
-  const createMockResponse = (
-    text: string,
-    finishReason: string,
-    usage: TokenUsage = {
-      completionTokens: 10,
-      promptTokens: 20,
-      totalTokens: 30,
-    },
-  ) => ({
-    text,
-    finishReason,
-    usage,
-    response: { messages: [] },
-    toolCalls: [],
-    toolResults: [],
-    warnings: [],
-  });
 
   beforeEach(() => {
     vi.clearAllMocks();
