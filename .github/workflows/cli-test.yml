@@ -10,6 +10,7 @@ on:
     paths:
       - 'packages/shortest/**'
       - '.github/workflows/cli-*.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
