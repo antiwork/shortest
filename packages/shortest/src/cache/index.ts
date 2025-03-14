@@ -1,12 +1,11 @@
+import { existsSync } from "fs";
 import * as fs from "fs/promises";
-import path, { join } from "path";
-import { TestCache } from "@/cache/test-cache";
+import path from "path";
+import { TestRunRepository } from "@/core/runner/test-run-repository";
 import { getLogger } from "@/log";
 import { CacheEntry } from "@/types/cache";
 import { directoryExists } from "@/utils/directory-exists";
 import { getErrorDetails } from "@/utils/errors";
-
-export { TestCache };
 
 export const DOT_SHORTEST_DIR_NAME = ".shortest";
 export const DOT_SHORTEST_DIR_PATH = path.join(
@@ -14,10 +13,7 @@ export const DOT_SHORTEST_DIR_PATH = path.join(
   DOT_SHORTEST_DIR_NAME,
 );
 export const CACHE_DIR_PATH = path.join(DOT_SHORTEST_DIR_PATH, "cache");
-
-export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_AGE_MS_FOR_SCREENSHOTS = 5 * 60 * 60 * 1000;
-const MAX_SCREENSHOTS = 10;
+export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
  * Removes expired cache entries and optionally purges all cache
@@ -33,130 +29,65 @@ export const cleanUpCache = async ({
   dirPath?: string;
 } = {}) => {
   const log = getLogger();
-  log.debug("Cleaning up cache", { forcePurge });
+  log.setGroup("🧹");
+  log.trace("Cleaning up cache", { forcePurge });
 
-  if (!(await directoryExists(dirPath))) {
-    log.debug("Cache directory does not exist", { dirPath });
+  if (!existsSync(dirPath)) {
+    log.trace("Cache directory does not exist", { dirPath });
     return;
   }
 
-  await cleanupJson(dirPath, forcePurge);
+  if (forcePurge) {
+    await fs.rm(dirPath, { recursive: true, force: true });
+    log.debug("Cache directory purged", { dirPath });
+    return;
+  }
 
-  await cleanupScreenshots(dirPath, forcePurge);
-};
+  const cacheFiles = await fs.readdir(dirPath);
+  log.trace("Found cache files", {
+    count: cacheFiles.length,
+  });
 
-const cleanupJson = async (
-  dirPath: string,
-  forcePurge: boolean,
-): Promise<void> => {
-  const log = getLogger();
-  const files = await fs.readdir(dirPath);
-  const now = Date.now();
+  for (const cacheFile of cacheFiles) {
+    if (!cacheFile.endsWith(".json")) continue;
 
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
+    const cacheFilePath = path.join(dirPath, cacheFile);
+    const cacheDirPath = path.join(dirPath, path.parse(cacheFile).name);
 
-    const filePath = path.join(dirPath, file);
     try {
-      const content = await fs.readFile(filePath, "utf-8");
+      const content = await fs.readFile(cacheFilePath, "utf-8");
       const entry = JSON.parse(content) as CacheEntry;
 
-      if (forcePurge || now - entry.metadata.timestamp > CACHE_MAX_AGE_MS) {
-        await fs.unlink(filePath);
-        log.trace("Cache file removed", { file: filePath });
+      // Check if cache is outdated or orphaned
+      const isOutdatedVersion =
+        entry.metadata.version < TestRunRepository.VERSION;
+      // TODO: Check lineNumber once that is available
+      const testFileExists = existsSync(
+        path.join(process.cwd(), entry.test.filePath),
+      );
+
+      if (isOutdatedVersion || !testFileExists) {
+        await fs.unlink(cacheFilePath);
+        await fs.rm(cacheDirPath, { recursive: true, force: true });
+        log.trace("Cache removed", {
+          file: cacheFile,
+          reason: isOutdatedVersion
+            ? "outdated version"
+            : "test file no longer exists",
+        });
       }
     } catch (error) {
       log.error("Failed to process cache file", {
-        file: filePath,
+        file: cacheFilePath,
         ...getErrorDetails(error),
       });
-      await fs.unlink(filePath);
-      log.error("Invalid cache file removed", { file: filePath });
+      await fs.unlink(cacheFilePath);
+      await fs.rm(cacheDirPath, { recursive: true, force: true });
+      log.error("Invalid cache file removed", { file: cacheFilePath });
     }
   }
-};
-
-/**
- * Cleans up screenshot files in the specified directory
- *
- * @param directory The directory containing screenshots
- */
-const cleanupScreenshots = async (
-  directory: string,
-  forcePurge: boolean,
-): Promise<void> => {
-  const log = getLogger();
-  let counter = 0;
-
-  try {
-    if (!(await directoryExists(directory))) return;
-
-    const dirEntries = await fs.readdir(directory, { withFileTypes: true });
-    const directories = await Promise.all(
-      dirEntries
-        .filter((dirent) => dirent.isDirectory())
-        .map(async (dirent) => {
-          const dirPath = join(directory, dirent.name);
-          const stats = await fs.stat(dirPath);
-          return {
-            name: dirent.name,
-            path: dirPath,
-            time: stats.mtime.getTime(),
-          };
-        }),
-    );
-
-    directories.sort((a, b) => b.time - a.time);
-
-    for (const dir of directories) {
-      const fileEntries = await fs.readdir(join(directory, dir.name));
-      const fileStats = await Promise.all(
-        fileEntries
-          .filter((file) => file.endsWith(".png") || file.endsWith(".jpg"))
-          .map(async (file) => {
-            const filePath = join(directory, dir.name, file);
-            const stats = await fs.stat(filePath);
-            return {
-              name: file,
-              path: filePath,
-              time: stats.mtime.getTime(),
-            };
-          }),
-      );
-
-      fileStats.sort((a, b) => b.time - a.time);
-
-      const now = Date.now();
-
-      for (const file of fileStats) {
-        counter++;
-        const isOld = now - file.time > MAX_AGE_MS_FOR_SCREENSHOTS;
-        const isBeyondLimit = counter > MAX_SCREENSHOTS;
-
-        if (forcePurge || isOld || isBeyondLimit) {
-          try {
-            if (isBeyondLimit) {
-              console.log("Removing screenshot", { file: file.path });
-            }
-            await fs.unlink(file.path);
-            const dirPath = path.join(directory, dir.name);
-            const remainingFiles = await fs.readdir(dirPath);
-            if (remainingFiles.length === 0) {
-              await fs.rmdir(dirPath);
-            }
-            log.trace("Screenshot removed", { file: file.path });
-          } catch (error: unknown) {
-            log.error("Failed to delete screenshot", getErrorDetails(error));
-          }
-        }
-      }
-    }
-  } catch (error) {
-    log.error(
-      "Failed to clean up screenshots directory",
-      getErrorDetails(error),
-    );
-  }
+  log.trace("Cache clean-up complete");
+  log.resetGroup();
 };
 
 /**
@@ -173,7 +104,7 @@ export const purgeLegacyCache = async ({
   const log = getLogger();
   const legacyCachePath = path.join(dirPath, "cache.json");
 
-  if (!(await directoryExists(legacyCachePath))) {
+  if (!existsSync(legacyCachePath)) {
     return;
   }
 
@@ -200,7 +131,7 @@ export const purgeLegacyCache = async ({
  */
 export const purgeLegacyScreenshots = async () => {
   const log = getLogger();
-  const legacyScreenshotsPath = path.join(CACHE_DIR_PATH, "screenshots");
+  const legacyScreenshotsPath = path.join(DOT_SHORTEST_DIR_PATH, "screenshots");
 
   if (!(await directoryExists(legacyScreenshotsPath))) {
     return;

@@ -15,8 +15,6 @@ import { BaseBrowserTool } from "@/browser/core";
 import { GitHubTool } from "@/browser/integrations/github";
 import { MailosaurTool } from "@/browser/integrations/mailosaur";
 import { BrowserManager } from "@/browser/manager";
-import { CACHE_DIR_PATH } from "@/cache";
-import { TestCase } from "@/core/runner/test-case";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger, Log } from "@/log/index";
 import { TestContext, BrowserToolConfig, ShortestConfig } from "@/types";
@@ -27,6 +25,7 @@ import {
   InternalActionEnum,
 } from "@/types/browser";
 import { getErrorDetails, ToolError, TestError } from "@/utils/errors";
+import { TestRunRepository } from "@/core/runner/test-run-repository";
 
 export class BrowserTool extends BaseBrowserTool {
   private page: Page;
@@ -37,7 +36,7 @@ export class BrowserTool extends BaseBrowserTool {
   private lastMousePosition: [number, number] = [0, 0];
   private githubTool?: GitHubTool;
   private viewport: { width: number; height: number };
-  private testContext?: TestContext;
+  private testContext: TestContext;
   private readonly MAX_SCREENSHOTS = 10;
   private readonly MAX_AGE_HOURS = 5;
   private mailosaurTool?: MailosaurTool;
@@ -405,26 +404,20 @@ export class BrowserTool extends BaseBrowserTool {
           };
 
         case InternalActionEnum.RUN_CALLBACK: {
-          if (!this.testContext?.currentTest) {
-            throw new ToolError(
-              "No test context available for callback execution",
-            );
-          }
-
           const testContext = this.testContext;
-          const currentTest = testContext.currentTest as TestCase;
+          const testCase = testContext.testRun.testCase;
 
           const currentStepIndex = testContext.currentStepIndex ?? 0;
 
           try {
-            if (currentStepIndex === 0 && currentTest.fn) {
-              await currentTest.fn(testContext);
+            if (currentStepIndex === 0 && testCase.fn) {
+              await testCase.fn(testContext);
               testContext.currentStepIndex = 1;
               return { output: "Test function executed successfully" };
             }
             // Handle expectations
             const expectationIndex = currentStepIndex - 1;
-            const expectation = currentTest.expectations?.[expectationIndex];
+            const expectation = testCase.expectations?.[expectationIndex];
 
             if (expectation?.fn) {
               await expectation.fn(this.testContext);
@@ -796,21 +789,13 @@ export class BrowserTool extends BaseBrowserTool {
 
   private async takeScreenshotWithMetadata(): Promise<ToolResult> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    let screenshotPath: string;
 
-    const testCase = this.testContext?.currentTest as TestCase;
-
-    const testCaseStartedAtTimestamp = testCase?.startedAt
-      ?.toISOString()
-      .replace(/[:.]/g, "-");
-
-    const testScreenshotDir = join(
-      CACHE_DIR_PATH,
-      `${testCaseStartedAtTimestamp}_${testCase.identifier}`,
+    const testRun = this.testContext.testRun;
+    const repository = TestRunRepository.getRepositoryForTestCase(
+      testRun.testCase,
     );
-
-    await fs.mkdir(testScreenshotDir, { recursive: true });
-    screenshotPath = join(testScreenshotDir, `screenshot-${timestamp}.png`);
+    const testRunDirPath = await repository.ensureTestRunDirPath(testRun);
+    const screenshotPath = join(testRunDirPath, `screenshot-${timestamp}.png`);
 
     const buffer = await this.page.screenshot({
       type: "jpeg",

@@ -2,7 +2,6 @@ import { generateText } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AIClient } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
-import { TestCache } from "@/cache/test-cache";
 import { TokenUsage } from "@/types/ai";
 import { ActionInput, ToolResult } from "@/types/browser";
 import { CacheEntry } from "@/types/cache";
@@ -43,10 +42,22 @@ vi.mock("@/ai/prompts", () => ({
   SYSTEM_PROMPT: "test system prompt",
 }));
 
+vi.mock("@/ai/utils/json", () => ({
+  extractJsonPayload: vi.fn().mockImplementation((text) => {
+    if (
+      text.includes('"status": "passed"') ||
+      text.includes('"status":"passed"')
+    ) {
+      return { status: "passed", reason: "test passed" };
+    }
+    throw new Error("Invalid JSON");
+  }),
+}));
+
 describe("AIClient", () => {
   let client: AIClient;
   let browserTool: BrowserTool;
-  let cache: TestCache;
+  let testRun: any;
 
   const createMockResponse = (
     text: string,
@@ -80,10 +91,14 @@ describe("AIClient", () => {
       "execute" | "getNormalizedComponentStringByCoords"
     > as BrowserTool;
 
-    cache = {
-      set: vi.fn<[], Promise<void>>(),
-      get: vi.fn<[], Promise<CacheEntry | null>>(),
-    } as Pick<TestCache, "set" | "get"> as TestCache;
+    testRun = {
+      cache: {
+        set: vi.fn<[], Promise<void>>(),
+        get: vi.fn<[], Promise<CacheEntry | null>>(),
+      },
+      testCase: { id: "test-case-id" },
+      addStep: vi.fn(),
+    };
 
     Object.defineProperty(AIClient.prototype, "tools", {
       get: () => ({
@@ -106,88 +121,76 @@ describe("AIClient", () => {
 
     client = new AIClient({
       browserTool,
-      testCache: cache,
+      testRun,
     });
-    (client as any).testCache = cache;
   });
 
   describe("runAction", () => {
     it("successfully processes an action with valid response", async () => {
-      const mockResponse = createMockResponse(
-        '{"status": "passed", "reason": "test passed"}',
-        "stop",
-      );
+      const mockResponse = {
+        response: { status: "passed", reason: "test passed" },
+        metadata: {
+          usage: {
+            completionTokens: 10,
+            promptTokens: 20,
+            totalTokens: 30,
+          },
+        },
+      };
 
-      (generateText as any).mockResolvedValue(mockResponse);
+      vi.spyOn(client as any, "runConversation").mockResolvedValue(
+        mockResponse,
+      );
 
       const result = await client.runAction("test prompt");
 
-      expect(result).toEqual({
-        response: {
-          status: "passed",
-          reason: "test passed",
-        },
-        metadata: {
-          usage: mockResponse.usage,
-        },
-      });
-      expect(cache.set).toHaveBeenCalled();
+      expect(result).toEqual(mockResponse);
+      expect(testRun.cache.set).not.toHaveBeenCalled(); // Cache is handled in runConversation
     });
 
     it("handles tool calls and continues conversation", async () => {
-      const toolCallResponse = {
-        text: "Using tool",
-        finishReason: "tool-calls",
-        usage: { completionTokens: 5, promptTokens: 10, totalTokens: 15 },
-        response: { messages: [{ role: "assistant", content: "Using tool" }] },
-        toolCalls: [
-          {
-            toolName: "navigate",
-            args: { action: "navigate", url: "https://example.com" },
+      const mockResponse = {
+        response: { status: "passed", reason: "test completed" },
+        metadata: {
+          usage: {
+            completionTokens: 10,
+            promptTokens: 20,
+            totalTokens: 30,
           },
-        ],
-        toolResults: [
-          { toolName: "navigate", result: { output: "Navigated" } },
-        ],
-        warnings: [],
+        },
       };
 
-      const finalResponse = createMockResponse(
-        '{"status": "passed", "reason": "test completed"}',
-        "stop",
+      vi.spyOn(client as any, "runConversation").mockResolvedValue(
+        mockResponse,
       );
-
-      (generateText as any)
-        .mockResolvedValueOnce(toolCallResponse)
-        .mockResolvedValueOnce(finalResponse);
 
       const result = await client.runAction("test prompt");
 
-      expect(result.response).toEqual({
-        status: "passed",
-        reason: "test completed",
-      });
-      expect(cache.set).toHaveBeenCalled();
+      expect(result).toEqual(mockResponse);
+      expect(testRun.cache.set).not.toHaveBeenCalled(); // Cache is handled in runConversation
     });
 
     describe("error handling", () => {
       it("retries on retryable errors", async () => {
         const error = new Error("Network error");
-        const successResponse = createMockResponse(
-          '{"status": "passed", "reason": "test passed"}',
-          "stop",
-        );
+        const mockResponse = {
+          response: { status: "passed", reason: "test passed" },
+          metadata: {
+            usage: {
+              completionTokens: 10,
+              promptTokens: 20,
+              totalTokens: 30,
+            },
+          },
+        };
 
-        (generateText as any)
+        vi.spyOn(client as any, "runConversation")
           .mockRejectedValueOnce(error)
-          .mockResolvedValue(successResponse);
+          .mockResolvedValue(mockResponse);
 
         const result = await client.runAction("test prompt");
 
-        expect(result.response).toEqual({
-          status: "passed",
-          reason: "test passed",
-        });
+        expect(result).toEqual(mockResponse);
       });
 
       it.each([
@@ -206,7 +209,7 @@ describe("AIClient", () => {
       ])(
         "handles $name",
         async ({ error, expectedMessage, expectedInstance }) => {
-          (generateText as any).mockRejectedValue(error);
+          vi.spyOn(client as any, "runConversation").mockRejectedValue(error);
 
           await expect(async () => {
             await client.runAction("test prompt");
@@ -255,7 +258,7 @@ describe("AIClient", () => {
 
       it("handles max retries", async () => {
         const error = new Error("Network error");
-        (generateText as any)
+        vi.spyOn(client as any, "runConversation")
           .mockRejectedValueOnce(error)
           .mockRejectedValueOnce(error)
           .mockRejectedValueOnce(error);

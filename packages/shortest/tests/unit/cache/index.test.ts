@@ -1,115 +1,203 @@
 import * as fs from "fs/promises";
 import path from "path";
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { CACHE_DIR_PATH, CACHE_MAX_AGE_MS, cleanUpCache } from "@/cache";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { cleanUpCache } from "@/cache";
+import { TestRunRepository } from "@/core/runner/test-run-repository";
 import { CacheEntry } from "@/types/cache";
-import { createHash } from "@/utils/create-hash";
 
-describe("cache", () => {
-  interface TestContext {
-    cacheDirPath: string;
-    mockCacheFilePath: string;
-  }
+// Mock fs.existsSync before importing
+vi.mock("fs", () => ({
+  existsSync: vi.fn(),
+}));
 
-  beforeEach<TestContext>(async (context) => {
-    // Create and store the unique test directory in the context
-    const uniqueId = createHash(
-      {
+// Mock fs/promises
+vi.mock("fs/promises", () => ({
+  readdir: vi.fn(),
+  readFile: vi.fn(),
+  unlink: vi.fn(),
+  rm: vi.fn(),
+}));
+
+// Mock getLogger
+vi.mock("@/log", () => ({
+  getLogger: vi.fn(() => ({
+    setGroup: vi.fn(),
+    resetGroup: vi.fn(),
+    trace: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+  })),
+}));
+
+// Import existsSync after mocking
+import { existsSync } from "fs";
+
+describe("cleanUpCache", () => {
+  const TEST_CACHE_DIR = "/test-cache-dir";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return early if cache directory does not exist", async () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    await cleanUpCache({ dirPath: TEST_CACHE_DIR });
+
+    expect(fs.readdir).not.toHaveBeenCalled();
+    expect(fs.rm).not.toHaveBeenCalled();
+  });
+
+  it("should purge entire cache directory when forcePurge is true", async () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(fs.rm).mockResolvedValue(undefined);
+
+    await cleanUpCache({ forcePurge: true, dirPath: TEST_CACHE_DIR });
+
+    expect(fs.rm).toHaveBeenCalledWith(TEST_CACHE_DIR, {
+      recursive: true,
+      force: true,
+    });
+    expect(fs.readdir).not.toHaveBeenCalled();
+  });
+
+  it("should process cache files and remove outdated ones", async () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(fs.readdir).mockResolvedValue([
+      "test1.json",
+      "test2.json",
+      "not-json-file.txt"
+    ]);
+
+    const outdatedEntry: CacheEntry = {
+      metadata: {
         timestamp: Date.now(),
-        random: Math.random(),
+        version: TestRunRepository.VERSION - 1,
+        status: "passed",
+        reason: undefined,
+        tokenUsage: { completionTokens: 10, promptTokens: 20, totalTokens: 30 },
+        runId: "test1",
+        fromCache: false,
       },
-      { length: 8 },
+      test: {
+        name: "Test 1",
+        filePath: "/test1.ts",
+      },
+      data: {},
+    };
+
+    const validEntry: CacheEntry = {
+      metadata: {
+        timestamp: Date.now(),
+        version: TestRunRepository.VERSION,
+        status: "passed",
+        reason: undefined,
+        tokenUsage: { completionTokens: 10, promptTokens: 20, totalTokens: 30 },
+        runId: "test2",
+        fromCache: false,
+      },
+      test: {
+        name: "Test 2",
+        filePath: "/test2.ts",
+      },
+      data: {},
+    };
+
+    vi.mocked(existsSync)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true);
+
+    vi.mocked(fs.readFile)
+      .mockResolvedValueOnce(JSON.stringify(outdatedEntry))
+      .mockResolvedValueOnce(JSON.stringify(validEntry));
+
+    await cleanUpCache({ dirPath: TEST_CACHE_DIR });
+
+    expect(fs.readdir).toHaveBeenCalledWith(TEST_CACHE_DIR);
+    expect(fs.readFile).toHaveBeenCalledTimes(2);
+
+    expect(fs.unlink).toHaveBeenCalledWith(
+      path.join(TEST_CACHE_DIR, "test1.json"),
     );
-    context.cacheDirPath = `${CACHE_DIR_PATH}.${uniqueId}.test`;
-    context.mockCacheFilePath = path.join(context.cacheDirPath, "test.json");
+    expect(fs.rm).toHaveBeenCalledWith(path.join(TEST_CACHE_DIR, "test1"), {
+      recursive: true,
+      force: true,
+    });
 
-    vi.resetModules();
-    await fs.mkdir(context.cacheDirPath, { recursive: true });
+    expect(fs.unlink).not.toHaveBeenCalledWith(
+      path.join(TEST_CACHE_DIR, "test2.json"),
+    );
+    expect(fs.rm).not.toHaveBeenCalledWith(path.join(TEST_CACHE_DIR, "test2"), {
+      recursive: true,
+      force: true,
+    });
   });
 
-  afterEach<TestContext>(async (context) => {
-    await fs.rm(context.cacheDirPath, { recursive: true, force: true });
+  it("should remove cache files when test file no longer exists", async () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(fs.readdir).mockResolvedValue([
+      "test1.json"
+    ]);
+
+    const validVersionButMissingTestFile: CacheEntry = {
+      metadata: {
+        timestamp: Date.now(),
+        version: TestRunRepository.VERSION,
+        status: "passed",
+        reason: undefined,
+        tokenUsage: { completionTokens: 10, promptTokens: 20, totalTokens: 30 },
+        runId: "test1",
+        fromCache: false,
+      },
+      test: {
+        name: "Test 1",
+        filePath: "/test1.ts",
+      },
+      data: {},
+    };
+
+    vi.mocked(existsSync)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false);
+
+    vi.mocked(fs.readFile).mockResolvedValueOnce(
+      JSON.stringify(validVersionButMissingTestFile),
+    );
+
+    await cleanUpCache({ dirPath: TEST_CACHE_DIR });
+
+    expect(fs.readdir).toHaveBeenCalledWith(TEST_CACHE_DIR);
+    expect(fs.readFile).toHaveBeenCalledTimes(1);
+
+    expect(fs.unlink).toHaveBeenCalledWith(
+      path.join(TEST_CACHE_DIR, "test1.json"),
+    );
+    expect(fs.rm).toHaveBeenCalledWith(path.join(TEST_CACHE_DIR, "test1"), {
+      recursive: true,
+      force: true,
+    });
   });
 
-  describe("cleanUpCache", () => {
-    it<TestContext>("removes expired cache entries", async ({
-      cacheDirPath,
-      mockCacheFilePath,
-    }) => {
-      const expiredEntry: CacheEntry = {
-        test: { name: "test", filePath: "test.ts" },
-        data: { steps: [] },
-        metadata: {
-          timestamp: Date.now() - CACHE_MAX_AGE_MS - 1000,
-          version: "1",
-        },
-      };
-      await fs.writeFile(mockCacheFilePath, JSON.stringify(expiredEntry));
-      await cleanUpCache({ dirPath: cacheDirPath });
-      await expect(fs.access(mockCacheFilePath)).rejects.toThrow();
-    });
+  it("should handle and remove invalid cache files", async () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(fs.readdir).mockResolvedValue([
+      "invalid.json"
+    ]);
 
-    it<TestContext>("keeps valid cache entries", async ({
-      cacheDirPath,
-      mockCacheFilePath,
-    }) => {
-      const validEntry: CacheEntry = {
-        test: { name: "test", filePath: "test.ts" },
-        data: { steps: [] },
-        metadata: {
-          timestamp: Date.now() - 1000,
-          version: "1",
-        },
-      };
+    vi.mocked(fs.readFile).mockRejectedValueOnce(new Error("Invalid JSON"));
 
-      await fs.writeFile(mockCacheFilePath, JSON.stringify(validEntry));
-      await cleanUpCache({ dirPath: cacheDirPath });
+    await cleanUpCache({ dirPath: TEST_CACHE_DIR });
 
-      await expect(fs.access(mockCacheFilePath)).resolves.toBeUndefined();
-    });
+    expect(fs.readdir).toHaveBeenCalledWith(TEST_CACHE_DIR);
+    expect(fs.readFile).toHaveBeenCalledTimes(1);
 
-    it<TestContext>("removes all cache entries when forcePurge is true", async ({
-      cacheDirPath,
-      mockCacheFilePath,
-    }) => {
-      const validEntry: CacheEntry = {
-        test: { name: "test", filePath: "test.ts" },
-        data: { steps: [] },
-        metadata: {
-          timestamp: Date.now(),
-          version: "1",
-        },
-      };
-
-      await fs.writeFile(mockCacheFilePath, JSON.stringify(validEntry));
-      await cleanUpCache({ forcePurge: true, dirPath: cacheDirPath });
-
-      await expect(fs.access(mockCacheFilePath)).rejects.toThrow();
-    });
-
-    it<TestContext>("removes invalid cache files", async ({
-      cacheDirPath,
-      mockCacheFilePath,
-    }) => {
-      await fs.writeFile(mockCacheFilePath, "invalid json");
-      await cleanUpCache({ dirPath: cacheDirPath });
-
-      await expect(fs.access(mockCacheFilePath)).rejects.toThrow();
-    });
-
-    it<TestContext>("ignores non-JSON files", async ({ cacheDirPath }) => {
-      const nonJsonFile = path.join(cacheDirPath, "test.txt");
-      await fs.writeFile(nonJsonFile, "test content");
-      await cleanUpCache({ dirPath: cacheDirPath });
-
-      await expect(fs.access(nonJsonFile)).resolves.toBeUndefined();
-    });
-
-    it("handles non-existent cache directory", async () => {
-      const nonExistentDir = path.join(CACHE_DIR_PATH, "non-existent");
-      await expect(
-        cleanUpCache({ dirPath: nonExistentDir }),
-      ).resolves.toBeUndefined();
+    expect(fs.unlink).toHaveBeenCalledWith(
+      path.join(TEST_CACHE_DIR, "invalid.json"),
+    );
+    expect(fs.rm).toHaveBeenCalledWith(path.join(TEST_CACHE_DIR, "invalid"), {
+      recursive: true,
+      force: true,
     });
   });
 });

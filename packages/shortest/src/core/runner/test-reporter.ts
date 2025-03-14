@@ -1,4 +1,5 @@
 import pc from "picocolors";
+import { TestRunRepository } from "./test-run-repository";
 import { FileResult, TestStatus } from "@/core/runner/index";
 import { TestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";

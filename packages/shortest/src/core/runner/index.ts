@@ -7,7 +7,6 @@ import { z } from "zod";
 import { AIClient, AIClientResponse } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
-import { TestCache } from "@/cache";
 import { TestCompiler } from "@/core/compiler";
 import { TestCase } from "@/core/runner/test-case";
 import {
@@ -16,8 +15,15 @@ import {
 } from "@/core/runner/test-file-parser";
 import { TestReporter } from "@/core/runner/test-reporter";
 import { TestRun } from "@/core/runner/test-run";
+import { TestRunRepository } from "@/core/runner/test-run-repository";
 import { getLogger, Log } from "@/log";
-import { TestContext, InternalActionEnum, ShortestStrictConfig } from "@/types";
+import {
+  TestContext,
+  InternalActionEnum,
+  ShortestStrictConfig,
+  TestFileContext,
+} from "@/types";
+import { assertDefined } from "@/utils/assert";
 import {
   CacheError,
   getErrorDetails,
@@ -41,6 +47,7 @@ export class TestRunner {
   private browserManager!: BrowserManager;
   private reporter: TestReporter;
   private testContext: TestContext | null = null;
+  private testFileContext: TestFileContext | null = null;
   private log: Log;
 
   constructor(cwd: string, config: ShortestStrictConfig) {
@@ -55,10 +62,10 @@ export class TestRunner {
     this.browserManager = new BrowserManager(this.config);
   }
 
-  private async createTestContext(
+  private async createFileTestContext(
     context: BrowserContext,
-  ): Promise<TestContext> {
-    if (!this.testContext) {
+  ): Promise<TestFileContext> {
+    if (!this.testFileContext) {
       // Create a properly typed Playwright object
       const playwrightObj = {
         ...playwright,
@@ -82,32 +89,37 @@ export class TestRunner {
         };
       };
 
-      this.testContext = {
+      this.testFileContext = {
         page: context.pages()[0],
         browser: this.browserManager.getBrowser()!,
         playwright: playwrightObj,
       };
     }
-    return this.testContext;
+    return this.testFileContext;
+  }
+
+  private async createTestContext(testRun: TestRun): Promise<TestContext> {
+    if (this.testContext) return this.testContext;
+
+    return { ...assertDefined(this.testFileContext), testRun };
   }
 
   private async executeTest(
-    testCase: TestCase,
+    testRun: TestRun,
     context: BrowserContext,
     skipCache: boolean = false,
   ): Promise<TestRun> {
+    const testCase = testRun.testCase;
     this.log.trace("Executing test", {
       name: testCase.name,
       filePath: testCase.filePath,
       payload: testCase.payload,
       skipCache,
     });
-    const testRun = new TestRun(testCase);
-    testRun.markRunning();
     // If it's direct execution, skip AI
     if (testCase.directExecution) {
       try {
-        const testContext = await this.createTestContext(context);
+        const testContext = await this.createTestContext(testRun);
         await testCase.fn?.(testContext);
         testRun.markPassed({ reason: "Direct execution successful" });
         return testRun;
@@ -121,13 +133,13 @@ export class TestRunner {
     }
 
     // Use the shared context
-    const testContext = await this.createTestContext(context);
+    const testContext = await this.createTestContext(testRun);
     const browserTool = new BrowserTool(testContext.page, this.browserManager, {
       width: 1920,
       height: 1080,
       testContext: {
         ...testContext,
-        currentTest: testCase,
+        testRun: testRun,
         currentStepIndex: 0,
       },
     });
@@ -136,11 +148,9 @@ export class TestRunner {
       action: "screenshot",
     });
 
-    const testCache = new TestCache(testCase);
-    await testCache.initialize();
     if (this.config.caching.enabled && !skipCache) {
       try {
-        await this.runCachedTest(testRun, browserTool, testCache);
+        await this.runCachedTest(testRun, browserTool);
         if (testCase.afterFn) {
           try {
             await testCase.afterFn(testContext);
@@ -164,12 +174,9 @@ export class TestRunner {
           "Cache execution interrupted, falling back to normal execution",
           getErrorDetails(error),
         );
-        if (error.type !== "not-found") {
-          await testCache.delete();
-        }
         const page = browserTool.getPage();
         await page.goto(initialState.metadata?.window_info?.url!);
-        return await this.executeTest(testCase, context, true);
+        return await this.executeTest(testRun, context, true);
       }
     } else {
       this.log.trace("Skipping cache", {
@@ -218,7 +225,7 @@ export class TestRunner {
       ]
         .filter(Boolean)
         .join("\n");
-      const aiClient = new AIClient({ browserTool, testCache });
+      const aiClient = new AIClient({ browserTool, testRun });
       aiResponse = await aiClient.runAction(prompt);
     } finally {
       this.log.resetGroup();
@@ -344,7 +351,7 @@ export class TestRunner {
         throw asShortestError(error);
       }
       this.log.trace("Creating test context");
-      const testContext = await this.createTestContext(context);
+      const testContext = await this.createFileTestContext(context);
 
       try {
         // Execute beforeAll hooks with shared context
@@ -363,12 +370,39 @@ export class TestRunner {
           }
 
           this.reporter.onTestStart(testCase);
-          const testRun = await this.executeTest(testCase, context);
+          const testRun = new TestRun(testCase);
+          await testRun.initialize();
+          try {
+            testRun.markRunning();
+            await this.executeTest(testRun, context);
+          } catch (error) {
+            this.log.error(
+              "Handling error for executeTest",
+              getErrorDetails(error),
+            );
+            throw error;
+          }
           this.reporter.onTestEnd(testRun);
 
           // Execute afterEach hooks with shared context
           for (const hook of registry.afterEachFns) {
             await hook(testContext);
+          }
+
+          // After test execution
+          await TestRunRepository.getRepositoryForTestCase(testCase).saveRun(
+            testRun,
+          );
+
+          try {
+            await TestRunRepository.getRepositoryForTestCase(
+              testCase,
+            ).applyRetentionPolicy();
+          } catch (error) {
+            this.log.error(
+              "Failed to apply retention policy",
+              getErrorDetails(error),
+            );
           }
         }
 
@@ -437,16 +471,21 @@ export class TestRunner {
   private async runCachedTest(
     testRun: TestRun,
     browserTool: BrowserTool,
-    testCache: TestCache,
   ): Promise<TestRun> {
     try {
       this.log.setGroup("💾");
       this.log.trace("Executing test from cache");
-      const cachedEntry = await testCache.get();
-      if (!cachedEntry) {
-        throw new CacheError("not-found", "No cache found");
+
+      const latestRun = await TestRunRepository.getRepositoryForTestCase(
+        testRun.testCase,
+      ).getLatestPassedRun();
+      if (!latestRun) {
+        throw new CacheError(
+          "not-found",
+          "No successful cached test run found",
+        );
       }
-      const steps = cachedEntry.data.steps
+      const steps = latestRun.steps
         // do not take screenshots in cached mode
         ?.filter(
           (step) =>
