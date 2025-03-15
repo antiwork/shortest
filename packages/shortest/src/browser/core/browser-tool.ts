@@ -28,10 +28,10 @@ import {
 import { getErrorDetails, ToolError, TestError } from "@/utils/errors";
 
 export class BrowserTool extends BaseBrowserTool {
-  private page: Page;
-  private browserManager: BrowserManager;
   protected readonly toolType: BetaToolType = "computer_20241022";
   protected readonly toolName: string = "computer";
+  private page: Page;
+  private browserManager: BrowserManager;
   private cursorVisible: boolean = true;
   private lastMousePosition: [number, number] = [0, 0];
   private githubTool?: GitHubTool;

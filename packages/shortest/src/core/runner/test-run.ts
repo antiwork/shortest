@@ -26,17 +26,41 @@ type TestRunState =
  * @see {@link TokenUsage} for token tracking
  */
 export class TestRun {
+  /**
+   * Creates a TestRun instance from a cache file
+   * @param {TestCase} testCase - The test case associated with this run
+   * @param {string} file - The cache file name
+   * @param {CacheEntry} cacheEntry - The cache entry data
+   * @returns {TestRun} A new TestRun instance
+   *
+   * @private
+   */
+  public static fromCacheFile(
+    testCase: TestCase,
+    cacheEntry: CacheEntry,
+  ): TestRun {
+    const testRun = new TestRun(testCase);
+    testRun.runId = cacheEntry.metadata.runId;
+    testRun.timestamp = cacheEntry.metadata.timestamp;
+    testRun.version =
+      typeof cacheEntry.metadata.version === "string"
+        ? parseInt(cacheEntry.metadata.version, 10) || 0
+        : cacheEntry.metadata.version || 0;
+    testRun.state = {
+      status: cacheEntry.metadata.status,
+      reason: cacheEntry.metadata.reason,
+    } as TestRunState;
+    testRun.tokenUsage = cacheEntry.metadata.tokenUsage;
+    if (cacheEntry.data.steps) {
+      testRun.steps = [...cacheEntry.data.steps];
+    }
+    testRun.fromCache = true;
+    return testRun;
+  }
+
   public readonly testCase: TestCase;
   public readonly log: Log;
-
-  private state: TestRunState = { status: "pending" } as TestRunState;
   public steps: CacheStep[] = [];
-  get status() {
-    return this.state.status;
-  }
-  get reason() {
-    return this.state.reason;
-  }
   public tokenUsage: TokenUsage = {
     completionTokens: 0,
     promptTokens: 0,
@@ -46,6 +70,14 @@ export class TestRun {
   public version: number = TestRunRepository.VERSION;
   public timestamp: number;
   public fromCache: boolean = false;
+
+  private state: TestRunState = { status: "pending" } as TestRunState;
+  get status() {
+    return this.state.status;
+  }
+  get reason() {
+    return this.state.reason;
+  }
 
   /**
    * Creates a new test run instance
@@ -133,34 +165,5 @@ export class TestRun {
   public getSteps(): CacheStep[] {
     // Return a copy to prevent direct mutation
     return [...this.steps];
-  }
-
-  /**
-   * Creates a TestRun instance from a cache file
-   * @param {TestCase} testCase - The test case associated with this run
-   * @param {string} file - The cache file name
-   * @param {CacheEntry} cacheEntry - The cache entry data
-   * @returns {TestRun} A new TestRun instance
-   *
-   * @private
-   */
-  static fromCacheFile(testCase: TestCase, cacheEntry: CacheEntry): TestRun {
-    const testRun = new TestRun(testCase);
-    testRun.runId = cacheEntry.metadata.runId;
-    testRun.timestamp = cacheEntry.metadata.timestamp;
-    testRun.version =
-      typeof cacheEntry.metadata.version === "string"
-        ? parseInt(cacheEntry.metadata.version, 10) || 0
-        : cacheEntry.metadata.version || 0;
-    testRun.state = {
-      status: cacheEntry.metadata.status,
-      reason: cacheEntry.metadata.reason,
-    } as TestRunState;
-    testRun.tokenUsage = cacheEntry.metadata.tokenUsage;
-    if (cacheEntry.data.steps) {
-      testRun.steps = [...cacheEntry.data.steps];
-    }
-    testRun.fromCache = true;
-    return testRun;
   }
 }

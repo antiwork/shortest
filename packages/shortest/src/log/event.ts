@@ -24,43 +24,6 @@ export class LogEvent {
   static readonly TRUNCATED_METADATA_KEYS = ["base64_image", "data"];
   static readonly TRUNCATED_PLACEHOLDER = "[TRUNCATED]";
 
-  readonly timestamp: Date;
-  readonly level: LogLevel;
-  readonly message: string;
-  readonly metadata: Record<string, any> = {};
-
-  private _parsedMetadata: Record<string, any> | undefined | null = null;
-
-  constructor(
-    level: LogLevel,
-    message: string,
-    metadata?: Record<string, any>,
-  ) {
-    this.timestamp = new Date();
-    this.level = level;
-    this.message = message;
-    this.metadata = metadata ?? {};
-  }
-
-  get parsedMetadata():
-    | Record<string, string | number | boolean | null | object>
-    | undefined {
-    return (this._parsedMetadata ??= this.parseMetadata());
-  }
-
-  private parseMetadata():
-    | Record<string, string | number | boolean | null | object>
-    | undefined {
-    if (!Object.keys(this.metadata).length) return undefined;
-
-    return Object.fromEntries(
-      Object.entries(this.metadata).map(([k, v]) => [
-        k,
-        LogEvent.filterValue(k, v, 0),
-      ]),
-    );
-  }
-
   /**
    * Recursively processes and filters values in metadata:
    * - Truncates nested objects beyond certain depth
@@ -76,7 +39,7 @@ export class LogEvent {
    *
    * @private
    */
-  private static filterValue(key: string, value: any, depth: number): any {
+  static filterValue(key: string, value: any, depth: number): any {
     const MAX_METADATA_DEPTH = 5;
 
     if (depth > MAX_METADATA_DEPTH) {
@@ -123,5 +86,42 @@ export class LogEvent {
     }
 
     return value;
+  }
+
+  readonly timestamp: Date;
+  readonly level: LogLevel;
+  readonly message: string;
+  readonly metadata: Record<string, any> = {};
+
+  private _parsedMetadata: Record<string, any> | undefined | null = null;
+
+  constructor(
+    level: LogLevel,
+    message: string,
+    metadata?: Record<string, any>,
+  ) {
+    this.timestamp = new Date();
+    this.level = level;
+    this.message = message;
+    this.metadata = metadata ?? {};
+  }
+
+  get parsedMetadata():
+    | Record<string, string | number | boolean | null | object>
+    | undefined {
+    return (this._parsedMetadata ??= this.parseMetadata());
+  }
+
+  private parseMetadata():
+    | Record<string, string | number | boolean | null | object>
+    | undefined {
+    if (!Object.keys(this.metadata).length) return undefined;
+
+    return Object.fromEntries(
+      Object.entries(this.metadata).map(([k, v]) => [
+        k,
+        LogEvent.filterValue(k, v, 0),
+      ]),
+    );
   }
 }

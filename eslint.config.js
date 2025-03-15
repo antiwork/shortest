@@ -41,6 +41,32 @@ export default [
     },
     rules: {
       "react/react-in-jsx-scope": "off",
+      "@typescript-eslint/member-ordering": ["error", {
+        default: {
+          memberTypes: [
+            // Static members
+            "static-field",
+            "static-method",
+
+            // Instance properties
+            "public-instance-field",
+            "protected-instance-field",
+            "private-instance-field",
+
+            // Constructors
+            // "constructor",
+
+            // Methods
+            // "public-method",
+            // "protected-method",
+            // "private-method",
+
+            // Getters/setters
+            // "get",
+            // "set"
+          ],
+        },
+      }],
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_" },
@@ -51,7 +77,7 @@ export default [
       "no-lonely-if": "error",
       "no-lone-blocks": "error",
       "no-empty": ["error", { allowEmptyCatch: true }],
-      "no-else-return": "error",
+    "no-else-return": "error",
       "no-alert": "error",
       "logical-assignment-operators": "error",
       "prefer-arrow-callback": "error",
