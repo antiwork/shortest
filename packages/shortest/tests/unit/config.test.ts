@@ -1,11 +1,10 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { vi } from "vitest";
-import { getLogger } from "@/log/index";
 import { ShortestConfig } from "@/types";
 import { parseConfig } from "@/utils/config";
 
 describe("Config parsing", () => {
-  let baseConfig: ShortestConfig;
+  let baseConfigWithAnthropic: ShortestConfig;
+  let baseConfigWithOpenAI: ShortestConfig;
 
   describe("with minimal config", () => {
     const minimalConfig = {
@@ -42,7 +41,7 @@ describe("Config parsing", () => {
   });
 
   beforeEach(() => {
-    baseConfig = {
+    baseConfigWithAnthropic = {
       headless: true,
       baseUrl: "https://example.com",
       testPattern: ".*",
@@ -56,7 +55,7 @@ describe("Config parsing", () => {
   describe("with invalid config.browser option", () => {
     test("it throws an error", () => {
       const userConfig = {
-        ...baseConfig,
+        ...baseConfigWithAnthropic,
         browser: {
           invalidBrowserOption: "value",
         },
@@ -70,7 +69,7 @@ describe("Config parsing", () => {
   describe("with config.browser.contextOptions option", () => {
     test("it passes through", () => {
       const userConfig = {
-        ...baseConfig,
+        ...baseConfigWithAnthropic,
         browser: {
           contextOptions: { ignoreHTTPSErrors: true },
         },
@@ -85,7 +84,7 @@ describe("Config parsing", () => {
   describe("with invalid config option", () => {
     test("it throws an error", () => {
       const userConfig = {
-        ...baseConfig,
+        ...baseConfigWithAnthropic,
         invalidOption: "value",
       };
       expect(() => parseConfig(userConfig)).toThrowError(
@@ -97,9 +96,9 @@ describe("Config parsing", () => {
   describe("with invalid config.ai option", () => {
     test("it throws an error", () => {
       const userConfig = {
-        ...baseConfig,
+        ...baseConfigWithAnthropic,
         ai: {
-          ...baseConfig.ai,
+          ...baseConfigWithAnthropic.ai,
           invalidAIOption: "value",
         },
       };
@@ -113,9 +112,9 @@ describe("Config parsing", () => {
     describe("without ANTHROPIC_API_KEY", () => {
       test("it throws an error", () => {
         const userConfig = {
-          ...baseConfig,
+          ...baseConfigWithAnthropic,
           ai: {
-            ...baseConfig.ai,
+            ...baseConfigWithAnthropic.ai,
             apiKey: undefined,
           },
         };
@@ -133,9 +132,9 @@ describe("Config parsing", () => {
       describe("without ai.apiKey", () => {
         test("uses value from ANTHROPIC_API_KEY", () => {
           const userConfig = {
-            ...baseConfig,
+            ...baseConfigWithAnthropic,
             ai: {
-              ...baseConfig.ai,
+              ...baseConfigWithAnthropic.ai,
               apiKey: undefined,
             },
           };
@@ -155,9 +154,9 @@ describe("Config parsing", () => {
 
         test("uses value from SHORTEST_ANTHROPIC_API_KEY", () => {
           const userConfig = {
-            ...baseConfig,
+            ...baseConfigWithAnthropic,
             ai: {
-              ...baseConfig.ai,
+              ...baseConfigWithAnthropic.ai,
               apiKey: undefined,
             },
           };
@@ -173,7 +172,7 @@ describe("Config parsing", () => {
       describe("with ai.apiKey", () => {
         test("uses the explicit ai.apiKey", () => {
           process.env.ANTHROPIC_API_KEY = "env-api-key";
-          const config = parseConfig(baseConfig);
+          const config = parseConfig(baseConfigWithAnthropic);
           expect(config.ai).toEqual({
             apiKey: "explicit-api-key",
             provider: "anthropic",
@@ -186,7 +185,7 @@ describe("Config parsing", () => {
     describe("with config.anthropicKey set", () => {
       test("throws ConfigError", () => {
         const userConfig = {
-          ...baseConfig,
+          ...baseConfigWithAnthropic,
           anthropicKey: "deprecated-api-key",
         };
         expect(() => parseConfig(userConfig)).toThrowError(
@@ -198,64 +197,147 @@ describe("Config parsing", () => {
     describe("with ai.provider unknown", () => {
       test("throws an error", () => {
         const userConfig = {
-          ...baseConfig,
+          ...baseConfigWithAnthropic,
           ai: {
-            ...baseConfig.ai,
+            ...baseConfigWithAnthropic.ai,
             provider: "unknown" as any,
           },
         };
         expect(() => parseConfig(userConfig)).toThrowError(
-          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.provider(?:\u001b\[\d+m)?: Invalid literal value, expected "anthropic" \(received: "unknown"\)/,
+          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.provider(?:\u001b\[\d+m)?: Invalid value, expected 'anthropic' | 'openai'/,
         );
       });
     });
 
-    describe("with invalid ai.model", () => {
-      test("throws an error", () => {
+    describe("with Anthropic provider", () => {
+      beforeEach(() => {
+        delete process.env.ANTHROPIC_API_KEY;
+        delete process.env.SHORTEST_ANTHROPIC_API_KEY;
+      });
+
+      test("validates Anthropic configuration", () => {
         const userConfig = {
-          ...baseConfig,
-          ai: { ...baseConfig.ai, model: "invalid-model" as any },
+          ...baseConfigWithAnthropic,
+          ai: {
+            provider: "anthropic" as const,
+            apiKey: "anthropic-key",
+          },
         };
-        expect(() => parseConfig(userConfig)).toThrowError(
-          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.model(?:\u001b\[\d+m)?: Invalid enum value\. Expected 'claude-3-5-sonnet-20241022' | 'claude-3-5-sonnet-latest', received 'invalid-model'(?:\s\(received: "invalid-model"\))?/,
-        );
-      });
-    });
-  });
-
-  describe("without config.ai", () => {
-    describe("without ANTHROPIC_API_KEY", () => {
-      describe("with config.anthropicKey", () => {
-        test("logs deprecation warning and creates config.ai", () => {
-          const mockWarn = vi.fn();
-          vi.spyOn(getLogger(), "warn").mockImplementation(mockWarn);
-
-          const userConfig = {
-            ...baseConfig,
-            anthropicKey: "deprecated-api-key",
-          };
-          delete userConfig.ai;
-          const config = parseConfig(userConfig);
-
-          expect(mockWarn).toHaveBeenCalledWith(
-            "'config.anthropicKey' option is deprecated. Use 'config.ai' structure instead.",
-          );
-          expect(config.ai).toEqual({
-            provider: "anthropic",
-            apiKey: "deprecated-api-key",
-            model: "claude-3-5-sonnet-20241022",
-          });
+        const config = parseConfig(userConfig);
+        expect(config.ai).toEqual({
+          provider: "anthropic",
+          apiKey: "anthropic-key",
+          model: "claude-3-5-sonnet-20241022",
         });
       });
 
-      describe("without config.anthropicKey", () => {
+      test("throws error without Anthropic API key", () => {
+        const userConfig = {
+          ...baseConfigWithAnthropic,
+          ai: {
+            provider: "anthropic" as const,
+            apiKey: undefined,
+          },
+        };
+        expect(() => parseConfig(userConfig)).toThrowError(
+          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.apiKey(?:\u001b\[\d+m)?: Required \(received: "undefined"\)/,
+        );
+      });
+
+      describe("with invalid ai.model", () => {
         test("throws an error", () => {
           const userConfig = {
-            ...baseConfig,
+            ...baseConfigWithAnthropic,
+            ai: {
+              ...baseConfigWithAnthropic.ai,
+              model: "invalid-model" as any,
+            },
           };
-          delete userConfig.ai;
           expect(() => parseConfig(userConfig)).toThrowError(
-            /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai(?:\u001b\[\d+m)?: Required \(received: "undefined"\)/,
+            /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.model(?:\u001b\[\d+m)?: Invalid value\. Expected 'claude-3-5-sonnet-20241022' | 'claude-3-5-sonnet-latest', received 'invalid-model'(?:\s\(received: "invalid-model"\))?/,
+          );
+        });
+      });
+    });
+
+    describe("with OpenAI provider", () => {
+      beforeEach(() => {
+        baseConfigWithOpenAI = {
+          ...baseConfigWithAnthropic,
+          ai: {
+            provider: "openai",
+            apiKey: "openai-key",
+          },
+        };
+      });
+
+      test("validates OpenAI configuration", () => {
+        const userConfig = {
+          ...baseConfigWithOpenAI,
+        };
+        const config = parseConfig(userConfig);
+        expect(config.ai).toEqual({
+          provider: "openai",
+          apiKey: "openai-key",
+          model: "computer-use-preview-2025-02-04",
+        });
+      });
+
+      test("throws error without OpenAI API key", () => {
+        const userConfig = {
+          ...baseConfigWithOpenAI,
+          ai: {
+            ...baseConfigWithOpenAI.ai,
+            apiKey: undefined,
+          },
+        };
+        expect(() => parseConfig(userConfig)).toThrowError(
+          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.apiKey(?:\u001b\[\d+m)?: Required \(received: "undefined"\)/,
+        );
+      });
+
+      test("uses OPENAI_API_KEY from environment", () => {
+        process.env.OPENAI_API_KEY = "env-openai-key";
+        const userConfig = {
+          ...baseConfigWithOpenAI,
+          ai: {
+            ...baseConfigWithOpenAI.ai,
+            apiKey: undefined,
+          },
+        };
+        const config = parseConfig(userConfig);
+        expect(config.ai).toEqual({
+          provider: "openai",
+          apiKey: "env-openai-key",
+          model: "computer-use-preview-2025-02-04",
+        });
+      });
+
+      test("uses SHORTEST_OPENAI_API_KEY from environment", () => {
+        process.env.SHORTEST_OPENAI_API_KEY = "shortest-env-openai-key";
+        const userConfig = {
+          ...baseConfigWithOpenAI,
+          ai: {
+            ...baseConfigWithOpenAI.ai,
+            apiKey: undefined,
+          },
+        };
+        const config = parseConfig(userConfig);
+        expect(config.ai).toEqual({
+          provider: "openai",
+          apiKey: "shortest-env-openai-key",
+          model: "computer-use-preview-2025-02-04",
+        });
+      });
+
+      describe("with invalid ai.model", () => {
+        test("throws an error", () => {
+          const userConfig = {
+            ...baseConfigWithOpenAI,
+            ai: { ...baseConfigWithOpenAI.ai, model: "invalid-model" as any },
+          };
+          expect(() => parseConfig(userConfig)).toThrowError(
+            /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.model(?:\u001b\[\d+m)?: Invalid value\. Expected 'computer-use-preview-2025-02-04', received 'invalid-model'(?:\s\(received: "invalid-model"\))?/,
           );
         });
       });
@@ -264,7 +346,7 @@ describe("Config parsing", () => {
 
   test("throws on invalid baseUrl", () => {
     const userConfig = {
-      ...baseConfig,
+      ...baseConfigWithAnthropic,
       baseUrl: "not-a-url",
     };
     expect(() => parseConfig(userConfig)).toThrowError(
@@ -274,7 +356,7 @@ describe("Config parsing", () => {
 
   test("throws on invalid testPattern", () => {
     const userConfig = {
-      ...baseConfig,
+      ...baseConfigWithAnthropic,
       testPattern: null as any,
     };
     expect(() => parseConfig(userConfig)).toThrowError(
@@ -284,7 +366,7 @@ describe("Config parsing", () => {
 
   test("throws when mailosaur.serverId is missing", () => {
     const userConfig = {
-      ...baseConfig,
+      ...baseConfigWithAnthropic,
       mailosaur: { apiKey: "key" } as any,
     };
     expect(() => parseConfig(userConfig)).toThrowError(

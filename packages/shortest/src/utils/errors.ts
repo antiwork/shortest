@@ -116,6 +116,16 @@ export const formatZodError = <T>(
       const prefix = path ? `${pc.cyan(path)}: ` : "";
       const receivedInfo =
         "received" in err ? ` (received: ${JSON.stringify(err.received)})` : "";
+
+      if (
+        err.code === "invalid_union_discriminator" ||
+        err.code === "invalid_enum_value"
+      ) {
+        err.message = err.message.replace(
+          /Invalid (discriminator|enum) value/,
+          "Invalid value",
+        );
+      }
       return `${prefix}${err.message}${receivedInfo}`;
     })
     .join("\n");
