@@ -44,26 +44,20 @@ export default [
       "@typescript-eslint/member-ordering": ["error", {
         default: {
           memberTypes: [
-            // Static members
             "static-field",
             "static-method",
 
-            // Instance properties
             "public-instance-field",
             "protected-instance-field",
             "private-instance-field",
 
-            // Constructors
-            // "constructor",
+            "constructor",
+            "get",
+            "set",
 
-            // Methods
-            // "public-method",
-            // "protected-method",
-            // "private-method",
-
-            // Getters/setters
-            // "get",
-            // "set"
+            "public-method",
+            "protected-method",
+            "private-method",
           ],
         },
       }],

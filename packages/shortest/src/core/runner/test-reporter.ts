@@ -107,6 +107,29 @@ export class TestReporter {
     this.summary();
   }
 
+  allTestsPassed(): boolean {
+    return this.testsCount === this.passedTestsCount;
+  }
+
+  error(context: string, message: string) {
+    this.reporterLog.error(pc.red(`${context}: ${message}`));
+  }
+
+  reportAssertion(
+    step: string,
+    status: "passed" | "failed",
+    error?: AssertionError,
+  ): void {
+    if (status === "passed") {
+      this.reporterLog.error(pc.green(`✓ ${step}`));
+    } else {
+      this.reporterLog.error(pc.red(`✗ ${step}`));
+      if (error) {
+        this.reporterLog.error(pc.dim(error.message));
+      }
+    }
+  }
+
   private calculateCost(
     promptTokens: number,
     completionTokens: number,
@@ -167,29 +190,6 @@ export class TestReporter {
     );
     this.reporterLog.info("\n", pc.dim("⎯".repeat(50)));
     this.reporterLog.resetGroup();
-  }
-
-  allTestsPassed(): boolean {
-    return this.testsCount === this.passedTestsCount;
-  }
-
-  error(context: string, message: string) {
-    this.reporterLog.error(pc.red(`${context}: ${message}`));
-  }
-
-  reportAssertion(
-    step: string,
-    status: "passed" | "failed",
-    error?: AssertionError,
-  ): void {
-    if (status === "passed") {
-      this.reporterLog.error(pc.green(`✓ ${step}`));
-    } else {
-      this.reporterLog.error(pc.red(`✗ ${step}`));
-      if (error) {
-        this.reporterLog.error(pc.dim(error.message));
-      }
-    }
   }
 }
 

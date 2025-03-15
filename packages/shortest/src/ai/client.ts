@@ -114,6 +114,29 @@ export class AIClient {
   }
 
   /**
+   * Retrieves or initializes the set of available tools for AI interactions.
+   * Includes browser automation, bash execution, and specialized testing tools.
+   *
+   * @returns {Record<string, CoreTool>} Map of available tools
+   *
+   * @see {@link BrowserTool} for web automation tools
+   * @see {@link BashTool} for shell command execution
+   *
+   * @private
+   */
+  private get tools(): Record<string, Tool> {
+    if (this._tools) return this._tools;
+
+    this._tools = this.toolRegistry.getTools(
+      this.configAi.provider,
+      this.configAi.model,
+      this.browserTool,
+    );
+
+    return this._tools;
+  }
+
+  /**
    * Executes an AI action with retry logic and error handling.
    * Manages conversation flow and caches results for successful tests.
    *
@@ -286,29 +309,6 @@ export class AIClient {
         this.log.resetGroup();
       }
     }
-  }
-
-  /**
-   * Retrieves or initializes the set of available tools for AI interactions.
-   * Includes browser automation, bash execution, and specialized testing tools.
-   *
-   * @returns {Record<string, CoreTool>} Map of available tools
-   *
-   * @see {@link BrowserTool} for web automation tools
-   * @see {@link BashTool} for shell command execution
-   *
-   * @private
-   */
-  private get tools(): Record<string, Tool> {
-    if (this._tools) return this._tools;
-
-    this._tools = this.toolRegistry.getTools(
-      this.configAi.provider,
-      this.configAi.model,
-      this.browserTool,
-    );
-
-    return this._tools;
   }
 
   /**

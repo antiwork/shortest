@@ -62,46 +62,33 @@ export class TestRunner {
     this.browserManager = new BrowserManager(this.config);
   }
 
-  private async createFileTestContext(
-    context: BrowserContext,
-  ): Promise<TestFileContext> {
-    if (!this.testFileContext) {
-      // Create a properly typed Playwright object
-      const playwrightObj = {
-        ...playwright,
-        request: {
-          ...request,
-          newContext: async (options?: {
-            extraHTTPHeaders?: Record<string, string>;
-          }) => {
-            const requestContext = await request.newContext({
-              baseURL: this.config.baseUrl,
-              ...options,
-            });
-            return requestContext;
-          },
-        },
-      } as typeof playwright & {
-        request: APIRequest & {
-          newContext: (options?: {
-            extraHTTPHeaders?: Record<string, string>;
-          }) => Promise<APIRequestContext>;
-        };
-      };
+  async execute(testPattern: string, lineNumber?: number): Promise<boolean> {
+    this.log.trace("Finding test files", { testPattern });
 
-      this.testFileContext = {
-        page: context.pages()[0],
-        browser: this.browserManager.getBrowser()!,
-        playwright: playwrightObj,
-      };
+    const files = await glob(testPattern, {
+      cwd: this.cwd,
+      absolute: true,
+    });
+    this.log.trace("Found test files", { files });
+
+    if (files.length === 0) {
+      this.reporter.error(
+        "Test Discovery",
+        `No test files found matching the pattern ${testPattern}`,
+      );
+      this.log.error("No test files found matching", {
+        pattern: testPattern,
+      });
+      return false;
     }
-    return this.testFileContext;
-  }
 
-  private async createTestContext(testRun: TestRun): Promise<TestContext> {
-    if (this.testContext) return this.testContext;
+    this.reporter.onRunStart(files.length);
+    for (const file of files) {
+      await this.executeTestFile(file, lineNumber);
+    }
+    this.reporter.onRunEnd();
 
-    return { ...assertDefined(this.testFileContext), testRun };
+    return this.reporter.allTestsPassed();
   }
 
   private async executeTest(
@@ -268,48 +255,76 @@ export class TestRunner {
     return testRun;
   }
 
-  private async filterTestsByLineNumber(
-    tests: TestCase[],
-    file: string,
-    lineNumber: number,
-  ): Promise<TestCase[]> {
-    const testLocations = parseShortestTestFile(file);
-    const escapeRegex = (str: string) =>
-      str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  private async runCachedTest(
+    testRun: TestRun,
+    browserTool: BrowserTool,
+  ): Promise<TestRun> {
+    try {
+      this.log.setGroup("💾");
+      this.log.trace("Executing test from cache");
 
-    const filteredTests = tests.filter((test) => {
-      const testNameNormalized = test.name.trim();
-      let testLocation = testLocations.find(
-        (location) => location.testName === testNameNormalized,
-      );
+      const latestRun = await TestRunRepository.getRepositoryForTestCase(
+        testRun.testCase,
+      ).getLatestPassedRun();
+      if (!latestRun) {
+        throw new CacheError(
+          "not-found",
+          "No successful cached test run found",
+        );
+      }
+      const steps = latestRun.steps
+        // Do not take screenshots in cached mode
+        ?.filter(
+          (step) =>
+            step.action?.input.action !==
+            InternalActionEnum.SCREENSHOT.toString(),
+        );
 
-      if (!testLocation) {
-        testLocation = testLocations.find((location) => {
-          const TEMP_TOKEN = "##PLACEHOLDER##";
-          let pattern = location.testName.replace(
-            new RegExp(escapeRegex(EXPRESSION_PLACEHOLDER), "g"),
-            TEMP_TOKEN,
-          );
-
-          pattern = escapeRegex(pattern);
-          pattern = pattern.replace(new RegExp(TEMP_TOKEN, "g"), ".*");
-          const regex = new RegExp(`^${pattern}$`);
-
-          return regex.test(testNameNormalized);
-        });
+      if (!steps || steps.length === 0) {
+        throw new CacheError("invalid", "No eligible steps in cache");
       }
 
-      if (!testLocation) {
-        return false;
+      this.log.trace("Executing cached steps", { stepCount: steps.length });
+      for (const step of steps) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (
+          step.action?.input.action === InternalActionEnum.MOUSE_MOVE &&
+          step.action.input.coordinate
+        ) {
+          const [x, y] = step.action.input.coordinate;
+          const componentStr =
+            await browserTool.getNormalizedComponentStringByCoords(x, y);
+
+          if (componentStr !== step.extras.componentStr) {
+            this.log.trace("UI element mismatch with cached UI element", {
+              componentStr,
+              stepComponentStr: step.extras.componentStr,
+            });
+            throw new CacheError("invalid", "UI element mismatch");
+          }
+        }
+
+        if (step.action?.input) {
+          try {
+            await browserTool.execute(step.action.input);
+          } catch (error) {
+            this.log.error("Failed to execute cached step", {
+              input: step.action.input,
+              ...getErrorDetails(error),
+            });
+            throw new CacheError("invalid", "Error executing cached step");
+          }
+        }
       }
 
-      const isInRange =
-        lineNumber >= testLocation.startLine &&
-        lineNumber <= testLocation.endLine;
-      return isInRange;
-    });
-
-    return filteredTests;
+      this.log.debug("Successfully executed all cached steps");
+      testRun.markPassed({
+        reason: "All actions successfully replayed from cache",
+      });
+      return testRun;
+    } finally {
+      this.log.resetGroup();
+    }
   }
 
   private async executeTestFile(filePath: string, lineNumber?: number) {
@@ -434,104 +449,89 @@ export class TestRunner {
     }
   }
 
-  async execute(testPattern: string, lineNumber?: number): Promise<boolean> {
-    this.log.trace("Finding test files", { testPattern });
+  private async filterTestsByLineNumber(
+    tests: TestCase[],
+    file: string,
+    lineNumber: number,
+  ): Promise<TestCase[]> {
+    const testLocations = parseShortestTestFile(file);
+    const escapeRegex = (str: string) =>
+      str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    const files = await glob(testPattern, {
-      cwd: this.cwd,
-      absolute: true,
-    });
-    this.log.trace("Found test files", { files });
-
-    if (files.length === 0) {
-      this.reporter.error(
-        "Test Discovery",
-        `No test files found matching the pattern ${testPattern}`,
+    const filteredTests = tests.filter((test) => {
+      const testNameNormalized = test.name.trim();
+      let testLocation = testLocations.find(
+        (location) => location.testName === testNameNormalized,
       );
-      this.log.error("No test files found matching", {
-        pattern: testPattern,
-      });
-      return false;
-    }
 
-    this.reporter.onRunStart(files.length);
-    for (const file of files) {
-      await this.executeTestFile(file, lineNumber);
-    }
-    this.reporter.onRunEnd();
+      if (!testLocation) {
+        testLocation = testLocations.find((location) => {
+          const TEMP_TOKEN = "##PLACEHOLDER##";
+          let pattern = location.testName.replace(
+            new RegExp(escapeRegex(EXPRESSION_PLACEHOLDER), "g"),
+            TEMP_TOKEN,
+          );
 
-    return this.reporter.allTestsPassed();
+          pattern = escapeRegex(pattern);
+          pattern = pattern.replace(new RegExp(TEMP_TOKEN, "g"), ".*");
+          const regex = new RegExp(`^${pattern}$`);
+
+          return regex.test(testNameNormalized);
+        });
+      }
+
+      if (!testLocation) {
+        return false;
+      }
+
+      const isInRange =
+        lineNumber >= testLocation.startLine &&
+        lineNumber <= testLocation.endLine;
+      return isInRange;
+    });
+
+    return filteredTests;
   }
 
-  private async runCachedTest(
-    testRun: TestRun,
-    browserTool: BrowserTool,
-  ): Promise<TestRun> {
-    try {
-      this.log.setGroup("💾");
-      this.log.trace("Executing test from cache");
-
-      const latestRun = await TestRunRepository.getRepositoryForTestCase(
-        testRun.testCase,
-      ).getLatestPassedRun();
-      if (!latestRun) {
-        throw new CacheError(
-          "not-found",
-          "No successful cached test run found",
-        );
-      }
-      const steps = latestRun.steps
-        // Do not take screenshots in cached mode
-        ?.filter(
-          (step) =>
-            step.action?.input.action !==
-            InternalActionEnum.SCREENSHOT.toString(),
-        );
-
-      if (!steps || steps.length === 0) {
-        throw new CacheError("invalid", "No eligible steps in cache");
-      }
-
-      this.log.trace("Executing cached steps", { stepCount: steps.length });
-      for (const step of steps) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        if (
-          step.action?.input.action === InternalActionEnum.MOUSE_MOVE &&
-          step.action.input.coordinate
-        ) {
-          const [x, y] = step.action.input.coordinate;
-          const componentStr =
-            await browserTool.getNormalizedComponentStringByCoords(x, y);
-
-          if (componentStr !== step.extras.componentStr) {
-            this.log.trace("UI element mismatch with cached UI element", {
-              componentStr,
-              stepComponentStr: step.extras.componentStr,
+  private async createFileTestContext(
+    context: BrowserContext,
+  ): Promise<TestFileContext> {
+    if (!this.testFileContext) {
+      // Create a properly typed Playwright object
+      const playwrightObj = {
+        ...playwright,
+        request: {
+          ...request,
+          newContext: async (options?: {
+            extraHTTPHeaders?: Record<string, string>;
+          }) => {
+            const requestContext = await request.newContext({
+              baseURL: this.config.baseUrl,
+              ...options,
             });
-            throw new CacheError("invalid", "UI element mismatch");
-          }
-        }
+            return requestContext;
+          },
+        },
+      } as typeof playwright & {
+        request: APIRequest & {
+          newContext: (options?: {
+            extraHTTPHeaders?: Record<string, string>;
+          }) => Promise<APIRequestContext>;
+        };
+      };
 
-        if (step.action?.input) {
-          try {
-            await browserTool.execute(step.action.input);
-          } catch (error) {
-            this.log.error("Failed to execute cached step", {
-              input: step.action.input,
-              ...getErrorDetails(error),
-            });
-            throw new CacheError("invalid", "Error executing cached step");
-          }
-        }
-      }
-
-      this.log.debug("Successfully executed all cached steps");
-      testRun.markPassed({
-        reason: "All actions successfully replayed from cache",
-      });
-      return testRun;
-    } finally {
-      this.log.resetGroup();
+      this.testFileContext = {
+        page: context.pages()[0],
+        browser: this.browserManager.getBrowser()!,
+        playwright: playwrightObj,
+      };
     }
+    return this.testFileContext;
+  }
+
+  private async createTestContext(testRun: TestRun): Promise<TestContext> {
+    if (this.testContext) return this.testContext;
+
+    return { ...assertDefined(this.testFileContext), testRun };
   }
 }

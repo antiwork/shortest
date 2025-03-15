@@ -72,12 +72,6 @@ export class TestRun {
   public fromCache: boolean = false;
 
   private state: TestRunState = { status: "pending" } as TestRunState;
-  get status() {
-    return this.state.status;
-  }
-  get reason() {
-    return this.state.reason;
-  }
 
   /**
    * Creates a new test run instance
@@ -95,6 +89,13 @@ export class TestRun {
     this.log.trace("Initializing TestRun", {
       runId: this.runId,
     });
+  }
+
+  get status() {
+    return this.state.status;
+  }
+  get reason() {
+    return this.state.reason;
   }
 
   /**

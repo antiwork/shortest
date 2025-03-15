@@ -87,9 +87,6 @@ export class TestRunRepository {
   private readonly testCase: TestCase;
   private readonly lockFileName: string;
   private readonly globalCacheDir: string;
-  private get lockFilePath(): string {
-    return path.join(this.globalCacheDir, this.lockFileName);
-  }
   private readonly log: Log;
   private readonly MAX_LOCK_ATTEMPTS = 10;
   private readonly BASE_LOCK_DELAY_MS = 10;
@@ -116,6 +113,10 @@ export class TestRunRepository {
       registerSharedProcessHandlers(this.log) ||
       TestRunRepository.activeRepositories;
     TestRunRepository.activeRepositories.add(this);
+  }
+
+  private get lockFilePath(): string {
+    return path.join(this.globalCacheDir, this.lockFileName);
   }
 
   /**
@@ -153,15 +154,6 @@ export class TestRunRepository {
     }
     this.testRuns = loadedTestRuns;
     return this.testRuns;
-  }
-
-  /**
-   * Resets the cached test runs to force reloading from disk
-   *
-   * @private
-   */
-  private resetTestRuns() {
-    this.testRuns = null;
   }
 
   /**
@@ -366,6 +358,41 @@ export class TestRunRepository {
   }
 
   /**
+   * Releases previously acquired lock
+   *
+   * @returns {Promise<void>}
+   */
+  public async releaseLock(): Promise<void> {
+    if (this.lockAcquired) {
+      try {
+        await fs.unlink(this.lockFilePath);
+        this.lockAcquired = false;
+        TestRunRepository.activeRepositories.delete(this);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          this.log.error("Failed to release lock", {
+            lockFilePath: this.lockFilePath,
+            ...getErrorDetails(error),
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Ensures the test run directory exists and returns its path
+   *
+   * @param {TestRun} testRun - Test run to ensure directory for
+   * @returns {Promise<string>} Path to the test run directory
+   */
+  public async ensureTestRunDirPath(testRun: TestRun): Promise<string> {
+    const runDirPath = path.join(this.globalCacheDir, testRun.runId);
+    await fs.mkdir(runDirPath, { recursive: true });
+    this.resetTestRuns();
+    return runDirPath;
+  }
+
+  /**
    * Acquires a lock for cache file access
    *
    * Uses exponential backoff to retry lock acquisition
@@ -425,28 +452,6 @@ export class TestRunRepository {
   }
 
   /**
-   * Releases previously acquired lock
-   *
-   * @returns {Promise<void>}
-   */
-  public async releaseLock(): Promise<void> {
-    if (this.lockAcquired) {
-      try {
-        await fs.unlink(this.lockFilePath);
-        this.lockAcquired = false;
-        TestRunRepository.activeRepositories.delete(this);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-          this.log.error("Failed to release lock", {
-            lockFilePath: this.lockFilePath,
-            ...getErrorDetails(error),
-          });
-        }
-      }
-    }
-  }
-
-  /**
    * Checks if a process is still running
    *
    * @param {number} pid - Process ID to check
@@ -489,15 +494,11 @@ export class TestRunRepository {
   }
 
   /**
-   * Ensures the test run directory exists and returns its path
+   * Resets the cached test runs to force reloading from disk
    *
-   * @param {TestRun} testRun - Test run to ensure directory for
-   * @returns {Promise<string>} Path to the test run directory
+   * @private
    */
-  public async ensureTestRunDirPath(testRun: TestRun): Promise<string> {
-    const runDirPath = path.join(this.globalCacheDir, testRun.runId);
-    await fs.mkdir(runDirPath, { recursive: true });
-    this.resetTestRuns();
-    return runDirPath;
+  private resetTestRuns() {
+    this.testRuns = null;
   }
 }

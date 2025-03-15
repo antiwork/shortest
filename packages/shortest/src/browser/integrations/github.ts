@@ -30,15 +30,6 @@ export class GitHubTool {
     }
   }
 
-  private validateSecret() {
-    if (!this.totpSecret) {
-      throw new ConfigError(
-        "invalid-config",
-        "GITHUB_TOTP_SECRET is required in .env file or via --secret flag",
-      );
-    }
-  }
-
   generateTOTPCode(): { code: string; timeRemaining: number } {
     this.validateSecret();
     try {
@@ -132,6 +123,15 @@ export class GitHubTool {
             ? error.message
             : "Unknown error during GitHub login",
       };
+    }
+  }
+
+  private validateSecret() {
+    if (!this.totpSecret) {
+      throw new ConfigError(
+        "invalid-config",
+        "GITHUB_TOTP_SECRET is required in .env file or via --secret flag",
+      );
     }
   }
 }
