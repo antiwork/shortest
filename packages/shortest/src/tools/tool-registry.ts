@@ -2,7 +2,7 @@ import { Tool } from "ai";
 import { z } from "zod";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { getLogger, Log } from "@/log";
-import { AnthropicModel } from "@/types/config";
+import { AnthropicModel, OpenAIModel } from "@/types/config";
 import { ShortestError } from "@/utils/errors";
 
 const TOOL_ENTRY_CATEGORIES = ["provider", "custom"] as const;
@@ -107,7 +107,7 @@ export class ToolRegistry {
    */
   public getTools(
     provider: string,
-    model: AnthropicModel,
+    model: AnthropicModel | OpenAIModel,
     browserTool: BrowserTool,
   ): Record<string, Tool> {
     const selectedTools: Record<string, Tool> = {};
@@ -151,7 +151,7 @@ export class ToolRegistry {
    */
   private getProviderTools(
     provider: string,
-    model: AnthropicModel,
+    model: AnthropicModel | OpenAIModel,
     browserTool: BrowserTool,
   ): Record<string, Tool> {
     const tools: Record<string, Tool> = {};
@@ -194,10 +194,25 @@ export class ToolRegistry {
    */
   private getProviderToolEntry(
     provider: string,
-    model: AnthropicModel,
+    model: AnthropicModel | OpenAIModel,
     toolType: AnthropicToolType,
   ): ToolEntry {
-    const toolEntryKey = this.getToolEntryKey(provider, model, toolType);
+    let toolEntryKey: string;
+    switch (provider) {
+      case "anthropic":
+        toolEntryKey = this.getAnthropicToolEntryKey(
+          provider,
+          model as AnthropicModel,
+          toolType,
+        );
+        break;
+      case "openai":
+        // toolEntryKey = this.getOpenAIToolEntryKey(provider, model as OpenAIModel, toolType);
+        throw new ShortestError(`Unsupported yet!`);
+        break;
+      default:
+        throw new ShortestError(`Unsupported provider: ${provider}`);
+    }
     const toolEntry = this.tools.get(toolEntryKey);
     if (toolEntry) {
       return toolEntry;
@@ -216,7 +231,7 @@ export class ToolRegistry {
    *
    * @private
    */
-  private getToolEntryKey(
+  private getAnthropicToolEntryKey(
     provider: string,
     model: AnthropicModel,
     toolType: AnthropicToolType,

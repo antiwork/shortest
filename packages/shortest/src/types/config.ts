@@ -10,7 +10,7 @@ export const cliOptionsSchema = z.object({
 export type CLIOptions = z.infer<typeof cliOptionsSchema>;
 
 /**
- * List of Anthropic models that are supported by the AI client.
+ * List of Anthropic models that are supported by the AI client with computer use.
  *
  * @see https://sdk.vercel.ai/providers/ai-sdk-providers/anthropic#model-capabilities
  * @see https://docs.anthropic.com/en/docs/about-claude/models/all-models
@@ -24,19 +24,55 @@ export const ANTHROPIC_MODELS = [
 export const anthropicModelSchema = z.enum(ANTHROPIC_MODELS);
 export type AnthropicModel = z.infer<typeof anthropicModelSchema>;
 
-const aiSchema = z
+const baseAnthropicSchema = z
   .object({
     provider: z.literal("anthropic"),
-    apiKey: z
-      .string()
-      .default(
-        () =>
-          process.env[getShortestEnvName("ANTHROPIC_API_KEY")] ||
-          process.env.ANTHROPIC_API_KEY!,
-      ),
-    model: z.enum(ANTHROPIC_MODELS).default(ANTHROPIC_MODELS[0]),
+    apiKey: z.string(),
+    model: anthropicModelSchema,
   })
   .strict();
+const aiAnthropicSchema = baseAnthropicSchema.extend({
+  apiKey: z
+    .string()
+    .default(
+      () =>
+        process.env[getShortestEnvName("ANTHROPIC_API_KEY")] ||
+        process.env.ANTHROPIC_API_KEY!,
+    ),
+  model: anthropicModelSchema.default(ANTHROPIC_MODELS[0]),
+});
+
+/**
+ * List of OpenAI models that are supported by the AI client with computer use..
+ *
+ * @see https://sdk.vercel.ai/providers/ai-sdk-providers/openai#model-capabilities
+ */
+export const OPENAI_MODELS = ["computer-use-preview-2025-02-04"] as const;
+export const openaiModelSchema = z.enum(OPENAI_MODELS);
+export type OpenAIModel = z.infer<typeof openaiModelSchema>;
+
+const baseOpenaiSchema = z
+  .object({
+    provider: z.literal("openai"),
+    apiKey: z.string(),
+    model: openaiModelSchema,
+  })
+  .strict();
+const aiOpenaiSchema = baseOpenaiSchema.extend({
+  apiKey: z
+    .string()
+    .default(
+      () =>
+        process.env[getShortestEnvName("OPENAI_API_KEY")] ||
+        process.env.OPENAI_API_KEY!,
+    ),
+  model: openaiModelSchema.default(OPENAI_MODELS[0]),
+});
+
+const aiSchema = z.discriminatedUnion("provider", [
+  aiAnthropicSchema,
+  aiOpenaiSchema,
+]);
 export type AIConfig = z.infer<typeof aiSchema>;
 
 const cachingSchema = z
@@ -75,10 +111,21 @@ export const configSchema = z
   })
   .strict();
 
+const userAiSchema = z.discriminatedUnion("provider", [
+  baseAnthropicSchema.extend({
+    apiKey: z.string().optional(),
+    model: anthropicModelSchema.optional(),
+  }),
+  baseOpenaiSchema.extend({
+    apiKey: z.string().optional(),
+    model: openaiModelSchema.optional(),
+  }),
+]);
+
 export const userConfigSchema = configSchema.extend({
   browser: browserSchema.optional(),
   testPattern: testPatternSchema.optional(),
-  ai: aiSchema.strict().partial().optional(),
+  ai: userAiSchema,
   caching: cachingSchema.strict().partial().optional(),
 });
 
