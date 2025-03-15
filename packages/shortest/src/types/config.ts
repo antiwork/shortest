@@ -111,10 +111,6 @@ export const configSchema = z
   })
   .strict();
 
-// const userAiSchema = z.discriminatedUnion("provider", [
-//   aiAnthropicSchema.partial(),
-//   aiOpenaiSchema.partial(),
-// ]);
 const userAiSchema = z.discriminatedUnion("provider", [
   baseAnthropicSchema.extend({
     apiKey: z.string().optional(),
