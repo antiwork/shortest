@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { Command, Option } from "commander";
 import pc from "picocolors";
 import { GitHubTool } from "@/browser/integrations/github";
 import {
@@ -9,7 +10,7 @@ import {
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
 import { getConfig, initializeConfig } from "@/index";
-import { LogLevel } from "@/log/config";
+import { LOG_LEVELS, LogLevel } from "@/log/config";
 import { getLogger } from "@/log/index";
 import { CLIOptions } from "@/types";
 import { getErrorDetails, ShortestError } from "@/utils/errors";
@@ -25,203 +26,192 @@ process.on("warning", (warning) => {
   console.warn(warning);
 });
 
-const VALID_FLAGS = [
-  "--debug-ai",
-  "--github-code",
-  "--headless",
-  "--help",
-  "--log-enabled",
-  "--no-cache",
-  "--no-legacy-output",
-  "--force-purge",
-  "-h",
-];
-const VALID_PARAMS = ["--target", "--secret", "--log-level"];
+const { version: currentVersion } = require("../../package.json");
+class RootCommand extends Command {
+  createCommand(name: string) {
+    const cmd = new Command(name);
+    cmd.addOption(
+      new Option("--log-level <level>", "Set logging level").choices(
+        LOG_LEVELS,
+      ),
+    );
+    return cmd;
+  }
+}
+const program = new RootCommand();
 
-const showHelp = () => {
-  console.log(`
-${pc.bold("Shortest")} - AI-powered end-to-end testing framework
-${pc.dim("https://github.com/antiwork/shortest")}
+program
+  .name("shortest")
+  .description("AI-powered end-to-end testing framework")
+  .version(currentVersion)
+  .option("--headless", "Run tests in headless browser mode")
+  .option(
+    "--target <url>",
+    "Set target URL for tests (default: http://localhost:3000)",
+  )
+  .option("--no-cache", "Disable test action caching", false)
 
-${pc.bold("Usage:")}
-  $ shortest [options] [pattern]                  Run tests matching pattern (default: **/*.test.ts)
-  $ shortest init                                 Initialize Shortest in current directory
-  $ shortest cache clear [--force-purge]          Clear test cache
+  .option(
+    "--debug-ai",
+    "Enable AI debug logging (deprecated, use --log-level=debug instead)",
+  );
 
-${pc.bold("Options:")}
-  --headless                                      Run tests in headless browser mode
-  --target=<url>                                  Set target URL for tests (default: http://localhost:3000)
-  --no-cache                                      Disable test action caching
-  --log-level=<level>                             Set logging level [silent|error|warn|info|debug|trace] (default: silent)
-  --github-code                                   Generate GitHub 2FA code for authentication
-  --secret=<key>                                  GitHub TOTP secret key (can also be set in ${ENV_LOCAL_FILENAME})
+program
+  .command("github-code")
+  .description("Generate GitHub 2FA code for authentication")
+  .option(
+    "--secret <key>",
+    `GitHub OTP secret key (can also be set in ${ENV_LOCAL_FILENAME})`,
+  )
+  .addHelpText(
+    "after",
+    `
+${pc.bold("Environment setup:")}
+  Required in ${ENV_LOCAL_FILENAME}:
+      GITHUB_TOTP_SECRET                          GitHub 2FA secret
+      GITHUB_USERNAME                             GitHub username
+      GITHUB_PASSWORD                             GitHub password
+`,
+  )
+  .action(async (options) => {
+    try {
+      await initializeConfig({});
+      const log = getLogger({
+        level: options.logLevel as LogLevel,
+      });
+      console.log("options", options);
+      log.trace("Executing github-code command", { options });
 
+      const secret = options.secret;
+      const github = new GitHubTool(secret);
+      const { code, timeRemaining } = github.generateTOTPCode();
+
+      console.log("\n" + pc.bgCyan(pc.black(" GitHub 2FA Code ")));
+      console.log(pc.cyan("Code: ") + pc.bold(code));
+      console.log(pc.cyan("Expires in: ") + pc.bold(`${timeRemaining}s`));
+      console.log(
+        pc.dim(`Using secret from: ${secret ? "CLI flag" : ".env file"}\n`),
+      );
+
+      process.exit(0);
+    } catch (error) {
+      console.error(pc.red("\n✖ Error:"), (error as Error).message, "\n");
+      process.exit(1);
+    }
+  });
+
+program
+  .command("init")
+  .description("Initialize Shortest in current directory")
+  .action(async () => {
+    await require("./init").default();
+    process.exit(0);
+  });
+
+program
+  .command("cache")
+  .description("Cache management commands")
+  .addCommand(
+    new Command("clear")
+      .description("Clear test cache")
+      .option("--force-purge", "Force purge of all cache files", false)
+      .action(async (options, cmd) => {
+        const log = getLogger({
+          level: cmd.optsWithGlobals().logLevel as LogLevel,
+        });
+        log.trace("Executing cache clear command", cmd.optsWithGlobals());
+
+        await cleanUpCache({ forcePurge: options.forcePurge });
+        log.info("Cache cleared");
+        process.exit(0);
+      }),
+  );
+
+program
+  .argument("[pattern]", "Test pattern to run (default: **/*.test.ts)")
+  .addHelpText(
+    "after",
+    `
 ${pc.bold("Environment setup:")}
   Required in ${ENV_LOCAL_FILENAME}:
     AI authentication
       SHORTEST_ANTHROPIC_API_KEY                  Anthropic API key for AI test execution
       ANTHROPIC_API_KEY                           Alternative Anthropic API key (only one is required)
 
-    GitHub authentication
-      GITHUB_TOTP_SECRET                          GitHub 2FA secret
-      GITHUB_USERNAME                             GitHub username
-      GITHUB_PASSWORD                             GitHub password
-
-${pc.bold("Examples:")}
-  shortest                                        # Run all tests
-  shortest login.test.ts                          # Run a single test file
-  shortest --headless                             # Run in headless browser mode
-  shortest --github-code --secret=<OTP_SECRET>    # Generate GitHub 2FA code
-
 ${pc.bold("Documentation:")}
   ${pc.cyan("https://github.com/antiwork/shortest")}
-`);
-};
+`,
+  )
+  .action(async (testPattern, options) => {
+    const log = getLogger({
+      level: options.logLevel as LogLevel,
+    });
 
-const handleGitHubCode = async (args: string[]) => {
-  try {
-    const secret = args
-      .find((arg) => arg.startsWith("--secret="))
-      ?.split("=")[1];
-    const github = new GitHubTool(secret);
-    const { code, timeRemaining } = github.generateTOTPCode();
+    if (options.debugAi) {
+      log.config.level = "debug";
+      log.warn("--debug-ai is deprecated, use --log-level=debug instead");
+    }
 
-    console.log("\n" + pc.bgCyan(pc.black(" GitHub 2FA Code ")));
-    console.log(pc.cyan("Code: ") + pc.bold(code));
-    console.log(pc.cyan("Expires in: ") + pc.bold(`${timeRemaining}s`));
-    console.log(
-      pc.dim(`Using secret from: ${secret ? "CLI flag" : ".env file"}\n`),
-    );
+    log.trace("Starting Shortest CLI", { args: process.argv });
+    log.trace("Log config", { ...log.config });
 
-    process.exit(0);
-  } catch (error) {
-    console.error(pc.red("\n✖ Error:"), (error as Error).message, "\n");
-    process.exit(1);
-  }
-};
+    let lineNumber: number | undefined;
 
-const isValidArg = (arg: string): boolean => {
-  if (VALID_FLAGS.includes(arg)) {
-    return true;
-  }
+    if (testPattern?.includes(":")) {
+      const [file, line] = testPattern.split(":");
+      testPattern = file;
+      lineNumber = parseInt(line, 10);
+    }
 
-  // Check if it's a parameter with value
-  const paramName = arg.split("=")[0];
-  if (VALID_PARAMS.includes(paramName)) {
-    return true;
-  }
+    const cliOptions: CLIOptions = {
+      headless: options.headless,
+      baseUrl: options.target,
+      testPattern,
+      noCache: !options.cache,
+    };
 
-  return false;
-};
+    log.trace("Initializing config with CLI options", { cliOptions });
+    await initializeConfig({ cliOptions });
+    const config = getConfig();
 
-const getParamValue = (
-  args: string[],
-  paramName: string,
-): string | undefined => {
-  const param = args.find((arg) => arg.startsWith(paramName));
-  if (param) {
-    return param.split("=")[1];
-  }
-  return undefined;
-};
+    await purgeLegacyCache();
+    await purgeLegacyScreenshots();
 
-const main = async () => {
-  const args = process.argv.slice(2);
-  const logLevel = getParamValue(args, "--log-level");
-  const log = getLogger({
-    level: logLevel as LogLevel,
+    try {
+      log.trace("Initializing TestRunner");
+      const runner = new TestRunner(process.cwd(), config);
+      await runner.initialize();
+      const success = await runner.execute(
+        testPattern ?? config.testPattern,
+        lineNumber,
+      );
+      process.exitCode = success ? 0 : 1;
+    } catch (error: any) {
+      log.trace("Handling error for TestRunner");
+      if (!(error instanceof ShortestError)) throw error;
+
+      console.error(pc.red(error.name));
+      console.error(error.message, getErrorDetails(error));
+      process.exitCode = 1;
+    } finally {
+      await cleanUpCache();
+    }
+    process.exit();
   });
 
-  const debugAI = args.includes("--debug-ai");
-  if (debugAI) {
-    log.config.level = "debug";
-    log.warn("--debug-ai is deprecated, use --log-level=debug instead");
-  }
+program.showHelpAfterError("(add --help for additional information)");
 
-  log.trace("Starting Shortest CLI", { args: process.argv });
-  log.trace("Log config", { ...log.config });
-
-  if (args[0] === "init") {
-    await require("./init").default();
-    process.exit(0);
-  }
-
-  if (args[0] === "cache") {
-    if (args[1] === "clear") {
-      const forcePurge = args.includes("--force-purge");
-      await cleanUpCache({ forcePurge });
-      process.exit(0);
-    }
-    console.error("Invalid cache command. Use 'shortest cache clear'");
-    process.exit(1);
-  }
-
-  if (args.includes("--help") || args.includes("-h")) {
-    showHelp();
-    process.exit(0);
-  }
-
-  if (args.includes("--github-code")) {
-    log.trace("Handling GitHub code argument");
-    await handleGitHubCode(args);
-  }
-
-  const invalidFlags = args
-    .filter((arg) => arg.startsWith("--"))
-    .filter((arg) => !isValidArg(arg));
-
-  if (invalidFlags.length > 0) {
-    console.error(pc.red("Invalid argument(s)"), { invalidFlags });
-    process.exit(1);
-  }
-
-  const headless = args.includes("--headless");
-  const baseUrl = args
-    .find((arg) => arg.startsWith("--target="))
-    ?.split("=")[1];
-  let testPattern = args.find((arg) => !arg.startsWith("--"));
-  const noCache = args.includes("--no-cache");
-  let lineNumber: number | undefined;
-
-  if (testPattern?.includes(":")) {
-    const [file, line] = testPattern.split(":");
-    testPattern = file;
-    lineNumber = parseInt(line, 10);
-  }
-
-  const cliOptions: CLIOptions = {
-    headless,
-    baseUrl,
-    testPattern,
-    noCache,
-  };
-  log.trace("Initializing config with CLI options", { cliOptions });
-  await initializeConfig({ cliOptions });
-  const config = getConfig();
-
-  await purgeLegacyCache();
-  await purgeLegacyScreenshots();
-
+const main = async () => {
   try {
-    log.trace("Initializing TestRunner");
-    const runner = new TestRunner(process.cwd(), config);
-    await runner.initialize();
-    const success = await runner.execute(
-      testPattern ?? config.testPattern,
-      lineNumber,
-    );
-    process.exitCode = success ? 0 : 1;
-  } catch (error: any) {
-    log.trace("Handling error for TestRunner");
+    await program.parseAsync(process.argv);
+  } catch (error) {
+    const log = getLogger();
+    log.trace("Handling error on main()");
     if (!(error instanceof ShortestError)) throw error;
 
-    console.error(pc.red(error.name));
-    console.error(error.message, getErrorDetails(error));
-    process.exitCode = 1;
-  } finally {
-    await cleanUpCache();
+    console.error(pc.red(error.name), error.message);
+    process.exit(1);
   }
-  process.exit();
 };
 
 main().catch(async (error) => {
