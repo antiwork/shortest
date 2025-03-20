@@ -74,7 +74,7 @@ export class TestRunner {
     if (files.length === 0) {
       this.reporter.error(
         "Test Discovery",
-        `No test files found matching the pattern ${testPattern}`,
+        `No test files found matching the test pattern ${testPattern}`,
       );
       this.log.error("No test files found matching", {
         pattern: testPattern,
@@ -352,7 +352,9 @@ export class TestRunner {
             "Test Discovery",
             `No test found at line ${lineNumber} in ${filePathWithoutCwd}`,
           );
-          process.exit(1);
+          throw new ShortestError(
+            `No test found at line ${lineNumber} in ${filePathWithoutCwd}`,
+          );
         }
       }
       let context;

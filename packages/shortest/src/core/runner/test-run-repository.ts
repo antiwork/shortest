@@ -24,7 +24,6 @@ const registerSharedProcessHandlers = (log: Log) => {
     await Promise.all(
       [...activeRepositories].map((repo) => repo.releaseLock()),
     );
-    process.exit();
   };
 
   process.on("exit", cleanUpAndExit);

@@ -25,7 +25,7 @@ export class GitHubTool {
     if (!this.totpSecret) {
       throw new ConfigError(
         "invalid-config",
-        "GITHUB_TOTP_SECRET is required in .env file or via --secret option",
+        `GITHUB_TOTP_SECRET is required in ${ENV_LOCAL_FILENAME} file or via --secret option`,
       );
     }
   }
@@ -130,7 +130,7 @@ export class GitHubTool {
     if (!this.totpSecret) {
       throw new ConfigError(
         "invalid-config",
-        "GITHUB_TOTP_SECRET is required in .env file or via --secret option",
+        `GITHUB_TOTP_SECRET is required in ${ENV_LOCAL_FILENAME} file or via --secret option`,
       );
     }
   }

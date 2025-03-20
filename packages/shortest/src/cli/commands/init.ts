@@ -2,15 +2,47 @@ import { execSync } from "child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "path";
 import { fileURLToPath } from "url";
+import { Command } from "commander";
 import { detect, resolveCommand } from "package-manager-detector";
 import pc from "picocolors";
 import { DOT_SHORTEST_DIR_NAME } from "@/cache";
+import { executeCommand } from "@/cli/utils/command-builder";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
 import { addToEnv } from "@/utils/add-to-env";
 import { addToGitignore } from "@/utils/add-to-gitignore";
 import { ShortestError } from "@/utils/errors";
 
-export default async function main() {
+export const initCommand = new Command("init")
+  .description("Initialize Shortest in current directory")
+  .configureHelp({
+    showGlobalOptions: true,
+    styleTitle: (title) => pc.bold(title),
+  })
+  .configureOutput({
+    outputError: (str, write) => write(pc.red(str)),
+  })
+  .addHelpText(
+    "after",
+    `
+The command will:
+
+- Automatically install the @antiwork/shortest package as a dev dependency if it is not already installed
+- Create a default shortest.config.ts file with boilerplate configuration
+- Generate a .env.local file (unless present) with placeholders for required environment variables, such as ANTHROPIC_API_KEY
+- Add ${ENV_LOCAL_FILENAME} and ${DOT_SHORTEST_DIR_NAME} to .gitignore
+
+${pc.bold("Documentation:")}
+  ${pc.cyan("https://github.com/antiwork/shortest")}
+`,
+  )
+  .action(async function () {
+    await executeCommand(this.name(), this.optsWithGlobals(), async () =>
+      executeInitCommand(),
+    );
+  })
+  .showHelpAfterError("(add --help for additional information)");
+
+export const executeInitCommand = async () => {
   console.log(pc.blue("Setting up Shortest..."));
 
   try {
@@ -87,9 +119,9 @@ export default async function main() {
     console.log("3. Run tests with: npx/pnpm test example.test.ts");
   } catch (error) {
     console.error(pc.red("Initialization failed:"), error);
-    process.exit(1);
+    throw error;
   }
-}
+};
 
 export const getPackageJson = async () => {
   try {

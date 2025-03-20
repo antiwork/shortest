@@ -32,6 +32,7 @@
     "build:cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs --external:esbuild --external:punycode --external:playwright --external:expect --external:dotenv --external:ai --external:@ai-sdk/* --external:@babel/* --external:tty",
     "build:cli": "esbuild src/cli/bin.ts --bundle --platform=node --format=esm --outdir=dist/cli --metafile=dist/meta-cli.json --external:fsevents --external:chokidar --external:glob --external:esbuild --external:events --external:path --external:fs --external:util --external:stream --external:os --external:assert --external:url --external:playwright --external:expect --external:dotenv --external:otplib --external:picocolors --external:punycode --external:https --external:http --external:net --external:tls --external:crypto --external:mailosaur --external:ai --external:@ai-sdk/* --external:@babel/* --external:tty --external:debug --external:commander",
     "dev": "pnpm build --watch",
+    "cli": "node dist/cli/bin.js",
     "test:unit": "npx vitest run",
     "test:unit:watch": "npx vitest --watch",
     "test:e2e": "node --import tsx --test tests/e2e/index.ts",
