@@ -1,8 +1,10 @@
 import { Command, Option } from "commander";
+import pc from "picocolors";
 import { LOG_LEVELS, LogLevel } from "@/log/config";
 import { getLogger } from "@/log/index";
 import { cliOptionsSchema } from "@/types/config";
 import { getErrorDetails } from "@/utils/errors";
+
 export interface GlobalOptions {
   logLevel?: LogLevel;
   headless?: boolean;
@@ -14,7 +16,7 @@ const { version: currentVersion } = require("../../../package.json");
 
 export const createShortestCommand = (name: string) =>
   new Command(name)
-    .description("AI-powered end-to-end testing framework")
+    .description(`${pc.cyan("AI-powered end-to-end testing framework")}`)
     .version(currentVersion)
     .addOption(
       new Option("--log-level <level>", "Set logging level").choices(

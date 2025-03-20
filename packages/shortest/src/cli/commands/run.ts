@@ -1,4 +1,3 @@
-import pc from "picocolors";
 import { cleanUpCache } from "@/cache";
 import { purgeLegacyScreenshots } from "@/cache";
 import { purgeLegacyCache } from "@/cache";

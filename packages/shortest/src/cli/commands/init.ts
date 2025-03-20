@@ -24,8 +24,7 @@ export const initCommand = new Command("init")
   .addHelpText(
     "after",
     `
-The command will:
-
+${pc.bold("The command will:")}
 - Automatically install the @antiwork/shortest package as a dev dependency if it is not already installed
 - Create a default shortest.config.ts file with boilerplate configuration
 - Generate a .env.local file (unless present) with placeholders for required environment variables, such as ANTHROPIC_API_KEY
