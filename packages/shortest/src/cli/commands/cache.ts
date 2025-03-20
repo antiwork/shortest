@@ -1,7 +1,8 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import pc from "picocolors";
 import { cleanUpCache } from "@/cache";
 import { executeCommand } from "@/cli/utils/command-builder";
+import { LOG_LEVELS } from "@/log/config";
 
 export const cacheCommands = new Command("cache").description(
   "Cache management commands",
@@ -9,10 +10,19 @@ export const cacheCommands = new Command("cache").description(
 
 const clearCommand = new Command("clear")
   .description("Clear test cache")
-  .option("--force-purge", "Force purge of all cache files", false)
+  .configureHelp({
+    styleTitle: (title) => pc.bold(title),
+  })
   .configureOutput({
     outputError: (str, write) => write(pc.red(str)),
   })
+  .showHelpAfterError("(add --help for additional information)");
+
+clearCommand
+  .option("--force-purge", "Force purge of all cache files", false)
+  .addOption(
+    new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
+  )
   .action(async function () {
     await executeCommand(this.name(), this.optsWithGlobals(), async () => {
       await cleanUpCache({ forcePurge: this.opts().forcePurge });

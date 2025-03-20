@@ -2,12 +2,13 @@ import { execSync } from "child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "path";
 import { fileURLToPath } from "url";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { detect, resolveCommand } from "package-manager-detector";
 import pc from "picocolors";
 import { DOT_SHORTEST_DIR_NAME } from "@/cache";
 import { executeCommand } from "@/cli/utils/command-builder";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
+import { LOG_LEVELS } from "@/log/config";
 import { addToEnv } from "@/utils/add-to-env";
 import { addToGitignore } from "@/utils/add-to-gitignore";
 import { ShortestError } from "@/utils/errors";
@@ -15,12 +16,12 @@ import { ShortestError } from "@/utils/errors";
 export const initCommand = new Command("init")
   .description("Initialize Shortest in current directory")
   .configureHelp({
-    showGlobalOptions: true,
     styleTitle: (title) => pc.bold(title),
   })
   .configureOutput({
     outputError: (str, write) => write(pc.red(str)),
   })
+  .showHelpAfterError("(add --help for additional information)")
   .addHelpText(
     "after",
     `
@@ -33,13 +34,17 @@ ${pc.bold("The command will:")}
 ${pc.bold("Documentation:")}
   ${pc.cyan("https://github.com/antiwork/shortest")}
 `,
+  );
+
+initCommand
+  .addOption(
+    new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
   )
   .action(async function () {
     await executeCommand(this.name(), this.optsWithGlobals(), async () =>
       executeInitCommand(),
     );
-  })
-  .showHelpAfterError("(add --help for additional information)");
+  });
 
 export const executeInitCommand = async () => {
   console.log(pc.blue("Setting up Shortest..."));

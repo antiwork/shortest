@@ -1,18 +1,19 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import pc from "picocolors";
 import { GitHubTool } from "@/browser/integrations/github";
 import { executeCommand } from "@/cli/utils/command-builder";
 import { ENV_LOCAL_FILENAME } from "@/constants";
+import { LOG_LEVELS } from "@/log/config";
 
 export const githubCodeCommand = new Command("github-code")
   .description("Generate GitHub 2FA code for authentication")
+  .configureHelp({
+    styleTitle: (title) => pc.bold(title),
+  })
   .configureOutput({
     outputError: (str, write) => write(pc.red(str)),
   })
-  .option(
-    "--secret <key>",
-    `GitHub OTP secret key (can also be set in ${ENV_LOCAL_FILENAME})`,
-  )
+  .showHelpAfterError("(add --help for additional information)")
   .addHelpText(
     "after",
     `
@@ -22,6 +23,15 @@ ${pc.bold("Environment setup:")}
       GITHUB_USERNAME                             GitHub username
       GITHUB_PASSWORD                             GitHub password
 `,
+  );
+
+githubCodeCommand
+  .option(
+    "--secret <key>",
+    `GitHub OTP secret key (can also be set in ${ENV_LOCAL_FILENAME})`,
+  )
+  .addOption(
+    new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
   )
   .action(async function () {
     await executeCommand(this.name(), this.optsWithGlobals(), async () =>
