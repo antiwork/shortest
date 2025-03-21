@@ -6,6 +6,7 @@ import {
   initCommand,
   cacheCommands,
   clearCommand,
+  detectFrameworkCommand,
 } from "@/cli/commands";
 import { getLogger } from "@/log/index";
 import { ShortestError } from "@/utils/errors";
@@ -30,6 +31,9 @@ githubCodeCommand.copyInheritedSettings(shortestCommand);
 shortestCommand.addCommand(cacheCommands);
 cacheCommands.copyInheritedSettings(shortestCommand);
 clearCommand.copyInheritedSettings(cacheCommands);
+
+shortestCommand.addCommand(detectFrameworkCommand);
+detectFrameworkCommand.copyInheritedSettings(shortestCommand);
 
 const main = async () => {
   try {
