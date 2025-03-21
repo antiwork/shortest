@@ -15,7 +15,7 @@ clearCommand
     new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
   )
   .action(async function () {
-    await executeCommand(this.name(), this.optsWithGlobals(), async () => {
+    await executeCommand(this.name(), this.opts(), async () => {
       await cleanUpCache({ forcePurge: this.opts().forcePurge });
     });
   })

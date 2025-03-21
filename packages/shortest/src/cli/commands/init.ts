@@ -21,7 +21,7 @@ export const initCommand = new Command("init")
 ${pc.bold("The command will:")}
 - Automatically install the @antiwork/shortest package as a dev dependency if it is not already installed
 - Create a default shortest.config.ts file with boilerplate configuration
-- Generate a .env.local file (unless present) with placeholders for required environment variables, such as ANTHROPIC_API_KEY
+- Generate a ${ENV_LOCAL_FILENAME} file (unless present) with placeholders for required environment variables, such as ANTHROPIC_API_KEY
 - Add ${ENV_LOCAL_FILENAME} and ${DOT_SHORTEST_DIR_NAME} to .gitignore
 
 ${pc.bold("Documentation:")}
@@ -34,7 +34,7 @@ initCommand
     new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
   )
   .action(async function () {
-    await executeCommand(this.name(), this.optsWithGlobals(), async () =>
+    await executeCommand(this.name(), this.opts(), async () =>
       executeInitCommand(),
     );
   });
