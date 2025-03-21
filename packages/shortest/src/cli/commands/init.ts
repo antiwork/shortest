@@ -15,13 +15,6 @@ import { ShortestError } from "@/utils/errors";
 
 export const initCommand = new Command("init")
   .description("Initialize Shortest in current directory")
-  .configureHelp({
-    styleTitle: (title) => pc.bold(title),
-  })
-  .configureOutput({
-    outputError: (str, write) => write(pc.red(str)),
-  })
-  .showHelpAfterError("(add --help for additional information)")
   .addHelpText(
     "after",
     `

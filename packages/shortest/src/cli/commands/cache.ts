@@ -1,5 +1,4 @@
 import { Command, Option } from "commander";
-import pc from "picocolors";
 import { cleanUpCache } from "@/cache";
 import { executeCommand } from "@/cli/utils/command-builder";
 import { LOG_LEVELS } from "@/log/config";
@@ -8,15 +7,7 @@ export const cacheCommands = new Command("cache").description(
   "Cache management commands",
 );
 
-const clearCommand = new Command("clear")
-  .description("Clear test cache")
-  .configureHelp({
-    styleTitle: (title) => pc.bold(title),
-  })
-  .configureOutput({
-    outputError: (str, write) => write(pc.red(str)),
-  })
-  .showHelpAfterError("(add --help for additional information)");
+const clearCommand = new Command("clear").description("Clear test cache");
 
 clearCommand
   .option("--force-purge", "Force purge of all cache files", false)

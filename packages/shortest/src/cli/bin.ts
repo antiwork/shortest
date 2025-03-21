@@ -21,8 +21,13 @@ process.on("warning", (warning) => {
 });
 
 shortestCommand.addCommand(initCommand);
+initCommand.copyInheritedSettings(shortestCommand);
+
 shortestCommand.addCommand(githubCodeCommand);
+githubCodeCommand.copyInheritedSettings(shortestCommand);
+
 shortestCommand.addCommand(cacheCommands);
+cacheCommands.copyInheritedSettings(shortestCommand);
 
 const main = async () => {
   try {

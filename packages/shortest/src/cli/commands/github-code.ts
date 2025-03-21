@@ -7,13 +7,6 @@ import { LOG_LEVELS } from "@/log/config";
 
 export const githubCodeCommand = new Command("github-code")
   .description("Generate GitHub 2FA code for authentication")
-  .configureHelp({
-    styleTitle: (title) => pc.bold(title),
-  })
-  .configureOutput({
-    outputError: (str, write) => write(pc.red(str)),
-  })
-  .showHelpAfterError("(add --help for additional information)")
   .addHelpText(
     "after",
     `
