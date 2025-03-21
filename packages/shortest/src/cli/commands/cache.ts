@@ -7,15 +7,19 @@ export const cacheCommands = new Command("cache").description(
   "Cache management commands",
 );
 
-const clearCommand = new Command("clear").description("Clear test cache");
+export const clearCommand = new Command("clear").description(
+  "Clear test cache",
+);
 
 clearCommand
   .option("--force-purge", "Force purge of all cache files", false)
+  // This is needed to show in help without calling showGlobalOptions, which would show all global options that
+  // are not relevant (e.g. --headless, --target, --no-cache)
   .addOption(
     new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
   )
   .action(async function () {
-    await executeCommand(this.name(), this.opts(), async () => {
+    await executeCommand(this.name(), this.optsWithGlobals(), async () => {
       await cleanUpCache({ forcePurge: this.opts().forcePurge });
     });
   })

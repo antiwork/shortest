@@ -5,6 +5,7 @@ import {
   githubCodeCommand,
   initCommand,
   cacheCommands,
+  clearCommand,
 } from "@/cli/commands";
 import { getLogger } from "@/log/index";
 import { ShortestError } from "@/utils/errors";
@@ -28,6 +29,7 @@ githubCodeCommand.copyInheritedSettings(shortestCommand);
 
 shortestCommand.addCommand(cacheCommands);
 cacheCommands.copyInheritedSettings(shortestCommand);
+clearCommand.copyInheritedSettings(cacheCommands);
 
 const main = async () => {
   try {

@@ -23,6 +23,8 @@ githubCodeCommand
     "--secret <key>",
     `GitHub OTP secret key (can also be set in ${ENV_LOCAL_FILENAME})`,
   )
+  // This is needed to show in help without calling showGlobalOptions, which would show all global options that
+  // are not relevant (e.g. --headless, --target, --no-cache)
   .addOption(
     new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
   )
