@@ -113,8 +113,8 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         framework: "next",
         filesScanned: this.treeStructure?.allFiles?.size || 0,
         summary: this.generateSummary(),
-        nextRoutes: this.routes,
-        nextApiRoutes: this.apiRoutes,
+        routes: this.routes,
+        apiRoutes: this.apiRoutes,
         results: this.results,
         testPlanningContext,
       };
@@ -134,8 +134,8 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         framework: "next",
         filesScanned: this.treeStructure?.allFiles?.size || 0,
         summary: `Error analyzing Next.js application: ${error.message}`,
-        nextRoutes: this.routes,
-        nextApiRoutes: this.apiRoutes,
+        routes: this.routes,
+        apiRoutes: this.apiRoutes,
         results: this.results,
         testPlanningContext: this.generateTestPlanningContext(),
       };

@@ -22,8 +22,8 @@ export interface AppAnalysis {
   framework: string;
   filesScanned: number;
   summary: string;
-  nextRoutes?: string[];
-  nextApiRoutes?: string[];
+  routes?: string[];
+  apiRoutes?: string[];
   results: FileAnalysisResult[];
   testPlanningContext?: TestPlanningContext;
 }
