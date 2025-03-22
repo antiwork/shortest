@@ -558,7 +558,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     if (file.name === "page.js" || file.name === "page.tsx") {
       fileDetail.details.isRoute = true;
       const routePath = this.getRoutePathFromFileApp(file.relativePath);
-      this.routes.push(file.relativePath);
+      this.routes.push(routePath);
 
       const pageInfo: PageInfo = {
         route: routePath,
@@ -587,7 +587,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     ) {
       fileDetail.details.isApiRoute = true;
       const routePath = this.getRoutePathFromFileApp(file.relativePath);
-      this.apiRoutes.push(file.relativePath);
+      this.apiRoutes.push(routePath);
 
       const apiInfo: ApiInfo = {
         route: routePath,
@@ -648,7 +648,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     if (file.relativePath.startsWith("pages/api/")) {
       fileDetail.details.isApiRoute = true;
       const routePath = this.getRoutePathFromFilePages(file.relativePath);
-      this.apiRoutes.push(file.relativePath);
+      this.apiRoutes.push(routePath);
 
       const apiInfo: ApiInfo = {
         route: routePath,
@@ -663,7 +663,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     } else {
       fileDetail.details.isRoute = true;
       const routePath = this.getRoutePathFromFilePages(file.relativePath);
-      this.routes.push(file.relativePath);
+      this.routes.push(routePath);
 
       const pageInfo: PageInfo = {
         route: routePath,
