@@ -8,7 +8,10 @@ import { getLogger } from "@/log";
 import { directoryExists } from "@/utils/directory-exists";
 import { getErrorDetails, ShortestError } from "@/utils/errors";
 
-const PROJECT_JSON_PATH = path.join(DOT_SHORTEST_DIR_PATH, "project.json");
+export const PROJECT_JSON_PATH = path.join(
+  DOT_SHORTEST_DIR_PATH,
+  "project.json",
+);
 
 export const detectFramework = async (options: { force?: boolean } = {}) => {
   const log = getLogger();
@@ -52,12 +55,12 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
       JSON.stringify(projectInfo, null, 2),
       "utf-8",
     );
-    log.debug("Saved framework information to project.json");
+    log.info(`Saved project information to ${PROJECT_JSON_PATH}`);
 
     return projectInfo;
   } catch (error) {
-    log.error("Failed to save framework information", getErrorDetails(error));
-    throw new ShortestError("Failed to save framework information");
+    log.error("Failed to save project information", getErrorDetails(error));
+    throw new ShortestError("Failed to save project information");
   }
 };
 
