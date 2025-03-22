@@ -1,3 +1,4 @@
+import { analyzeCommand } from "@/cli/commands/analyze";
 import { cacheCommands, clearCommand } from "@/cli/commands/cache";
 import { detectFrameworkCommand } from "@/cli/commands/detect-framework";
 import { githubCodeCommand } from "@/cli/commands/github-code";
@@ -11,4 +12,5 @@ export {
   cacheCommands,
   clearCommand,
   detectFrameworkCommand,
+  analyzeCommand,
 };
