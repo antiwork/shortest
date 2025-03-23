@@ -3,7 +3,6 @@
  */
 export interface BaseAnalyzer {
   execute(): Promise<AppAnalysis>;
-  finalizeAnalysis(): Promise<void>;
 }
 
 /**
@@ -20,23 +19,53 @@ export interface FileAnalysisResult {
  */
 export interface AppAnalysis {
   framework: string;
-  filesScanned: number;
-  summary: string;
-  routes?: string[];
-  apiRoutes?: string[];
-  results: FileAnalysisResult[];
-  testPlanningContext?: TestPlanningContext;
+  routerType: "app" | "pages" | "unknown";
+  stats: {
+    filesScanned: number;
+    routes: number;
+    apiRoutes: number;
+    components: number;
+  };
+  routes: RouteInfo[];
+  apiRoutes: ApiRouteInfo[];
+  components: ComponentInfo[];
+  layouts: LayoutInfo[];
 }
 
-// File information with content and parsed AST
-export interface FileInfo {
+export interface RouteInfo {
   path: string;
-  relativePath: string;
-  content: string;
-  ast?: any; // Will be populated with Babel AST
-  isDirectory: boolean;
-  size: number;
-  lastModified: Date;
+  file: string;
+  layoutChain: string[];
+  components: string[];
+  hasParams: boolean;
+  hasSearch: boolean;
+  hasForm: boolean;
+  auth: boolean;
+  dataFetching: string[];
+  hooks: string[];
+  eventHandlers: string[];
+  featureFlags: string[];
+}
+
+export interface ApiRouteInfo {
+  path: string;
+  file: string;
+  methods: string[];
+  hasValidation: boolean;
+  deps: string[];
+}
+
+export interface ComponentInfo {
+  name: string;
+  file: string;
+  props: string[];
+  hasHandlers: boolean;
+}
+
+export interface LayoutInfo {
+  name: string;
+  file: string;
+  children?: string[];
 }
 
 // Directory node in the app structure tree
@@ -49,20 +78,6 @@ export interface DirectoryNode {
   isDirectory: true;
   size?: number;
   lastModified?: Date;
-}
-
-// File node in the app structure tree
-export interface FileNode {
-  path: string;
-  relativePath: string;
-  name: string;
-  type: "file";
-  extension: string;
-  isDirectory: false;
-  size: number;
-  lastModified: Date;
-  content?: string;
-  ast?: any;
 }
 
 export interface TreeNode {

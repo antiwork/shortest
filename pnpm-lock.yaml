@@ -310,9 +310,6 @@ importers:
       '@types/node':
         specifier: ^20.17.17
         version: 20.17.17
-      '@types/picomatch':
-        specifier: ^3.0.2
-        version: 3.0.2
       package-manager-detector:
         specifier: 0.2.9
         version: 0.2.9
@@ -2911,9 +2908,6 @@ packages:
 
   '@types/pg@8.11.6':
     resolution: {integrity: sha512-/2WmmBXHLsfRqzfHW7BNZ8SbYzE8OSk7i3WjFYvfgRHj7S1xj+16Je5fUKv3lVdVzk/zn9TXOqf+avFCFIE0yQ==}
-
-  '@types/picomatch@3.0.2':
-    resolution: {integrity: sha512-n0i8TD3UDB7paoMMxA3Y65vUncFJXjcUf7lQY7YyKGl6031FNjfsLs6pdLFCy2GNFxItPJG8GvvpbZc2skH7WA==}
 
   '@types/react-dom@19.0.3':
     resolution: {integrity: sha512-0Knk+HJiMP/qOZgMyNFamlIjw9OFCsyC2ZbigmEEyXXixgre6IQpm/4V+r3qH4GC1JPvRJKInw+on2rV6YZLeA==}
@@ -8031,8 +8025,6 @@ snapshots:
       '@types/node': 22.13.1
       pg-protocol: 1.7.0
       pg-types: 4.0.2
-
-  '@types/picomatch@3.0.2': {}
 
   '@types/react-dom@19.0.3(@types/react@19.0.8)':
     dependencies:
