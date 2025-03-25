@@ -10,7 +10,7 @@ export const analyzeCommand = new Command("analyze").description(
 
 analyzeCommand
   .addOption(
-    new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS)
+    new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
   )
   .addOption(
     new Option("--force", "Force analysis even if cached data exists").default(
@@ -44,17 +44,8 @@ const executeAnalyzeCommand = async (
   log.info(
     `Analysis complete. Found ${analysis.routes?.length || 0} routes, ` +
       `${analysis.apiRoutes?.length || 0} API routes, and ` +
-      `${analysis.filesScanned} files.`,
+      `${analysis.stats.filesScanned} files.`,
   );
 
   log.info("Results saved to .shortest/next/analysis.json");
-
-  if (analysis.testPlanningContext) {
-    log.info(
-      "Generated test planning context with " +
-        `${analysis.testPlanningContext.mainPages.length} pages, ` +
-        `${analysis.testPlanningContext.apiEndpoints.length} API endpoints, and ` +
-        `${analysis.testPlanningContext.suggestedTestFlows.length} suggested test flows.`,
-    );
-  }
 };

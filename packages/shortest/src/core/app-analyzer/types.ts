@@ -33,9 +33,7 @@ export interface RouteInfo {
   layoutChain: string[];
   components: string[];
   hasParams: boolean;
-  hasSearch: boolean;
   hasForm: boolean;
-  auth: boolean;
   dataFetching: string[];
   hooks: string[];
   eventHandlers: string[];
@@ -63,29 +61,4 @@ export interface LayoutInfo {
   name: string;
   content: string;
   components: string[];
-}
-
-export interface TestPlanningContext {
-  routerType: "app" | "pages" | "unknown";
-  mainPages: {
-    route: string;
-    hasAuth: boolean;
-    hasParams: boolean;
-    hasSearchParams: boolean;
-    hasFormSubmission: boolean;
-    components: string[];
-    dataFetching: string[];
-  }[];
-  apiEndpoints: {
-    route: string;
-    methods: string[];
-    hasValidation: boolean;
-  }[];
-  coreComponents: {
-    name: string;
-    props: string[];
-    hasEventHandlers: boolean;
-  }[];
-  userFlows: any[];
-  suggestedTestFlows: any[];
 }

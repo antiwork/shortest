@@ -47,9 +47,7 @@ interface PageInfo {
       | null;
     dependencies?: string[];
   }[];
-  hasAuth: boolean;
   hasParams: boolean;
-  hasSearchParams: boolean;
   hasFormSubmission: boolean;
 }
 
@@ -228,9 +226,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         layoutChain: this.getLayoutChainForPage(page.relativeFilePath),
         components: page.components,
         hasParams: page.hasParams,
-        hasSearch: page.hasSearchParams,
         hasForm: page.hasFormSubmission,
-        auth: page.hasAuth,
         dataFetching: dataFetchingMethods.filter(Boolean) as string[],
         hooks: this.getHooksForFile(page.relativeFilePath),
         eventHandlers: this.getEventHandlersForFile(page.relativeFilePath),
@@ -602,12 +598,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         relativeFilePath: file.relativeFilePath,
         components: fileDetail.details.components || [],
         dataFetching: this.extractDataFetchingFromAST(file.ast),
-        hasAuth:
-          this.hasAuthCheckInAST(file.ast) ||
-          file.content.includes("useAuth") ||
-          file.content.includes("withAuth"),
         hasParams: this.hasRouteParams(routePath),
-        hasSearchParams: file.content.includes("searchParams"),
         hasFormSubmission:
           this.hasFormSubmissionInAST(file.ast) ||
           file.content.includes("onSubmit"),
@@ -736,13 +727,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         relativeFilePath: file.relativeFilePath,
         components: fileDetail.details.components || [],
         dataFetching: this.extractDataFetchingFromAST(file.ast),
-        hasAuth:
-          this.hasAuthCheckInAST(file.ast) ||
-          file.content.includes("useAuth") ||
-          file.content.includes("withAuth"),
         hasParams: this.hasRouteParams(routePath),
-        hasSearchParams:
-          file.content.includes("query") || file.content.includes("useRouter"),
         hasFormSubmission:
           this.hasFormSubmissionInAST(file.ast) ||
           file.content.includes("onSubmit"),
@@ -1171,36 +1156,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     }
 
     return dataFetching;
-  }
-
-  /**
-   * Check if the AST contains authentication logic
-   */
-  private hasAuthCheckInAST(ast: parser.ParseResult<t.File>): boolean {
-    let hasAuth = false;
-
-    traverse(ast, {
-      CallExpression(path: any) {
-        if (t.isIdentifier(path.node.callee)) {
-          if (
-            ["useAuth", "getSession", "useSession"].includes(
-              path.node.callee.name,
-            )
-          ) {
-            hasAuth = true;
-          }
-        }
-      },
-      Identifier(path: any) {
-        if (
-          ["isAuthenticated", "isLoggedIn", "withAuth"].includes(path.node.name)
-        ) {
-          hasAuth = true;
-        }
-      },
-    });
-
-    return hasAuth;
   }
 
   /**
