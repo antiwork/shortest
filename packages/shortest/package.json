@@ -1,6 +1,6 @@
 {
   "name": "@antiwork/shortest",
-  "version": "0.4.8",
+  "version": "15.2.4",
   "description": "AI-powered natural language end-to-end testing framework",
   "type": "module",
   "main": "./dist/index.js",
