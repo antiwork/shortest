@@ -3,7 +3,12 @@ import { createRequire } from "module";
 import path from "path";
 import * as parser from "@babel/parser";
 import * as t from "@babel/types";
-import { FileAnalysisResult, BaseAnalyzer, AppAnalysis } from "./types";
+import {
+  FileAnalysisResult,
+  BaseAnalyzer,
+  AppAnalysis,
+  LayoutInfo,
+} from "./types";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { getGitInfo } from "@/core/app-analyzer/utils/get-git-info";
 import {
@@ -11,7 +16,8 @@ import {
   getTreeStructure,
 } from "@/core/app-analyzer/utils/get-tree-structure";
 import { getLogger } from "@/log";
-import { getErrorDetails } from "@/utils/errors";
+import { assertDefined } from "@/utils/assert";
+import { getErrorDetails, ShortestError } from "@/utils/errors";
 
 const require = createRequire(import.meta.url);
 const traverse = require("@babel/traverse").default;
@@ -22,12 +28,12 @@ interface ComponentInfo {
   imports: string[];
   hooks: string[];
   eventHandlers: string[];
-  filepath: string;
+  relativeFilePath: string;
 }
 
 interface PageInfo {
-  route: string;
-  filepath: string;
+  routePath: string;
+  relativeFilePath: string;
   components: string[];
   dataFetching: {
     method:
@@ -48,17 +54,17 @@ interface PageInfo {
 }
 
 interface ApiInfo {
-  route: string;
-  filepath: string;
+  routePath: string;
+  relativeFilePath: string;
   methods: ("GET" | "POST" | "PUT" | "DELETE" | "PATCH")[];
   inputValidation: boolean;
   dependencies: string[];
 }
 
 interface FileInfo {
-  relativePath: string;
-  dirPath: string;
-  absolutePath: string;
+  relativeFilePath: string;
+  relativeDirPath: string;
+  absoluteFilePath: string;
   name: string;
   extension: string;
   content: null | string;
@@ -66,6 +72,7 @@ interface FileInfo {
 }
 
 export class NextJsAnalyzer implements BaseAnalyzer {
+  private layouts: Record<string, LayoutInfo> = {};
   private routes: string[] = [];
   private apiRoutes: string[] = [];
   private results: FileAnalysisResult[] = [];
@@ -73,10 +80,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
   private pages: PageInfo[] = [];
   private paths: string[] = [];
   private apis: ApiInfo[] = [];
-  private layouts: Record<
-    string,
-    { name: string; file: string; children?: string[] }
-  > = {};
   private isAppRouter = false;
   private isPagesRouter = false;
   private fileInfos: FileInfo[] = [];
@@ -99,6 +102,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
   async execute(): Promise<AppAnalysis> {
     this.log.trace("Executing NextJs analyzer");
 
+    this.layouts = {};
     this.routes = [];
     this.apiRoutes = [];
     this.results = [];
@@ -116,6 +120,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.detectRouterType();
 
     await this.parseFiles();
+    await this.processLayoutFiles();
     await this.processRouteFiles();
     await this.processComponentFiles();
 
@@ -196,9 +201,9 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       }
     } else if (node.type === "file") {
       this.fileInfos.push({
-        relativePath: node.path,
-        dirPath: path.dirname(node.path),
-        absolutePath: path.resolve(this.rootDir, node.path),
+        relativeFilePath: node.path,
+        relativeDirPath: path.dirname(node.path),
+        absoluteFilePath: path.resolve(this.rootDir, node.path),
         name: node.name,
         extension: node.extension,
         content: null,
@@ -212,32 +217,31 @@ export class NextJsAnalyzer implements BaseAnalyzer {
    */
   private generateAnalysis(): AppAnalysis {
     // Convert pages to route info
-    console.log(this.pages);
     const routeInfoList = this.pages.map((page) => {
       const dataFetchingMethods = page.dataFetching.map(
         (df) => df.method || "unknown",
       );
 
       return {
-        path: page.route,
-        file: page.filepath,
-        layoutChain: this.getLayoutChainForPage(page.filepath),
+        routePath: page.routePath,
+        relativeFilePath: page.relativeFilePath,
+        layoutChain: this.getLayoutChainForPage(page.relativeFilePath),
         components: page.components,
         hasParams: page.hasParams,
         hasSearch: page.hasSearchParams,
         hasForm: page.hasFormSubmission,
         auth: page.hasAuth,
         dataFetching: dataFetchingMethods.filter(Boolean) as string[],
-        hooks: this.getHooksForFile(page.filepath),
-        eventHandlers: this.getEventHandlersForFile(page.filepath),
+        hooks: this.getHooksForFile(page.relativeFilePath),
+        eventHandlers: this.getEventHandlersForFile(page.relativeFilePath),
         featureFlags: [],
       };
     });
 
     // Convert API routes
     const apiRouteInfoList = this.apis.map((api) => ({
-      path: api.route,
-      file: api.filepath,
+      routePath: api.routePath,
+      relativeFilePath: api.relativeFilePath,
       methods: api.methods as string[],
       hasValidation: api.inputValidation,
       deps: api.dependencies,
@@ -247,7 +251,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     const componentInfoList = Object.entries(this.components).map(
       ([name, comp]) => ({
         name: name,
-        file: comp.filepath,
+        relativeFilePath: comp.relativeFilePath,
         props: comp.props,
         hasHandlers: comp.eventHandlers.length > 0,
       }),
@@ -273,6 +277,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       apiRoutes: apiRouteInfoList,
       components: componentInfoList,
       layouts: layoutInfoList,
+      allPaths: this.paths,
     };
   }
 
@@ -280,39 +285,32 @@ export class NextJsAnalyzer implements BaseAnalyzer {
    * Get the layout chain for a page
    */
   private getLayoutChainForPage(filepath: string): string[] {
-    const layoutChain: string[] = [];
+    const fileDirPath = path.dirname(filepath);
 
-    // Add RootLayout if we have it
-    if (this.layouts["RootLayout"]) {
-      layoutChain.push("RootLayout");
+    return Object.entries(this.layouts)
+      .map(([name, layout]) => ({
+        name,
+        relativeDirPath: layout.relativeDirPath,
+        distance: this.getDirectoryDistance(
+          fileDirPath,
+          layout.relativeDirPath,
+        ),
+      }))
+      .filter((layout) => layout.distance >= 0)
+      .sort((a, b) => a.distance - b.distance)
+      .map((layout) => layout.name);
+  }
+
+  private getDirectoryDistance(from: string, to: string): number {
+    // If 'to' is not a parent directory of 'from', return -1
+    if (!from.startsWith(to)) {
+      return -1;
     }
 
-    // If it's app router, try to find layouts in parent directories
-    if (this.isAppRouter && filepath.includes("/app/")) {
-      // Split the path by '/' and build potential layout paths
-      const parts = filepath.split("/");
-      let currentPath = "";
-
-      for (let i = 0; i < parts.length - 1; i++) {
-        const part = parts[i];
-        if (part === "app" || currentPath !== "") {
-          currentPath = currentPath ? `${currentPath}/${part}` : part;
-
-          // Check if there's a layout file at this level
-          const layoutKeys = Object.keys(this.layouts).filter(
-            (key) =>
-              this.layouts[key].file === `${currentPath}/layout.tsx` ||
-              this.layouts[key].file === `${currentPath}/layout.js`,
-          );
-
-          if (layoutKeys.length > 0) {
-            layoutChain.push(layoutKeys[0]);
-          }
-        }
-      }
-    }
-
-    return layoutChain;
+    // Count directory levels between 'from' and 'to'
+    const fromParts = from.split("/");
+    const toParts = to.split("/");
+    return fromParts.length - toParts.length;
   }
 
   /**
@@ -373,7 +371,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       extensions: fileExtensions,
     });
 
-    // Parse each file and generate its AST
     for (const ext of fileExtensions) {
       const files = this.fileInfos.filter((file) => file.extension === ext);
       this.log.trace(`Found ${files.length} files with extension: ${ext}`);
@@ -382,11 +379,11 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         try {
           if (!file.content) {
             try {
-              this.log.trace("Reading file", { path: file.relativePath });
-              file.content = await fs.readFile(file.relativePath, "utf-8");
+              this.log.trace("Reading file", { path: file.relativeFilePath });
+              file.content = await fs.readFile(file.relativeFilePath, "utf-8");
             } catch (readError) {
               this.log.error(
-                `Error reading file ${file.relativePath}:`,
+                `Error reading file ${file.relativeFilePath}:`,
                 getErrorDetails(readError),
               );
               continue;
@@ -395,7 +392,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
           if (!file.ast && file.content) {
             try {
-              // Parse the file content using Babel
               const ast = parser.parse(file.content, {
                 sourceType: "module",
                 plugins: [
@@ -413,14 +409,14 @@ export class NextJsAnalyzer implements BaseAnalyzer {
               file.ast = ast;
             } catch (parseError) {
               this.log.error(
-                `Error parsing file ${file.relativePath}:`,
+                `Error parsing file ${file.relativeFilePath}:`,
                 getErrorDetails(parseError),
               );
             }
           }
         } catch (error) {
           this.log.error(
-            `Unexpected error processing file ${file.relativePath}:`,
+            `Unexpected error processing file ${file.relativeFilePath}:`,
             getErrorDetails(error),
           );
         }
@@ -430,13 +426,56 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.log.trace("File parsing complete");
   }
 
-  /**
-   * Detect if the project uses App Router or Pages Router
-   */
+  private async processLayoutFiles(): Promise<void> {
+    const layoutFileInfos = this.fileInfos.filter((file) =>
+      /^layout\.(jsx?|tsx)$/.test(file.name),
+    );
+
+    for (const layoutFileInfo of layoutFileInfos) {
+      const ast = assertDefined(layoutFileInfo.ast);
+      const content = assertDefined(layoutFileInfo.content);
+
+      let layoutName = undefined;
+
+      traverse(ast, {
+        ExportDefaultDeclaration(path: any) {
+          if (
+            t.isFunctionDeclaration(path.node.declaration) &&
+            path.node.declaration.id
+          ) {
+            layoutName = path.node.declaration.id.name;
+          } else if (t.isIdentifier(path.node.declaration)) {
+            layoutName = path.node.declaration.name;
+          }
+        },
+      });
+
+      if (!layoutName) {
+        this.log.error("Could not determine layout name", {
+          path: layoutFileInfo.relativeFilePath,
+        });
+        throw new ShortestError(
+          `Could not determine layout name: ${layoutFileInfo.relativeFilePath}`,
+        );
+      }
+
+      const layoutInfo: LayoutInfo = {
+        name: layoutName,
+        relativeFilePath: layoutFileInfo.relativeFilePath,
+        relativeDirPath: layoutFileInfo.relativeDirPath,
+        content: content,
+        components: this.extractComponentsFromAST(ast),
+      };
+      this.layouts[layoutName] = layoutInfo;
+    }
+  }
+
   private detectRouterType(): void {
-    this.isAppRouter = this.fileInfos.some((file) => file.dirPath === "app");
+    this.isAppRouter = this.fileInfos.some(
+      (file) => file.relativeDirPath === "app",
+    );
     this.isPagesRouter = this.fileInfos.some(
-      (file) => file.dirPath === "pages",
+      (file) => file.relativeDirPath === "pages",
     );
 
     if (this.isAppRouter && this.isPagesRouter) {
@@ -452,31 +491,32 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     }
   }
 
-  /**
-   * Process Next.js route files (pages and API routes)
-   */
   private async processRouteFiles(): Promise<void> {
     this.log.trace("Processing route files", {
       isAppRouter: this.isAppRouter,
       isPagesRouter: this.isPagesRouter,
     });
 
-    // Look for app router files regardless of app/ directory
-    // Find all page.js/tsx, route.js/tsx, and layout.js/tsx files
-    const appRouterFiles = this.fileInfos.filter(
-      (file) =>
-        // Look for app router-specific file naming patterns
-        file.name === "page.js" ||
-        file.name === "page.tsx" ||
-        file.name === "route.js" ||
-        file.name === "route.tsx" ||
-        file.name === "layout.js" ||
-        file.name === "layout.tsx",
+    const ROUTING_FILE_PATTERNS = [
+      "layout\\.(js|jsx|tsx)$",
+      "page\\.(js|jsx|tsx)$",
+      "loading\\.(js|jsx|tsx)$",
+      "not-found\\.(js|jsx|tsx)$",
+      "error\\.(js|jsx|tsx)$",
+      "global-error\\.(js|jsx|tsx)$",
+      "route\\.(js|ts)$",
+      "template\\.(js|jsx|tsx)$",
+      "default\\.(js|jsx|tsx)$",
+    ];
+
+    const appRouterFiles = this.fileInfos.filter((file) =>
+      ROUTING_FILE_PATTERNS.some((pattern) =>
+        new RegExp(pattern).test(file.name),
+      ),
     );
 
-    // Process App Router route files if we have them or if app router was detected
     if (appRouterFiles.length > 0 || this.isAppRouter) {
-      this.isAppRouter = true; // Ensure this is set if we found app router files
+      this.isAppRouter = true;
       this.log.debug(`Found ${appRouterFiles.length} App Router files`);
 
       for (const file of appRouterFiles) {
@@ -484,21 +524,18 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       }
     }
 
-    // Look for pages files with more flexibility
     const pagesFiles = this.fileInfos.filter((file) => {
-      // Check if it's in a pages directory
       const isPagesFile =
-        file.dirPath.includes("/pages/") || file.dirPath.startsWith("pages/");
+        file.relativeDirPath.includes("/pages/") ||
+        file.relativeDirPath.startsWith("pages/");
 
-      // Skip special files like _app.js
-      const isSpecialFile = file.name.startsWith("_") || file.name === "api"; // Skip the api folder itself
+      const isSpecialFile = file.name.startsWith("_") || file.name === "api";
 
       return isPagesFile && !isSpecialFile;
     });
 
-    // Process Pages Router files if we have them or if pages router was detected
     if (pagesFiles.length > 0 || this.isPagesRouter) {
-      this.isPagesRouter = true; // Ensure this is set if we found pages router files
+      this.isPagesRouter = true;
       this.log.debug(`Found ${pagesFiles.length} Pages Router files`);
 
       for (const file of pagesFiles) {
@@ -506,14 +543,13 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       }
     }
 
-    // Process API routes specifically since they're important
     const apiFiles = this.fileInfos.filter((file) =>
-      file.relativePath.includes("/api/"),
+      file.relativeFilePath.includes("/api/"),
     );
 
     this.log.debug(`Found ${apiFiles.length} API files`);
     for (const file of apiFiles) {
-      if (file.relativePath.startsWith("pages/api/")) {
+      if (file.relativeFilePath.startsWith("pages/api/")) {
         await this.processPagesRouterFile(file);
       } else {
         await this.processAppRouterFile(file);
@@ -533,7 +569,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
     const fileDetail: FileAnalysisResult = {
       framework: "next",
-      path: file.relativePath,
+      path: file.relativeFilePath,
       details: {
         isRoute: false,
         isApiRoute: false,
@@ -558,12 +594,12 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
     if (file.name === "page.js" || file.name === "page.tsx") {
       fileDetail.details.isRoute = true;
-      const routePath = this.getRoutePathFromFileApp(file.relativePath);
+      const routePath = this.getRoutePathFromFileApp(file.relativeFilePath);
       this.routes.push(routePath);
 
       const pageInfo: PageInfo = {
-        route: routePath,
-        filepath: file.relativePath,
+        routePath: routePath,
+        relativeFilePath: file.relativeFilePath,
         components: fileDetail.details.components || [],
         dataFetching: this.extractDataFetchingFromAST(file.ast),
         hasAuth:
@@ -596,7 +632,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
       // Fallback to creating name from path
       if (!layoutName) {
-        const parts = file.relativePath.split("/");
+        const parts = file.relativeFilePath.split("/");
         const dirName = parts[parts.length - 2] || "";
         layoutName =
           dirName.charAt(0).toUpperCase() + dirName.slice(1) + "Layout";
@@ -604,29 +640,23 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
       // Special case for root layout
       if (
-        file.relativePath === "app/layout.tsx" ||
-        file.relativePath === "app/layout.js"
+        file.relativeFilePath === "app/layout.tsx" ||
+        file.relativeFilePath === "app/layout.js"
       ) {
         layoutName = "RootLayout";
       }
-
-      // Add to layouts
-      this.layouts[layoutName] = {
-        name: layoutName,
-        file: file.relativePath,
-      };
     } else if (
       file.name === "route.js" ||
       file.name === "route.tsx" ||
-      file.relativePath.includes("/api/")
+      file.relativeFilePath.includes("/api/")
     ) {
       fileDetail.details.isApiRoute = true;
-      const routePath = this.getRoutePathFromFileApp(file.relativePath);
+      const routePath = this.getRoutePathFromFileApp(file.relativeFilePath);
       this.apiRoutes.push(routePath);
 
       const apiInfo: ApiInfo = {
-        route: routePath,
-        filepath: file.relativePath,
+        routePath: routePath,
+        relativeFilePath: file.relativeFilePath,
         methods: this.extractApiMethodsFromAST(file.ast),
         inputValidation: this.hasInputValidationInAST(file.ast),
         dependencies: fileDetail.details.imports || [],
@@ -647,7 +677,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
     const fileDetail: FileAnalysisResult = {
       framework: "next",
-      path: file.relativePath,
+      path: file.relativeFilePath,
       details: {
         isRoute: false,
         isApiRoute: false,
@@ -659,41 +689,36 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       },
     };
 
-    // Extract information using AST
-    // Extract imports
     fileDetail.details.imports = this.extractImportsFromAST(file.ast);
-
-    // Extract exports
     fileDetail.details.exports = this.extractExportsFromAST(file.ast);
-
-    // Extract React hooks
     fileDetail.details.hooks = this.extractHooksFromAST(file.ast);
-
-    // Extract event handlers
     fileDetail.details.eventHandlers = this.extractEventHandlersFromAST(
       file.ast,
     );
-
-    // Extract component usage
     fileDetail.details.components = this.extractComponentsFromAST(file.ast);
 
     // Check for _app.js/_app.tsx which could be considered a layout
     if (file.name === "_app.js" || file.name === "_app.tsx") {
       this.layouts["PagesAppLayout"] = {
         name: "PagesAppLayout",
-        file: file.relativePath,
+        relativeFilePath: file.relativeFilePath,
+        relativeDirPath: file.relativeDirPath,
+        content: file.content || "",
+        components: this.extractComponentsFromAST(
+          file.ast || parser.parse("", { sourceType: "module" }),
+        ),
       };
     }
 
     // Determine route type
-    if (file.relativePath.startsWith("pages/api/")) {
+    if (file.relativeFilePath.startsWith("pages/api/")) {
       fileDetail.details.isApiRoute = true;
-      const routePath = this.getRoutePathFromFilePages(file.relativePath);
+      const routePath = this.getRoutePathFromFilePages(file.relativeFilePath);
       this.apiRoutes.push(routePath);
 
       const apiInfo: ApiInfo = {
-        route: routePath,
-        filepath: file.relativePath,
+        routePath: routePath,
+        relativeFilePath: file.relativeFilePath,
         methods: this.extractApiMethodsFromAST(file.ast),
         inputValidation: this.hasInputValidationInAST(file.ast),
         dependencies: fileDetail.details.imports || [],
@@ -703,12 +728,12 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       fileDetail.details.apiInfo = apiInfo;
     } else {
       fileDetail.details.isRoute = true;
-      const routePath = this.getRoutePathFromFilePages(file.relativePath);
+      const routePath = this.getRoutePathFromFilePages(file.relativeFilePath);
       this.routes.push(routePath);
 
       const pageInfo: PageInfo = {
-        route: routePath,
-        filepath: file.relativePath,
+        routePath: routePath,
+        relativeFilePath: file.relativeFilePath,
         components: fileDetail.details.components || [],
         dataFetching: this.extractDataFetchingFromAST(file.ast),
         hasAuth:
@@ -741,18 +766,19 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     const componentFiles = this.fileInfos.filter((file) => {
       // Common component file locations
       const isInComponentsDir =
-        file.dirPath.includes("/components/") ||
-        file.dirPath.startsWith("components/") ||
-        file.dirPath.includes("/src/components/");
+        file.relativeDirPath.includes("/components/") ||
+        file.relativeDirPath.startsWith("components/") ||
+        file.relativeDirPath.includes("/src/components/");
 
       // Common UI component locations
       const isInUIDir =
-        file.dirPath.includes("/ui/") || file.dirPath.startsWith("ui/");
+        file.relativeDirPath.includes("/ui/") ||
+        file.relativeDirPath.startsWith("ui/");
 
       // Components in feature directories
       const isInFeatureDir =
-        file.dirPath.includes("/features/") ||
-        file.dirPath.startsWith("features/");
+        file.relativeDirPath.includes("/features/") ||
+        file.relativeDirPath.startsWith("features/");
 
       // Must be a JS/TS file with appropriate extension
       const hasJsExtension =
@@ -769,8 +795,8 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         file.name.includes("Component") ||
         // Index files in component directories
         (file.name.match(/^index\.(jsx?|tsx?)$/) &&
-          (file.relativePath.includes("/components/") ||
-            file.relativePath.includes("/ui/")));
+          (file.relativeFilePath.includes("/components/") ||
+            file.relativeFilePath.includes("/ui/")));
 
       return (
         hasJsExtension &&
@@ -800,7 +826,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
     const fileDetail: FileAnalysisResult = {
       framework: "next",
-      path: file.relativePath,
+      path: file.relativeFilePath,
       details: {
         isComponent: true,
         imports: [],
@@ -829,7 +855,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
     // Create component info
     const componentName = path.basename(
-      file.relativePath,
+      file.relativeFilePath,
       `.${file.extension}`,
     );
 
@@ -839,7 +865,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       imports: fileDetail.details.imports || [],
       hooks: fileDetail.details.hooks || [],
       eventHandlers: fileDetail.details.eventHandlers || [],
-      filepath: file.relativePath,
+      relativeFilePath: file.relativeFilePath,
     };
 
     this.components[componentName] = componentInfo;

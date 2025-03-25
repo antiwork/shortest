@@ -35,6 +35,8 @@ export const getPaths = async (sourceDir: string) => {
       "**/*.spec.js",
       "**/*.spec.jsx",
       "packages/**",
+      "test/**",
+      "tests/**",
     ],
   });
   paths.sort();

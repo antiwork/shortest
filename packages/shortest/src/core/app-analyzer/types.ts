@@ -5,18 +5,12 @@ export interface BaseAnalyzer {
   execute(): Promise<AppAnalysis>;
 }
 
-/**
- * Minimal data describing a single file's analysis.
- */
 export interface FileAnalysisResult {
   framework?: "next" | "react" | "remix" | "other";
   path: string;
   details: Record<string, any>;
 }
 
-/**
- * The final shape we store to analysis.json
- */
 export interface AppAnalysis {
   framework: string;
   routerType: "app" | "pages" | "unknown";
@@ -30,11 +24,12 @@ export interface AppAnalysis {
   apiRoutes: ApiRouteInfo[];
   components: ComponentInfo[];
   layouts: LayoutInfo[];
+  allPaths: string[];
 }
 
 export interface RouteInfo {
-  path: string;
-  file: string;
+  routePath: string;
+  relativeFilePath: string;
   layoutChain: string[];
   components: string[];
   hasParams: boolean;
@@ -48,8 +43,8 @@ export interface RouteInfo {
 }
 
 export interface ApiRouteInfo {
-  path: string;
-  file: string;
+  routePath: string;
+  relativeFilePath: string;
   methods: string[];
   hasValidation: boolean;
   deps: string[];
@@ -57,42 +52,17 @@ export interface ApiRouteInfo {
 
 export interface ComponentInfo {
   name: string;
-  file: string;
+  relativeFilePath: string;
   props: string[];
   hasHandlers: boolean;
 }
 
 export interface LayoutInfo {
+  relativeFilePath: string;
+  relativeDirPath: string;
   name: string;
-  file: string;
-  children?: string[];
-}
-
-// Directory node in the app structure tree
-export interface DirectoryNode {
-  path: string;
-  relativePath: string;
-  name: string;
-  type: "directory";
-  children: (DirectoryNode | FileNode)[];
-  isDirectory: true;
-  size?: number;
-  lastModified?: Date;
-}
-
-export interface TreeNode {
-  path: string;
-  name: string;
-  type: "directory" | "file";
-  children?: TreeNode[];
-  extension?: string;
-}
-
-export interface AppTreeStructure {
-  root: DirectoryNode;
-  allFiles: Map<string, FileNode>;
-  filesByType: Map<string, FileNode[]>;
-  filesByDirectory: Map<string, FileNode[]>;
+  content: string;
+  components: string[];
 }
 
 export interface TestPlanningContext {
