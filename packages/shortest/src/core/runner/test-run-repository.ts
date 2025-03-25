@@ -329,7 +329,8 @@ export class TestRunRepository {
       const MAX_RUNS_PER_TEST = 1;
 
       const currentVersionRuns = allRuns.filter(
-        (run) => run.version === TestRunRepository.VERSION,
+        (run) =>
+          run.version === TestRunRepository.VERSION && !run.executedFromCache,
       );
 
       if (currentVersionRuns.length > 0) {

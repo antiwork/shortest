@@ -374,6 +374,7 @@ describe("TestRunRepository", () => {
         version: TestRunRepository.VERSION,
         status: "passed",
         runId: "current-run",
+        executedFromCache: false,
       } as TestRun;
 
       vi.spyOn(repository, "getRuns").mockResolvedValue([
@@ -395,11 +396,13 @@ describe("TestRunRepository", () => {
         version: TestRunRepository.VERSION,
         status: "passed",
         runId: "passed-run",
+        executedFromCache: false,
       } as TestRun;
       const failedRun = {
         version: TestRunRepository.VERSION,
         status: "failed",
         runId: "failed-run",
+        executedFromCache: false,
       } as TestRun;
 
       vi.spyOn(repository, "getRuns").mockResolvedValue([passedRun, failedRun]);
@@ -420,12 +423,14 @@ describe("TestRunRepository", () => {
         status: "failed",
         runId: "older-run",
         timestamp: 1000,
+        executedFromCache: false,
       } as TestRun;
       const newerRun = {
         version: TestRunRepository.VERSION,
         status: "failed",
         runId: "newer-run",
         timestamp: 2000,
+        executedFromCache: false,
       } as TestRun;
 
       vi.spyOn(repository, "getRuns").mockResolvedValue([olderRun, newerRun]);
@@ -435,6 +440,49 @@ describe("TestRunRepository", () => {
 
       expect(deleteRunMock).toHaveBeenCalledWith(olderRun);
       expect(deleteRunMock).not.toHaveBeenCalledWith(newerRun);
+    });
+
+    test("excludes runs with executedFromCache=true from retention policy", async () => {
+      const deleteRunMock = vi.fn().mockResolvedValue(undefined);
+      repository.deleteRun = deleteRunMock;
+
+      const fromCacheRun = {
+        version: TestRunRepository.VERSION,
+        status: "failed",
+        runId: "from-cache-run",
+        timestamp: 3000,
+        executedFromCache: true,
+      } as TestRun;
+      const regularRun = {
+        version: TestRunRepository.VERSION,
+        status: "failed",
+        runId: "regular-run",
+        timestamp: 2000,
+        executedFromCache: false,
+      } as TestRun;
+      const olderRun = {
+        version: TestRunRepository.VERSION,
+        status: "failed",
+        runId: "older-run",
+        timestamp: 1000,
+        executedFromCache: false,
+      } as TestRun;
+
+      vi.spyOn(repository, "getRuns").mockResolvedValue([
+        fromCacheRun,
+        regularRun,
+        olderRun,
+      ]);
+      vi.spyOn(repository, "getLatestPassedRun").mockResolvedValue(null);
+
+      await repository.applyRetentionPolicy();
+
+      // fromCacheRun should be excluded from consideration due to executedFromCache=true
+      // regularRun should be kept as the most recent non-cache run
+      // olderRun should be deleted
+      expect(deleteRunMock).toHaveBeenCalledWith(olderRun);
+      expect(deleteRunMock).not.toHaveBeenCalledWith(regularRun);
+      expect(deleteRunMock).not.toHaveBeenCalledWith(fromCacheRun);
     });
   });
 
