@@ -84,7 +84,7 @@ describe("cleanUpCache", () => {
         reason: undefined,
         tokenUsage: { completionTokens: 10, promptTokens: 20, totalTokens: 30 },
         runId: "test1",
-        fromCache: false,
+        executedFromCache: false,
       },
       test: {
         name: "Test 1",
@@ -101,7 +101,7 @@ describe("cleanUpCache", () => {
         reason: undefined,
         tokenUsage: { completionTokens: 10, promptTokens: 20, totalTokens: 30 },
         runId: "test2",
-        fromCache: false,
+        executedFromCache: false,
       },
       test: {
         name: "Test 2",
@@ -153,7 +153,7 @@ describe("cleanUpCache", () => {
         reason: undefined,
         tokenUsage: { completionTokens: 10, promptTokens: 20, totalTokens: 30 },
         runId: "test1",
-        fromCache: false,
+        executedFromCache: false,
       },
       test: {
         name: "Test 1",
