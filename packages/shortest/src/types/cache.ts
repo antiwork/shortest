@@ -25,7 +25,7 @@ export interface CacheEntry {
     reason: string | undefined;
     tokenUsage: TokenUsage;
     runId: string;
-    fromCache: boolean;
+    executedFromCache: boolean;
   };
   test: Pick<TestCase, "name" | "filePath">;
   data: {

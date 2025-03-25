@@ -12,7 +12,6 @@ import { createProvider } from "@/ai/provider";
 import { AIJSONResponse, extractJsonPayload } from "@/ai/utils/json";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { TestRun } from "@/core/runner/test-run";
-import { TestRunRepository } from "@/core/runner/test-run-repository";
 import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import { createToolRegistry, ToolRegistry } from "@/tools/index";
@@ -60,7 +59,7 @@ export type AIClientResponse = {
  * ```typescript
  * const client = new AIClient({
  *   browserTool: new BrowserTool(),
- *   testRun: new TestRun()
+ *   testRun: TestRun.create()
  * });
  *
  * const response = await client.runAction(
@@ -293,11 +292,6 @@ export class AIClient {
           const json = extractJsonPayload(resp.text);
           this.log.trace("Response", { ...json });
 
-          if (json.status === "passed") {
-            await TestRunRepository.getRepositoryForTestCase(
-              this.testRun.testCase,
-            ).saveRun(this.testRun);
-          }
           return { response: json, metadata: { usage: this.usage } };
         } catch {
           throw new AIError(

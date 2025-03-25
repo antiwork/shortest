@@ -53,7 +53,7 @@ export const main = async () => {
       ],
     });
 
-    const testRun = new TestRun(mockTest);
+    const testRun = TestRun.create(mockTest);
     testRun.markRunning();
 
     const browserTool = new BrowserTool(page, browserManager, {

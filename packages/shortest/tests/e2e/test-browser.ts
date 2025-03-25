@@ -15,7 +15,7 @@ export const main = async () => {
     filePath: "tests/e2e/test-browser.ts",
   });
 
-  const testRun = new TestRun(testCase);
+  const testRun = TestRun.create(testCase);
   testRun.markRunning();
 
   try {

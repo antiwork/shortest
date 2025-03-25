@@ -20,7 +20,7 @@ export const main = async () => {
       name: "Keyboard Test",
       filePath: "tests/e2e/test-keyboard.ts",
     });
-    const testRun = new TestRun(testCase);
+    const testRun = TestRun.create(testCase);
     testRun.markRunning();
 
     const browserTool = new BrowserTool(page, browserManager, {

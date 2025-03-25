@@ -261,7 +261,9 @@ export class TestRunner {
   ): Promise<TestRun> {
     try {
       this.log.setGroup("💾");
-      this.log.trace("Executing test from cache");
+      this.log.trace("Attempting to execute test from cache", {
+        identifier: testRun.testCase.identifier,
+      });
 
       const latestRun = await TestRunRepository.getRepositoryForTestCase(
         testRun.testCase,
@@ -272,7 +274,7 @@ export class TestRunner {
           "No successful cached test run found",
         );
       }
-      const steps = latestRun.steps
+      const filteredSteps = latestRun.steps
         // Do not take screenshots in cached mode
         ?.filter(
           (step) =>
@@ -280,12 +282,17 @@ export class TestRunner {
             InternalActionEnum.SCREENSHOT.toString(),
         );
 
-      if (!steps || steps.length === 0) {
+      this.log.trace("Using cached test run", {
+        runId: latestRun.runId,
+        stepCount: latestRun.steps.length,
+        filteredStepCount: filteredSteps.length,
+      });
+
+      if (!filteredSteps || filteredSteps.length === 0) {
         throw new CacheError("invalid", "No eligible steps in cache");
       }
 
-      this.log.trace("Executing cached steps", { stepCount: steps.length });
-      for (const step of steps) {
+      for (const step of filteredSteps) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         if (
           step.action?.input.action === InternalActionEnum.MOUSE_MOVE &&
@@ -318,7 +325,7 @@ export class TestRunner {
       }
 
       this.log.debug("Successfully executed all cached steps");
-      testRun.markPassed({
+      testRun.markPassedFromCache({
         reason: "All actions successfully replayed from cache",
       });
       return testRun;
@@ -385,8 +392,7 @@ export class TestRunner {
           }
 
           this.reporter.onTestStart(testCase);
-          const testRun = new TestRun(testCase);
-          await testRun.initialize();
+          const testRun = TestRun.create(testCase);
           try {
             testRun.markRunning();
             await this.executeTest(testRun, context);

@@ -49,7 +49,7 @@ const registerSharedProcessHandlers = (log: Log) => {
  * @example
  * ```typescript
  * const repository = TestRunRepository.getRepositoryForTestCase(testCase);
- * const testRun = new TestRun(testCase);
+ * const testRun = TestRun.create(testCase);
  * await repository.saveRun(testRun);
  * ```
  *
@@ -59,7 +59,7 @@ const registerSharedProcessHandlers = (log: Log) => {
  * @private
  */
 export class TestRunRepository {
-  public static VERSION = 2;
+  public static VERSION = 3;
   public static activeRepositories: Set<TestRunRepository>;
   private static repositoriesByIdentifier = new Map<
     string,
@@ -75,8 +75,10 @@ export class TestRunRepository {
   public static getRepositoryForTestCase(
     testCase: TestCase,
   ): TestRunRepository {
+    const log = getLogger();
     const key = testCase.identifier;
     if (!TestRunRepository.repositoriesByIdentifier.has(key)) {
+      log.trace("Creating new repository", { identifier: key });
       const repository = new TestRunRepository(testCase);
       TestRunRepository.repositoriesByIdentifier.set(key, repository);
     }
@@ -143,7 +145,7 @@ export class TestRunRepository {
         const filePath = path.join(this.globalCacheDir, file);
         const content = await fs.readFile(filePath, "utf-8");
         const cacheEntry = JSON.parse(content) as CacheEntry;
-        loadedTestRuns.push(TestRun.fromCacheFile(this.testCase, cacheEntry));
+        loadedTestRuns.push(TestRun.fromCache(this.testCase, cacheEntry));
       } catch (error) {
         this.log.error("Failed to load test run from cache", {
           file,
@@ -161,13 +163,22 @@ export class TestRunRepository {
    * @returns {Promise<TestRun | null>} Latest passed test run or null if none exists
    */
   async getLatestPassedRun(): Promise<TestRun | null> {
+    this.log.trace("Getting latest passed run", {
+      identifier: this.testCase.identifier,
+    });
     const testRuns = await this.getRuns();
     const validTestRuns = testRuns.filter(
       (testRun) =>
         testRun.status === "passed" &&
         testRun.version === TestRunRepository.VERSION &&
-        !testRun.fromCache,
+        !testRun.executedFromCache,
     );
+    this.log.trace("Found test runs", {
+      identifier: this.testCase.identifier,
+      totalRunsCount: testRuns.length,
+      validRunsCount: validTestRuns.length,
+      validRunIds: validTestRuns.map((run) => run.runId),
+    });
     return validTestRuns.length > 0
       ? validTestRuns[validTestRuns.length - 1]
       : null;
@@ -184,6 +195,12 @@ export class TestRunRepository {
       this.log.error("Failed to acquire lock for saving run");
       return;
     }
+    this.log.trace("Saving test run", {
+      runId: testRun.runId,
+      status: testRun.status,
+      stepCount: testRun.steps.length,
+      executedFromCache: testRun.executedFromCache,
+    });
 
     try {
       const cacheEntry: CacheEntry = {
@@ -194,7 +211,7 @@ export class TestRunRepository {
           reason: testRun.reason,
           tokenUsage: testRun.tokenUsage,
           runId: testRun.runId,
-          fromCache: testRun.fromCache,
+          executedFromCache: testRun.executedFromCache,
         },
         test: {
           name: this.testCase.name,
@@ -304,7 +321,7 @@ export class TestRunRepository {
 
       this.log.trace("Retention policy applied successfully", {
         keptRunId: latestPassedRun.runId,
-        totalDeleted: deletedCount,
+        deletedCount,
       });
     }
     // If no passed run, keep only up to MAX_RUNS_PER_TEST most recent runs
@@ -312,7 +329,8 @@ export class TestRunRepository {
       const MAX_RUNS_PER_TEST = 1;
 
       const currentVersionRuns = allRuns.filter(
-        (run) => run.version === TestRunRepository.VERSION,
+        (run) =>
+          run.version === TestRunRepository.VERSION && !run.executedFromCache,
       );
 
       if (currentVersionRuns.length > 0) {
@@ -342,12 +360,12 @@ export class TestRunRepository {
           this.log.trace("Keeping latest run", {
             keptRunId: runsToKeep[0].runId,
             status: runsToKeep[0].status,
-            totalDeleted: deletedCount,
+            deletedCount,
           });
         } else {
           this.log.trace(`Keeping ${runsToKeep.length} most recent runs`, {
             keptRunIds: runsToKeep.map((run) => run.runId),
-            totalDeleted: deletedCount,
+            deletedCount,
           });
         }
       }
