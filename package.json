@@ -61,7 +61,7 @@
     "jose": "^5.10.0",
     "lucide-react": "^0.439.0",
     "minimatch": "^10.0.1",
-    "next": "15.0.0-canary.152",
+    "next": "15.2.4",
     "postcss": "^8.5.2",
     "postgres": "^3.4.4",
     "react": "19.0.0-rc-7771d3a7-20240827",
