@@ -24,7 +24,6 @@ export class AppAnalyzer {
 
     let analysis: AppAnalysis;
 
-    // Check for existing analysis file unless force option is true
     if (!options.force) {
       const existingAnalysis = await this.getExistingAnalysis();
       if (existingAnalysis) {

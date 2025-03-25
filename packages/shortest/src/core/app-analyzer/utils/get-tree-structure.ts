@@ -1,12 +1,7 @@
-import fs from "fs/promises";
 import path from "path";
 import { globby } from "globby";
 import { z } from "zod";
-import { getGitInfo } from "./get-git-info";
-import { DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { getLogger } from "@/log";
-
-const TREE_VERSION = 1;
 
 const FileNodeSchema = z.object({
   path: z.string(),
@@ -26,36 +21,9 @@ const TreeNodeSchema = z.union([DirectoryNodeSchema, FileNodeSchema]);
 
 type TreeNode = z.infer<typeof TreeNodeSchema>;
 
-export const getTreeStructure = async (
-  framework: string,
-  rootDir: string,
-): Promise<TreeNode> => {
-  const treeStructure = await buildTreeStructure(rootDir);
-
-  const frameworkDir = path.join(DOT_SHORTEST_DIR_PATH, framework);
-  await fs.mkdir(frameworkDir, { recursive: true });
-  const treeJsonPath = path.join(frameworkDir, "tree.json");
-
-  const treeOutput = {
-    metadata: {
-      timestamp: Date.now(),
-      version: TREE_VERSION,
-      git: await getGitInfo(),
-    },
-    data: treeStructure,
-  };
-
-  await fs.writeFile(treeJsonPath, JSON.stringify(treeOutput, null, 2));
-
-  return treeStructure;
-};
-
-const buildTreeStructure = async (rootDir: string): Promise<TreeNode> => {
-  const log = getLogger();
-  log.trace("Building application structure tree...");
-
+export const getPaths = async (sourceDir: string) => {
   const paths = await globby(["**/*"], {
-    cwd: rootDir,
+    cwd: sourceDir,
     gitignore: true,
     ignore: [
       "**/*.test.ts",
@@ -66,13 +34,24 @@ const buildTreeStructure = async (rootDir: string): Promise<TreeNode> => {
       "**/*.spec.tsx",
       "**/*.spec.js",
       "**/*.spec.jsx",
+      "packages/**",
     ],
   });
   paths.sort();
 
+  return paths;
+};
+
+export const getTreeStructure = async (
+  sourceDir: string,
+): Promise<TreeNode> => {
+  const log = getLogger();
+  log.trace("Building application structure tree...");
+  const paths = await getPaths(sourceDir);
+
   const rootNode: TreeNode = {
     path: "",
-    name: path.basename(rootDir),
+    name: path.basename(sourceDir),
     type: "directory",
     children: [],
   };

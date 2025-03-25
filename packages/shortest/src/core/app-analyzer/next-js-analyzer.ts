@@ -5,8 +5,11 @@ import * as parser from "@babel/parser";
 import * as t from "@babel/types";
 import { FileAnalysisResult, BaseAnalyzer, AppAnalysis } from "./types";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
-import { getTreeStructure } from "@/core/app-analyzer/utils/build-tree-structure";
 import { getGitInfo } from "@/core/app-analyzer/utils/get-git-info";
+import {
+  getPaths,
+  getTreeStructure,
+} from "@/core/app-analyzer/utils/get-tree-structure";
 import { getLogger } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
 
@@ -68,6 +71,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
   private results: FileAnalysisResult[] = [];
   private components: Record<string, ComponentInfo> = {};
   private pages: PageInfo[] = [];
+  private paths: string[] = [];
   private apis: ApiInfo[] = [];
   private layouts: Record<
     string,
@@ -75,14 +79,19 @@ export class NextJsAnalyzer implements BaseAnalyzer {
   > = {};
   private isAppRouter = false;
   private isPagesRouter = false;
-  // private treeStructure: any = null;
   private fileInfos: FileInfo[] = [];
   private log = getLogger();
 
   private readonly NEXT_FRAMEWORK_NAME = "next";
   private readonly VERSION = 1;
+  private readonly frameworkDir: string;
 
-  constructor(private rootDir: string) {}
+  constructor(private rootDir: string) {
+    this.frameworkDir = path.join(
+      DOT_SHORTEST_DIR_PATH,
+      this.NEXT_FRAMEWORK_NAME,
+    );
+  }
 
   /**
    * Main method to execute the analysis
@@ -95,16 +104,20 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.results = [];
     this.components = {};
     this.pages = [];
+    this.paths = [];
     this.apis = [];
     this.isAppRouter = false;
     this.isPagesRouter = false;
 
+    await this.setPaths();
     await this.setTreeStructure();
     this.log.debug(`Processing ${this.fileInfos.length} files`);
 
     this.detectRouterType();
+
     await this.parseFiles();
-    await this.analyzeFiles();
+    await this.processRouteFiles();
+    await this.processComponentFiles();
 
     this.log.debug(
       `Analysis generated: ${this.pages.length} pages, ${this.apis.length} API routes, ${Object.keys(this.components).length} components`,
@@ -118,28 +131,44 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return analysis;
   }
 
+  private async setPaths(): Promise<void> {
+    this.log.trace("Retrieving folder paths for NextJs analyzer");
+    this.paths = await getPaths(this.rootDir);
+
+    await fs.mkdir(this.frameworkDir, { recursive: true });
+    const pathsOutput = {
+      metadata: {
+        timestamp: Date.now(),
+        version: this.VERSION,
+        git: await getGitInfo(),
+      },
+      data: this.paths,
+    };
+
+    await fs.writeFile(
+      path.join(this.frameworkDir, "paths.json"),
+      JSON.stringify(pathsOutput, null, 2),
+    );
+
+    this.log.trace("Paths saved", {
+      path: path.join(this.frameworkDir, "paths.json"),
+    });
+  }
+
   /**
    * Set the tree structure for analysis
    */
-  async setTreeStructure(): Promise<void> {
+  private async setTreeStructure(): Promise<void> {
     this.log.setGroup("🌳");
     this.log.trace("Building tree structure for NextJs analyzer");
     try {
-      const treeNode = await getTreeStructure(
-        this.NEXT_FRAMEWORK_NAME,
-        this.rootDir,
-      );
+      const treeNode = await getTreeStructure(this.rootDir);
 
-      // this.treeStructure = appTreeStructure;
-      this.extractFileInfos(treeNode);
+      this.setFileInfos(treeNode);
       console.log(this.fileInfos);
 
-      const frameworkDir = path.join(
-        DOT_SHORTEST_DIR_PATH,
-        this.NEXT_FRAMEWORK_NAME,
-      );
-      await fs.mkdir(frameworkDir, { recursive: true });
-      const treeJsonPath = path.join(frameworkDir, "tree.json");
+      await fs.mkdir(this.frameworkDir, { recursive: true });
+      const treeJsonPath = path.join(this.frameworkDir, "tree.json");
 
       const treeOutput = {
         metadata: {
@@ -160,10 +189,10 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     }
   }
 
-  private extractFileInfos(node: any): void {
+  private setFileInfos(node: any): void {
     if (node.type === "directory" && node.children) {
       for (const child of node.children) {
-        this.extractFileInfos(child);
+        this.setFileInfos(child);
       }
     } else if (node.type === "file") {
       this.fileInfos.push({
@@ -183,6 +212,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
    */
   private generateAnalysis(): AppAnalysis {
     // Convert pages to route info
+    console.log(this.pages);
     const routeInfoList = this.pages.map((page) => {
       const dataFetchingMethods = page.dataFetching.map(
         (df) => df.method || "unknown",
@@ -227,7 +257,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     const layoutInfoList = Object.values(this.layouts);
 
     return {
-      framework: "next",
+      framework: this.NEXT_FRAMEWORK_NAME,
       routerType: this.isAppRouter
         ? "app"
         : this.isPagesRouter
@@ -316,12 +346,8 @@ export class NextJsAnalyzer implements BaseAnalyzer {
    */
   private async saveAnalysisToFile(analysis: AppAnalysis): Promise<void> {
     try {
-      const frameworkDir = path.join(
-        DOT_SHORTEST_DIR_PATH,
-        this.NEXT_FRAMEWORK_NAME,
-      );
-      await fs.mkdir(frameworkDir, { recursive: true });
-      const analysisJsonPath = path.join(frameworkDir, "analysis.json");
+      await fs.mkdir(this.frameworkDir, { recursive: true });
+      const analysisJsonPath = path.join(this.frameworkDir, "analysis.json");
 
       const output = {
         metadata: {
@@ -338,16 +364,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       this.log.error("Failed to save analysis to file", getErrorDetails(error));
       throw error;
     }
-  }
-
-  /**
-   * Main method to analyze the Next.js app structure
-   */
-  private async analyzeFiles(): Promise<void> {
-    await this.processRouteFiles();
-
-    // Process component files
-    await this.processComponentFiles();
   }
 
   private async parseFiles(): Promise<void> {
@@ -440,10 +456,10 @@ export class NextJsAnalyzer implements BaseAnalyzer {
    * Process Next.js route files (pages and API routes)
    */
   private async processRouteFiles(): Promise<void> {
-    this.log.debug("Processing route files");
-    this.log.debug(
-      `Router type: ${this.isAppRouter ? "App Router" : ""} ${this.isPagesRouter ? "Pages Router" : ""}`,
-    );
+    this.log.trace("Processing route files", {
+      isAppRouter: this.isAppRouter,
+      isPagesRouter: this.isPagesRouter,
+    });
 
     // Look for app router files regardless of app/ directory
     // Find all page.js/tsx, route.js/tsx, and layout.js/tsx files
@@ -753,7 +769,8 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         file.name.includes("Component") ||
         // Index files in component directories
         (file.name.match(/^index\.(jsx?|tsx?)$/) &&
-          (file.relativePath.includes("/components/") || file.relativePath.includes("/ui/")));
+          (file.relativePath.includes("/components/") ||
+            file.relativePath.includes("/ui/")));
 
       return (
         hasJsExtension &&
