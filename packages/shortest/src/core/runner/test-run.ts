@@ -17,7 +17,7 @@ type TestRunState =
  * @class
  * @example
  * ```typescript
- * const testRun = new TestRun(testCase);
+ * const testRun = TestRun.create(testCase);
  * testRun.markRunning();
  * testRun.markPassed({ reason: "Test passed" });
  * ```
@@ -27,21 +27,48 @@ type TestRunState =
  */
 export class TestRun {
   /**
-   * Creates a TestRun instance from a cache file
+   * Creates a new TestRun instance from a test case
+   * @param {TestCase} testCase - The test case to be executed
+   * @returns {TestRun} A new TestRun instance with pending status
+   */
+  public static create(testCase: TestCase): TestRun {
+    const log = getLogger();
+    const startedAt = new Date();
+    const timestamp = startedAt.getTime();
+    const formattedStartedAt = startedAt.toISOString().replace(/[:.]/g, "-");
+    const runId = `${formattedStartedAt}_${testCase.identifier}`;
+
+    log.trace("Creating TestRun", {
+      runId,
+    });
+    return new TestRun(testCase, {
+      runId,
+      timestamp,
+      executedFromCache: false,
+    });
+  }
+
+  /**
+   * Creates a TestRun instance from a cache entry
    * @param {TestCase} testCase - The test case associated with this run
-   * @param {string} file - The cache file name
    * @param {CacheEntry} cacheEntry - The cache entry data
    * @returns {TestRun} A new TestRun instance
    *
    * @private
    */
-  public static fromCacheFile(
-    testCase: TestCase,
-    cacheEntry: CacheEntry,
-  ): TestRun {
-    const testRun = new TestRun(testCase);
-    testRun.runId = cacheEntry.metadata.runId;
-    testRun.timestamp = cacheEntry.metadata.timestamp;
+  public static fromCache(testCase: TestCase, cacheEntry: CacheEntry): TestRun {
+    const log = getLogger();
+    log.trace("Creating TestRun from cache", {
+      runId: cacheEntry.metadata.runId,
+      stepCount: cacheEntry.data.steps?.length,
+    });
+
+    const testRun = new TestRun(testCase, {
+      runId: cacheEntry.metadata.runId,
+      timestamp: cacheEntry.metadata.timestamp,
+      executedFromCache: cacheEntry.metadata.executedFromCache,
+    });
+
     testRun.version =
       typeof cacheEntry.metadata.version === "string"
         ? parseInt(cacheEntry.metadata.version, 10) || 0
@@ -54,58 +81,62 @@ export class TestRun {
     if (cacheEntry.data.steps) {
       testRun.steps = [...cacheEntry.data.steps];
     }
-    testRun.fromCache = true;
     return testRun;
   }
 
   public readonly testCase: TestCase;
   public readonly log: Log;
+  public readonly runId: string;
+  public readonly timestamp: number;
+
   public steps: CacheStep[] = [];
   public tokenUsage: TokenUsage = {
     completionTokens: 0,
     promptTokens: 0,
     totalTokens: 0,
   };
-  public runId: string;
   public version: number = TestRunRepository.VERSION;
-  public timestamp: number;
-  public fromCache: boolean = false;
 
+  private _executedFromCache: boolean = false;
   private state: TestRunState = { status: "pending" } as TestRunState;
 
-  /**
-   * Creates a new test run instance
-   * @param {TestCase} testCase - Test case to execute
-   *
-   * @private
-   */
-  constructor(testCase: TestCase) {
+  private constructor(
+    testCase: TestCase,
+    {
+      runId,
+      timestamp,
+      executedFromCache,
+    }: { runId: string; timestamp: number; executedFromCache: boolean },
+  ) {
     this.testCase = testCase;
     this.log = getLogger();
-    const startedAt = new Date();
-    this.timestamp = startedAt.getTime();
-    const formattedStartedAt = startedAt.toISOString().replace(/[:.]/g, "-");
-    this.runId = `${formattedStartedAt}_${this.testCase.identifier}`;
-    this.log.trace("Initializing TestRun", {
-      runId: this.runId,
-    });
+    this.runId = runId;
+    this.timestamp = timestamp;
+    this._executedFromCache = executedFromCache;
   }
 
-  get status() {
-    return this.state.status;
+  /**
+   * Gets whether this test run was executed from cache
+   * @returns {boolean} True if executed from cache, false otherwise
+   */
+  get executedFromCache() {
+    return this._executedFromCache;
   }
+
+  /**
+   * Gets the reason for the current test status
+   * @returns {string|undefined} The reason string or undefined if not set
+   */
   get reason() {
     return this.state.reason;
   }
 
   /**
-   * Initializes the cache instance
-   * @private
+   * Gets the current test status
+   * @returns {TestStatus} The current status of the test
    */
-  async initialize(): Promise<void> {
-    this.log.trace("TestRun initialized", {
-      runId: this.runId,
-    });
+  get status() {
+    return this.state.status;
   }
 
   /**
@@ -141,6 +172,19 @@ export class TestRun {
   }
 
   /**
+   * Marks the test run as passed when it used a cached test run to be executed
+   * @param {Object} options - Options
+   * @param {string} options.reason - Reason for passing
+   */
+  markPassedFromCache({ reason }: { reason: string }) {
+    this.markPassed({ reason });
+    // Used for transient test runs that are executed from cache so that
+    // are not saved to the cache, as their steps are not valid to be
+    // used in a future test run.
+    this._executedFromCache = true;
+  }
+
+  /**
    * Marks the test as failed
    * @param {Object} options - Fail options
    * @param {string} options.reason - Reason for failure
@@ -159,10 +203,18 @@ export class TestRun {
     if (tokenUsage) this.tokenUsage = tokenUsage;
   }
 
+  /**
+   * Adds a step to the test run
+   * @param {CacheStep} step - The step to add to the test run
+   */
   public addStep(step: CacheStep): void {
     this.steps.push(step);
   }
 
+  /**
+   * Gets all steps in this test run
+   * @returns {CacheStep[]} A copy of the steps array
+   */
   public getSteps(): CacheStep[] {
     // Return a copy to prevent direct mutation
     return [...this.steps];

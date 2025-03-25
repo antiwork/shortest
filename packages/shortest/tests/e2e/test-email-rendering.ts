@@ -46,7 +46,7 @@ export const main = async () => {
       name: "Email Rendering Test",
       filePath: "tests/e2e/test-email-rendering.ts",
     });
-    const testRun = new TestRun(testCase);
+    const testRun = TestRun.create(testCase);
     testRun.markRunning();
 
     const browserTool = new BrowserTool(page, browserManager, {

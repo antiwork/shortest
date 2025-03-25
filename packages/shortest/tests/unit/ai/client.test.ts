@@ -82,7 +82,7 @@ describe("AIClient", () => {
       name: "test case",
       filePath: "/test.ts",
     });
-    testRun = new TestRun(testCase);
+    testRun = TestRun.create(testCase);
 
     vi.spyOn(testRun, "addStep");
 

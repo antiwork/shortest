@@ -22,7 +22,7 @@ export const main = async () => {
       name: "GitHub Login Test",
       filePath: "tests/e2e/test-github-login.ts",
     });
-    const testRun = new TestRun(testCase);
+    const testRun = TestRun.create(testCase);
     testRun.markRunning();
 
     let browserTool = new BrowserTool(page, browserManager, {
