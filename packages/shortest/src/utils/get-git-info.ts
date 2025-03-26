@@ -2,10 +2,15 @@ import { simpleGit, SimpleGit, CleanOptions } from "simple-git";
 import { getLogger } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
 
+export interface GitInfo {
+  branch: string | null;
+  commit: string | null;
+}
+
 /**
  * Get Git repository information
  */
-export const getGitInfo = async () => {
+export const getGitInfo = async (): Promise<GitInfo> => {
   const log = getLogger();
 
   try {

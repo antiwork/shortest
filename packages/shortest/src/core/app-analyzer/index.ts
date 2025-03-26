@@ -8,18 +8,20 @@ import { getLogger } from "@/log";
 import { ShortestError, getErrorDetails } from "@/utils/errors";
 
 export const SUPPORTED_FRAMEWORKS = ["next"];
+// eslint-disable-next-line zod/require-zod-schema-types
+type SupportedFramework = (typeof SUPPORTED_FRAMEWORKS)[number];
 
 export class AppAnalyzer {
   private rootDir: string;
-  private framework: string;
+  private framework: SupportedFramework;
   private log = getLogger();
 
-  constructor(rootDir: string, framework: string) {
+  constructor(rootDir: string, framework: SupportedFramework) {
     this.rootDir = rootDir;
     this.framework = framework;
   }
 
-  public async analyze(
+  public async execute(
     options: { force?: boolean } = {},
   ): Promise<AppAnalysis> {
     this.log.trace("Analyzing application...", { framework: this.framework });
@@ -27,7 +29,7 @@ export class AppAnalyzer {
     let analysis: AppAnalysis;
 
     if (!options.force) {
-      const existingAnalysis = await this.getExistingAnalysis();
+      const existingAnalysis = await getExistingAnalysis(this.framework);
       if (existingAnalysis) {
         this.log.trace("Using existing analysis from cache");
         return existingAnalysis;
@@ -44,30 +46,6 @@ export class AppAnalyzer {
 
     this.log.trace(`Analysis complete for ${this.framework} framework`);
     return analysis;
-  }
-
-  private async getExistingAnalysis(): Promise<AppAnalysis | null> {
-    try {
-      const frameworkDir = path.join(DOT_SHORTEST_DIR_PATH, this.framework);
-      const analysisJsonPath = path.join(frameworkDir, "analysis.json");
-
-      try {
-        await fs.access(analysisJsonPath);
-      } catch {
-        return null;
-      }
-
-      const analysisJson = await fs.readFile(analysisJsonPath, "utf-8");
-      const analysisData = JSON.parse(analysisJson);
-
-      return analysisData.data;
-    } catch (error) {
-      this.log.trace(
-        "Failed to read existing analysis",
-        getErrorDetails(error),
-      );
-      return null;
-    }
   }
 
   private async analyzeNextJs(): Promise<AppAnalysis> {
@@ -88,3 +66,29 @@ export class AppAnalyzer {
     }
   }
 }
+
+export const getExistingAnalysis = async (
+  framework: SupportedFramework,
+): Promise<AppAnalysis | null> => {
+  const log = getLogger();
+  log.trace("Getting existing analysis", { framework });
+
+  try {
+    const frameworkDir = path.join(DOT_SHORTEST_DIR_PATH, framework);
+    const analysisJsonPath = path.join(frameworkDir, "analysis.json");
+
+    try {
+      await fs.access(analysisJsonPath);
+    } catch {
+      return null;
+    }
+
+    const analysisJson = await fs.readFile(analysisJsonPath, "utf-8");
+    const analysisData = JSON.parse(analysisJson);
+
+    return analysisData.data;
+  } catch (error) {
+    log.trace("Failed to read existing analysis", getErrorDetails(error));
+    return null;
+  }
+};

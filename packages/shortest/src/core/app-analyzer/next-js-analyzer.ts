@@ -72,7 +72,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
   private log = getLogger();
 
   private readonly NEXT_FRAMEWORK_NAME = "next";
-  private readonly VERSION = 1;
+  private readonly NEXT_ANALYSIS_VERSION = 1;
   private readonly frameworkDir: string;
 
   constructor(private rootDir: string) {
@@ -115,10 +115,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     );
 
     const analysis: AppAnalysis = this.generateAnalysis();
-
-    // Save analysis.json
     await this.saveAnalysisToFile(analysis);
-
     return analysis;
   }
 
@@ -130,7 +127,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     const pathsOutput = {
       metadata: {
         timestamp: Date.now(),
-        version: this.VERSION,
+        version: this.NEXT_ANALYSIS_VERSION,
         git: await getGitInfo(),
       },
       data: this.paths,
@@ -156,7 +153,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       const treeNode = await getTreeStructure(this.rootDir);
 
       this.setFileInfos(treeNode);
-      console.log(this.fileInfos);
 
       await fs.mkdir(this.frameworkDir, { recursive: true });
       const treeJsonPath = path.join(this.frameworkDir, "tree.json");
@@ -164,7 +160,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       const treeOutput = {
         metadata: {
           timestamp: Date.now(),
-          version: this.VERSION,
+          version: this.NEXT_ANALYSIS_VERSION,
           git: await getGitInfo(),
         },
         data: treeNode,
@@ -327,7 +323,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       const output = {
         metadata: {
           timestamp: Date.now(),
-          version: this.VERSION,
+          version: this.NEXT_ANALYSIS_VERSION,
           git: await getGitInfo(),
         },
         data: analysis,

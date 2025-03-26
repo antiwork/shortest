@@ -6,13 +6,13 @@ import { Framework } from "@netlify/framework-info/lib/types";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { getLogger } from "@/log";
 import { getErrorDetails, ShortestError } from "@/utils/errors";
-import { getGitInfo } from "@/utils/get-git-info";
+import { getGitInfo, GitInfo } from "@/utils/get-git-info";
 
 export interface ProjectInfo {
   metadata: {
     timestamp: number;
     version: number;
-    git: { branch: string; commit: string };
+    git: GitInfo;
   };
   data: {
     frameworks: Framework[];

@@ -7,7 +7,7 @@ import { LOG_LEVELS } from "@/log/config";
 import { ShortestError } from "@/utils/errors";
 
 export const analyzeCommand = new Command("analyze").description(
-  "Analyze the structure of your project and generate test planning insights",
+  "Analyze the structure of the project",
 );
 
 analyzeCommand
@@ -46,19 +46,16 @@ const executeAnalyzeCommand = async (
     );
   }
 
-  console.log(supportedFrameworks);
   const framework = supportedFrameworks[0].id;
 
   log.info(`Analyzing ${framework} application structure...`);
 
   const analyzer = new AppAnalyzer(cwd, framework);
-  const analysis = await analyzer.analyze(options);
+  const analysis = await analyzer.execute(options);
 
   log.info(
     `Analysis complete. Found ${analysis.routes?.length || 0} routes, ` +
       `${analysis.apiRoutes?.length || 0} API routes, and ` +
       `${analysis.stats.filesScanned} files.`,
   );
-
-  log.info("Results saved to .shortest/next/analysis.json");
 };
