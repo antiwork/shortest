@@ -7,6 +7,8 @@ import { AppAnalysis } from "@/core/app-analyzer/types";
 import { getLogger } from "@/log";
 import { ShortestError, getErrorDetails } from "@/utils/errors";
 
+export const SUPPORTED_FRAMEWORKS = ["next"];
+
 export class AppAnalyzer {
   private rootDir: string;
   private framework: string;

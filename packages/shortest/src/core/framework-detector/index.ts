@@ -2,16 +2,39 @@ import { existsSync } from "fs";
 import fs from "fs/promises";
 import path from "path";
 import { listFrameworks } from "@netlify/framework-info";
-import { DOT_SHORTEST_DIR_NAME, DOT_SHORTEST_DIR_PATH } from "@/cache";
+import { Framework } from "@netlify/framework-info/lib/types";
+import { DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { getLogger } from "@/log";
-import { directoryExists } from "@/utils/directory-exists";
 import { getErrorDetails, ShortestError } from "@/utils/errors";
 import { getGitInfo } from "@/utils/get-git-info";
+
+export interface ProjectInfo {
+  metadata: {
+    timestamp: number;
+    version: number;
+    git: { branch: string; commit: string };
+  };
+  data: {
+    frameworks: Framework[];
+  };
+}
 
 export const PROJECT_JSON_PATH = path.join(
   DOT_SHORTEST_DIR_PATH,
   "project.json",
 );
+
+export const getProjectInfo = async (): Promise<ProjectInfo> => {
+  const log = getLogger();
+  try {
+    return JSON.parse(await fs.readFile(PROJECT_JSON_PATH, "utf-8"));
+  } catch (error) {
+    log.error("Failed to read cached project data", getErrorDetails(error));
+    throw new ShortestError(
+      "Failed to read cached project data, execute shortest detect-framework first",
+    );
+  }
+};
 
 export const detectFramework = async (options: { force?: boolean } = {}) => {
   const log = getLogger();
@@ -33,10 +56,7 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
 
   const frameworks = await listFrameworks({ projectDir: process.cwd() });
 
-  if (!(await directoryExists(DOT_SHORTEST_DIR_PATH))) {
-    await fs.mkdir(DOT_SHORTEST_DIR_PATH, { recursive: true });
-    log.trace(`Created ${DOT_SHORTEST_DIR_NAME} directory`);
-  }
+  await fs.mkdir(DOT_SHORTEST_DIR_PATH, { recursive: true });
 
   try {
     const VERSION = 1;
@@ -47,7 +67,9 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
         version: VERSION,
         git: await getGitInfo(),
       },
-      data: frameworks,
+      data: {
+        frameworks,
+      },
     };
 
     await fs.writeFile(
