@@ -286,25 +286,16 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return fromParts.length - toParts.length;
   }
 
-  /**
-   * Get hooks used in a file
-   */
   private getHooksForFile(filepath: string): string[] {
     const result = this.results.find((r) => r.path === filepath);
     return result?.details?.hooks || [];
   }
 
-  /**
-   * Get event handlers in a file
-   */
   private getEventHandlersForFile(filepath: string): string[] {
     const result = this.results.find((r) => r.path === filepath);
     return result?.details?.eventHandlers || [];
   }
 
-  /**
-   * Generate a summary of the analysis
-   */
   private generateSummary(): string {
     return (
       `Next.js application using ${this.isAppRouter ? "App Router" : this.isPagesRouter ? "Pages Router" : "unknown router type"}. ` +
@@ -312,9 +303,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     );
   }
 
-  /**
-   * Save analysis results to file
-   */
   private async saveAnalysisToFile(analysis: AppAnalysis): Promise<void> {
     try {
       await fs.mkdir(this.frameworkDir, { recursive: true });
@@ -534,9 +522,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     );
   }
 
-  /**
-   * Process App Router route file
-   */
   private async processAppRouterFile(file: FileInfo): Promise<void> {
     if (!file.content || !file.ast) return;
 
@@ -585,10 +570,8 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     } else if (file.name === "layout.js" || file.name === "layout.tsx") {
       fileDetail.details.isLayout = true;
 
-      // Extract layout name and add to layouts
       let layoutName: string | undefined;
 
-      // Try to extract layout name from default export
       if (file.ast) {
         const exports = this.extractExportsFromAST(file.ast);
         const defaultExport = exports.find((e) => e.includes("default"));
@@ -597,7 +580,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         }
       }
 
-      // Fallback to creating name from path
       if (!layoutName) {
         const parts = file.relativeFilePath.split("/");
         const dirName = parts[parts.length - 2] || "";
@@ -605,7 +587,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
           dirName.charAt(0).toUpperCase() + dirName.slice(1) + "Layout";
       }
 
-      // Special case for root layout
       if (
         file.relativeFilePath === "app/layout.tsx" ||
         file.relativeFilePath === "app/layout.js"
@@ -636,9 +617,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.results.push(fileDetail);
   }
 
-  /**
-   * Process Pages Router route file
-   */
   private async processPagesRouterFile(file: FileInfo): Promise<void> {
     if (!file.content || !file.ast) return;
 
@@ -677,7 +655,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       };
     }
 
-    // Determine route type
     if (file.relativeFilePath.startsWith("pages/api/")) {
       fileDetail.details.isApiRoute = true;
       const routePath = this.getRoutePathFromFilePages(file.relativeFilePath);
@@ -715,39 +692,29 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.results.push(fileDetail);
   }
 
-  /**
-   * Process component files
-   */
   private async processComponentFiles(): Promise<void> {
     this.log.debug("Processing component files");
 
-    // Find all potential component files
-    // We look for multiple component organization patterns
     const componentFiles = this.fileInfos.filter((file) => {
-      // Common component file locations
       const isInComponentsDir =
         file.relativeDirPath.includes("/components/") ||
         file.relativeDirPath.startsWith("components/") ||
         file.relativeDirPath.includes("/src/components/");
 
-      // Common UI component locations
       const isInUIDir =
         file.relativeDirPath.includes("/ui/") ||
         file.relativeDirPath.startsWith("ui/");
 
-      // Components in feature directories
       const isInFeatureDir =
         file.relativeDirPath.includes("/features/") ||
         file.relativeDirPath.startsWith("features/");
 
-      // Must be a JS/TS file with appropriate extension
       const hasJsExtension =
         file.extension === "js" ||
         file.extension === "jsx" ||
         file.extension === "ts" ||
         file.extension === "tsx";
 
-      // Look for potential React component patterns
       const isProbablyComponent =
         // TitleCase naming is a strong signal for a component
         /^[A-Z][a-zA-Z0-9]*\.(jsx?|tsx?)$/.test(file.name) ||
@@ -778,9 +745,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     );
   }
 
-  /**
-   * Process component file
-   */
   private async processComponentFile(file: FileInfo): Promise<void> {
     if (!file.content || !file.ast) return;
 
@@ -796,24 +760,15 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       },
     };
 
-    // Extract information using AST
     if (file.ast) {
-      // Extract imports
       fileDetail.details.imports = this.extractImportsFromAST(file.ast);
-
-      // Extract exports
       fileDetail.details.exports = this.extractExportsFromAST(file.ast);
-
-      // Extract React hooks
       fileDetail.details.hooks = this.extractHooksFromAST(file.ast);
-
-      // Extract event handlers
       fileDetail.details.eventHandlers = this.extractEventHandlersFromAST(
         file.ast,
       );
     }
 
-    // Create component info
     const componentName = path.basename(
       file.relativeFilePath,
       `.${file.extension}`,
@@ -834,9 +789,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.results.push(fileDetail);
   }
 
-  /**
-   * Extract imports from AST
-   */
   private extractImportsFromAST(ast: parser.ParseResult<t.File>): string[] {
     const imports: string[] = [];
 
@@ -859,9 +811,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return imports;
   }
 
-  /**
-   * Extract exports from AST
-   */
   private extractExportsFromAST(ast: parser.ParseResult<t.File>): string[] {
     const exports: string[] = [];
 
@@ -899,9 +848,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return exports;
   }
 
-  /**
-   * Extract hooks from AST
-   */
   private extractHooksFromAST(ast: parser.ParseResult<t.File>): string[] {
     const hooks: string[] = [];
 
@@ -922,9 +868,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return hooks;
   }
 
-  /**
-   * Extract event handlers from AST
-   */
   private extractEventHandlersFromAST(ast: any): string[] {
     const handlers: string[] = [];
 
@@ -964,9 +907,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return handlers;
   }
 
-  /**
-   * Extract components from AST
-   */
   private extractComponentsFromAST(ast: parser.ParseResult<t.File>): string[] {
     const components: string[] = [];
 
@@ -989,9 +929,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return components;
   }
 
-  /**
-   * Extract props from AST
-   */
   private extractPropsFromAST(ast: parser.ParseResult<t.File>): string[] {
     const props: string[] = [];
 
@@ -1037,9 +974,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return props;
   }
 
-  /**
-   * Check if the AST contains form submission logic
-   */
   private hasFormSubmissionInAST(ast: parser.ParseResult<t.File>): boolean {
     let hasFormSubmission = false;
 
@@ -1070,9 +1004,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return hasFormSubmission;
   }
 
-  /**
-   * Extract API methods from AST
-   */
   private extractApiMethodsFromAST(
     ast: parser.ParseResult<t.File>,
   ): ("GET" | "POST" | "PUT" | "DELETE" | "PATCH")[] {
@@ -1128,9 +1059,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return methods;
   }
 
-  /**
-   * Check if the AST contains input validation
-   */
   private hasInputValidationInAST(ast: parser.ParseResult<t.File>): boolean {
     let hasValidation = false;
 
@@ -1146,9 +1074,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     return hasValidation;
   }
 
-  /**
-   * Check if a route has parameters
-   */
   private hasRouteParams(route: string): boolean {
     return route.includes(":");
   }
