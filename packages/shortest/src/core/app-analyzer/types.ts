@@ -34,7 +34,6 @@ export interface RouteInfo {
   components: string[];
   hasParams: boolean;
   hasForm: boolean;
-  dataFetching: string[];
   hooks: string[];
   eventHandlers: string[];
   featureFlags: string[];

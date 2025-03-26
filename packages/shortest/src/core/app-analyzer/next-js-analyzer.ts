@@ -35,18 +35,6 @@ interface PageInfo {
   routePath: string;
   relativeFilePath: string;
   components: string[];
-  dataFetching: {
-    method:
-      | "getServerSideProps"
-      | "getStaticProps"
-      | "getStaticPaths"
-      | "useQuery"
-      | "fetch"
-      | "axios"
-      | "other"
-      | null;
-    dependencies?: string[];
-  }[];
   hasParams: boolean;
   hasFormSubmission: boolean;
 }
@@ -215,24 +203,17 @@ export class NextJsAnalyzer implements BaseAnalyzer {
    */
   private generateAnalysis(): AppAnalysis {
     // Convert pages to route info
-    const routeInfoList = this.pages.map((page) => {
-      const dataFetchingMethods = page.dataFetching.map(
-        (df) => df.method || "unknown",
-      );
-
-      return {
-        routePath: page.routePath,
-        relativeFilePath: page.relativeFilePath,
-        layoutChain: this.getLayoutChainForPage(page.relativeFilePath),
-        components: page.components,
-        hasParams: page.hasParams,
-        hasForm: page.hasFormSubmission,
-        dataFetching: dataFetchingMethods.filter(Boolean) as string[],
-        hooks: this.getHooksForFile(page.relativeFilePath),
-        eventHandlers: this.getEventHandlersForFile(page.relativeFilePath),
-        featureFlags: [],
-      };
-    });
+    const routeInfoList = this.pages.map((page) => ({
+      routePath: page.routePath,
+      relativeFilePath: page.relativeFilePath,
+      layoutChain: this.getLayoutChainForPage(page.relativeFilePath),
+      components: page.components,
+      hasParams: page.hasParams,
+      hasForm: page.hasFormSubmission,
+      hooks: this.getHooksForFile(page.relativeFilePath),
+      eventHandlers: this.getEventHandlersForFile(page.relativeFilePath),
+      featureFlags: [],
+    }));
 
     // Convert API routes
     const apiRouteInfoList = this.apis.map((api) => ({
@@ -597,7 +578,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         routePath: routePath,
         relativeFilePath: file.relativeFilePath,
         components: fileDetail.details.components || [],
-        dataFetching: this.extractDataFetchingFromAST(file.ast),
         hasParams: this.hasRouteParams(routePath),
         hasFormSubmission:
           this.hasFormSubmissionInAST(file.ast) ||
@@ -726,7 +706,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         routePath: routePath,
         relativeFilePath: file.relativeFilePath,
         components: fileDetail.details.components || [],
-        dataFetching: this.extractDataFetchingFromAST(file.ast),
         hasParams: this.hasRouteParams(routePath),
         hasFormSubmission:
           this.hasFormSubmissionInAST(file.ast) ||
@@ -1060,102 +1039,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     });
 
     return props;
-  }
-
-  /**
-   * Extract data fetching methods from AST
-   */
-  private extractDataFetchingFromAST(ast: parser.ParseResult<t.File>): {
-    method:
-      | "getServerSideProps"
-      | "getStaticProps"
-      | "getStaticPaths"
-      | "useQuery"
-      | "fetch"
-      | "axios"
-      | "other"
-      | null;
-    dependencies?: string[];
-  }[] {
-    const dataFetching: {
-      method:
-        | "getServerSideProps"
-        | "getStaticProps"
-        | "getStaticPaths"
-        | "useQuery"
-        | "fetch"
-        | "axios"
-        | "other"
-        | null;
-      dependencies?: string[];
-    }[] = [];
-
-    // Check for Next.js data fetching methods
-    let hasGetServerSideProps = false;
-    let hasGetStaticProps = false;
-    let hasGetStaticPaths = false;
-    let hasUseQuery = false;
-    let hasFetch = false;
-    let hasAxios = false;
-
-    traverse(ast, {
-      ExportNamedDeclaration(path: any) {
-        if (
-          path.node.declaration &&
-          t.isFunctionDeclaration(path.node.declaration)
-        ) {
-          const funcName = path.node.declaration.id?.name;
-          if (funcName === "getServerSideProps") {
-            hasGetServerSideProps = true;
-          } else if (funcName === "getStaticProps") {
-            hasGetStaticProps = true;
-          } else if (funcName === "getStaticPaths") {
-            hasGetStaticPaths = true;
-          }
-        }
-      },
-      CallExpression(path: any) {
-        if (t.isIdentifier(path.node.callee)) {
-          if (path.node.callee.name === "useQuery") {
-            hasUseQuery = true;
-          } else if (path.node.callee.name === "fetch") {
-            hasFetch = true;
-          }
-        } else if (
-          t.isMemberExpression(path.node.callee) &&
-          t.isIdentifier(path.node.callee.object) &&
-          path.node.callee.object.name === "axios"
-        ) {
-          hasAxios = true;
-        }
-      },
-    });
-
-    if (hasGetServerSideProps) {
-      dataFetching.push({ method: "getServerSideProps" });
-    }
-
-    if (hasGetStaticProps) {
-      dataFetching.push({ method: "getStaticProps" });
-    }
-
-    if (hasGetStaticPaths) {
-      dataFetching.push({ method: "getStaticPaths" });
-    }
-
-    if (hasUseQuery) {
-      dataFetching.push({ method: "useQuery" });
-    }
-
-    if (hasFetch) {
-      dataFetching.push({ method: "fetch" });
-    }
-
-    if (hasAxios) {
-      dataFetching.push({ method: "axios" });
-    }
-
-    return dataFetching;
   }
 
   /**
