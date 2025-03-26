@@ -8,6 +8,7 @@ import {
   clearCommand,
   detectFrameworkCommand,
   analyzeCommand,
+  planCommand,
 } from "@/cli/commands";
 import { getLogger } from "@/log/index";
 import { ShortestError } from "@/utils/errors";
@@ -38,6 +39,9 @@ detectFrameworkCommand.copyInheritedSettings(shortestCommand);
 
 shortestCommand.addCommand(analyzeCommand);
 analyzeCommand.copyInheritedSettings(shortestCommand);
+
+shortestCommand.addCommand(planCommand);
+planCommand.copyInheritedSettings(shortestCommand);
 
 const main = async () => {
   try {
