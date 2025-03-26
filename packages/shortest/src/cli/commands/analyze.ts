@@ -54,8 +54,7 @@ const executeAnalyzeCommand = async (
   const analysis = await analyzer.execute(options);
 
   log.info(
-    `Analysis complete. Found ${analysis.routes?.length || 0} routes, ` +
-      `${analysis.apiRoutes?.length || 0} API routes, and ` +
-      `${analysis.stats.filesScanned} files.`,
+    `Analysis complete. Found ${analysis.stats.routeCount} routes, ` +
+      `${analysis.stats.apiRouteCount} API routes in ${analysis.stats.fileCount} files.`,
   );
 };
