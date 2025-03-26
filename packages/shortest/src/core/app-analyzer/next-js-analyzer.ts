@@ -22,15 +22,6 @@ import { getGitInfo } from "@/utils/get-git-info";
 const require = createRequire(import.meta.url);
 const traverse = require("@babel/traverse").default;
 
-interface ComponentInfo {
-  name: string;
-  props: string[];
-  imports: string[];
-  hooks: string[];
-  eventHandlers: string[];
-  relativeFilePath: string;
-}
-
 interface PageInfo {
   routePath: string;
   relativeFilePath: string;
@@ -62,7 +53,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
   private routes: string[] = [];
   private apiRoutes: string[] = [];
   private results: FileAnalysisResult[] = [];
-  private components: Record<string, ComponentInfo> = {};
   private pages: PageInfo[] = [];
   private paths: string[] = [];
   private apis: ApiInfo[] = [];
@@ -82,17 +72,12 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     );
   }
 
-  /**
-   * Main method to execute the analysis
-   */
   async execute(): Promise<AppAnalysis> {
     this.log.trace("Executing NextJs analyzer");
 
     this.layouts = {};
     this.routes = [];
     this.apiRoutes = [];
-    this.results = [];
-    this.components = {};
     this.pages = [];
     this.paths = [];
     this.apis = [];
@@ -108,10 +93,9 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     await this.parseFiles();
     await this.processLayoutFiles();
     await this.processRouteFiles();
-    await this.processComponentFiles();
 
     this.log.debug(
-      `Analysis generated: ${this.pages.length} pages, ${this.apis.length} API routes, ${Object.keys(this.components).length} components`,
+      `Analysis generated: ${this.pages.length} pages, ${this.apis.length} API routes, ${Object.keys(this.layouts).length} layouts`,
     );
 
     const analysis: AppAnalysis = this.generateAnalysis();
@@ -194,11 +178,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     }
   }
 
-  /**
-   * Generate the new analysis format
-   */
   private generateAnalysis(): AppAnalysis {
-    // Convert pages to route info
     const routeInfoList = this.pages.map((page) => ({
       routePath: page.routePath,
       relativeFilePath: page.relativeFilePath,
@@ -211,7 +191,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       featureFlags: [],
     }));
 
-    // Convert API routes
     const apiRouteInfoList = this.apis.map((api) => ({
       routePath: api.routePath,
       relativeFilePath: api.relativeFilePath,
@@ -220,17 +199,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       deps: api.dependencies,
     }));
 
-    // Convert components
-    const componentInfoList = Object.entries(this.components).map(
-      ([name, comp]) => ({
-        name: name,
-        relativeFilePath: comp.relativeFilePath,
-        props: comp.props,
-        hasHandlers: comp.eventHandlers.length > 0,
-      }),
-    );
-
-    // Convert layouts
     const layoutInfoList = Object.values(this.layouts);
 
     return {
@@ -241,22 +209,18 @@ export class NextJsAnalyzer implements BaseAnalyzer {
           ? "pages"
           : "unknown",
       stats: {
-        filesScanned: this.fileInfos.length,
-        routes: this.pages.length,
-        apiRoutes: this.apis.length,
-        components: Object.keys(this.components).length,
+        fileCount: this.fileInfos.length,
+        routeCount: this.pages.length,
+        apiRouteCount: this.apis.length,
+        layoutCount: Object.keys(this.layouts).length,
       },
+      layouts: layoutInfoList,
       routes: routeInfoList,
       apiRoutes: apiRouteInfoList,
-      components: componentInfoList,
-      layouts: layoutInfoList,
       allPaths: this.paths,
     };
   }
 
-  /**
-   * Get the layout chain for a page
-   */
   private getLayoutChainForPage(filepath: string): string[] {
     const fileDirPath = path.dirname(filepath);
 
@@ -294,13 +258,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
   private getEventHandlersForFile(filepath: string): string[] {
     const result = this.results.find((r) => r.path === filepath);
     return result?.details?.eventHandlers || [];
-  }
-
-  private generateSummary(): string {
-    return (
-      `Next.js application using ${this.isAppRouter ? "App Router" : this.isPagesRouter ? "Pages Router" : "unknown router type"}. ` +
-      `Found ${this.pages.length} pages, ${this.apis.length} API routes, and ${Object.keys(this.components).length} components.`
-    );
   }
 
   private async saveAnalysisToFile(analysis: AppAnalysis): Promise<void> {
@@ -522,6 +479,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     );
   }
 
+  // TODO: Untested, AI-generated, check if this logic actually works
   private async processAppRouterFile(file: FileInfo): Promise<void> {
     if (!file.content || !file.ast) return;
 
@@ -540,15 +498,13 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       },
     };
 
-    if (file.ast) {
-      fileDetail.details.imports = this.extractImportsFromAST(file.ast);
-      fileDetail.details.exports = this.extractExportsFromAST(file.ast);
-      fileDetail.details.hooks = this.extractHooksFromAST(file.ast);
-      fileDetail.details.eventHandlers = this.extractEventHandlersFromAST(
-        file.ast,
-      );
-      fileDetail.details.components = this.extractComponentsFromAST(file.ast);
-    }
+    fileDetail.details.imports = this.extractImportsFromAST(file.ast);
+    fileDetail.details.exports = this.extractExportsFromAST(file.ast);
+    fileDetail.details.hooks = this.extractHooksFromAST(file.ast);
+    fileDetail.details.eventHandlers = this.extractEventHandlersFromAST(
+      file.ast,
+    );
+    fileDetail.details.components = this.extractComponentsFromAST(file.ast);
 
     if (file.name === "page.js" || file.name === "page.tsx") {
       fileDetail.details.isRoute = true;
@@ -692,103 +648,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.results.push(fileDetail);
   }
 
-  private async processComponentFiles(): Promise<void> {
-    this.log.debug("Processing component files");
-
-    const componentFiles = this.fileInfos.filter((file) => {
-      const isInComponentsDir =
-        file.relativeDirPath.includes("/components/") ||
-        file.relativeDirPath.startsWith("components/") ||
-        file.relativeDirPath.includes("/src/components/");
-
-      const isInUIDir =
-        file.relativeDirPath.includes("/ui/") ||
-        file.relativeDirPath.startsWith("ui/");
-
-      const isInFeatureDir =
-        file.relativeDirPath.includes("/features/") ||
-        file.relativeDirPath.startsWith("features/");
-
-      const hasJsExtension =
-        file.extension === "js" ||
-        file.extension === "jsx" ||
-        file.extension === "ts" ||
-        file.extension === "tsx";
-
-      const isProbablyComponent =
-        // TitleCase naming is a strong signal for a component
-        /^[A-Z][a-zA-Z0-9]*\.(jsx?|tsx?)$/.test(file.name) ||
-        // Files explicitly named Component
-        file.name.includes("Component") ||
-        // Index files in component directories
-        (file.name.match(/^index\.(jsx?|tsx?)$/) &&
-          (file.relativeFilePath.includes("/components/") ||
-            file.relativeFilePath.includes("/ui/")));
-
-      return (
-        hasJsExtension &&
-        (isInComponentsDir ||
-          isInUIDir ||
-          isInFeatureDir ||
-          isProbablyComponent)
-      );
-    });
-
-    this.log.debug(`Found ${componentFiles.length} potential component files`);
-
-    for (const file of componentFiles) {
-      await this.processComponentFile(file);
-    }
-
-    this.log.debug(
-      `Processed ${Object.keys(this.components).length} components`,
-    );
-  }
-
-  private async processComponentFile(file: FileInfo): Promise<void> {
-    if (!file.content || !file.ast) return;
-
-    const fileDetail: FileAnalysisResult = {
-      framework: "next",
-      path: file.relativeFilePath,
-      details: {
-        isComponent: true,
-        imports: [],
-        exports: [],
-        hooks: [],
-        eventHandlers: [],
-      },
-    };
-
-    if (file.ast) {
-      fileDetail.details.imports = this.extractImportsFromAST(file.ast);
-      fileDetail.details.exports = this.extractExportsFromAST(file.ast);
-      fileDetail.details.hooks = this.extractHooksFromAST(file.ast);
-      fileDetail.details.eventHandlers = this.extractEventHandlersFromAST(
-        file.ast,
-      );
-    }
-
-    const componentName = path.basename(
-      file.relativeFilePath,
-      `.${file.extension}`,
-    );
-
-    const componentInfo: ComponentInfo = {
-      name: componentName,
-      props: this.extractPropsFromAST(file.ast),
-      imports: fileDetail.details.imports || [],
-      hooks: fileDetail.details.hooks || [],
-      eventHandlers: fileDetail.details.eventHandlers || [],
-      relativeFilePath: file.relativeFilePath,
-    };
-
-    this.components[componentName] = componentInfo;
-    fileDetail.details.componentInfo = componentInfo;
-
-    this.results.push(fileDetail);
-  }
-
   private extractImportsFromAST(ast: parser.ParseResult<t.File>): string[] {
     const imports: string[] = [];
 
@@ -927,51 +786,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     });
 
     return components;
-  }
-
-  private extractPropsFromAST(ast: parser.ParseResult<t.File>): string[] {
-    const props: string[] = [];
-
-    traverse(ast, {
-      // Find props in function parameters with destructuring
-      FunctionDeclaration(path: any) {
-        if (path.node.params.length > 0) {
-          const param = path.node.params[0];
-          if (t.isObjectPattern(param)) {
-            param.properties.forEach((prop: any) => {
-              if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
-                props.push(prop.key.name);
-              } else if (
-                t.isRestElement(prop) &&
-                t.isIdentifier(prop.argument)
-              ) {
-                props.push(`...${prop.argument.name}`);
-              }
-            });
-          }
-        }
-      },
-      // Find props in arrow functions with destructuring
-      ArrowFunctionExpression(path: any) {
-        if (path.node.params.length > 0) {
-          const param = path.node.params[0];
-          if (t.isObjectPattern(param)) {
-            param.properties.forEach((prop: any) => {
-              if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
-                props.push(prop.key.name);
-              } else if (
-                t.isRestElement(prop) &&
-                t.isIdentifier(prop.argument)
-              ) {
-                props.push(`...${prop.argument.name}`);
-              }
-            });
-          }
-        }
-      },
-    });
-
-    return props;
   }
 
   private hasFormSubmissionInAST(ast: parser.ParseResult<t.File>): boolean {
