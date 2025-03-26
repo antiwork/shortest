@@ -15,15 +15,14 @@ export interface AppAnalysis {
   framework: string;
   routerType: "app" | "pages" | "unknown";
   stats: {
-    filesScanned: number;
-    routes: number;
-    apiRoutes: number;
-    components: number;
+    fileCount: number;
+    routeCount: number;
+    apiRouteCount: number;
+    layoutCount: number;
   };
+  layouts: LayoutInfo[];
   routes: RouteInfo[];
   apiRoutes: ApiRouteInfo[];
-  components: ComponentInfo[];
-  layouts: LayoutInfo[];
   allPaths: string[];
 }
 
@@ -45,13 +44,6 @@ export interface ApiRouteInfo {
   methods: string[];
   hasValidation: boolean;
   deps: string[];
-}
-
-export interface ComponentInfo {
-  name: string;
-  relativeFilePath: string;
-  props: string[];
-  hasHandlers: boolean;
 }
 
 export interface LayoutInfo {

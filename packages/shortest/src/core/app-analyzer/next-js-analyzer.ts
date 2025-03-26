@@ -127,9 +127,6 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     });
   }
 
-  /**
-   * Set the tree structure for analysis
-   */
   private async setTreeStructure(): Promise<void> {
     this.log.setGroup("🌳");
     this.log.trace("Building tree structure for NextJs analyzer");
