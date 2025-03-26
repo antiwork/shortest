@@ -46,6 +46,7 @@
     "@types/node": "^22.13.1",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
+    "@vercel/analytics": "^1.5.0",
     "@vercel/postgres": "^0.10.0",
     "adm-zip": "^0.5.16",
     "ai": "^4.1.45",
