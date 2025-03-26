@@ -2,11 +2,11 @@ import { existsSync } from "fs";
 import fs from "fs/promises";
 import path from "path";
 import { listFrameworks } from "@netlify/framework-info";
-import { simpleGit, SimpleGit, CleanOptions } from "simple-git";
 import { DOT_SHORTEST_DIR_NAME, DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { getLogger } from "@/log";
 import { directoryExists } from "@/utils/directory-exists";
 import { getErrorDetails, ShortestError } from "@/utils/errors";
+import { getGitInfo } from "@/utils/get-git-info";
 
 export const PROJECT_JSON_PATH = path.join(
   DOT_SHORTEST_DIR_PATH,
@@ -61,24 +61,5 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
   } catch (error) {
     log.error("Failed to save project information", getErrorDetails(error));
     throw new ShortestError("Failed to save project information");
-  }
-};
-
-const getGitInfo = async () => {
-  const log = getLogger();
-
-  try {
-    const git: SimpleGit = simpleGit().clean(CleanOptions.FORCE);
-    const branchInfo = await git.branch();
-    return {
-      branch: branchInfo.current,
-      commit: await git.revparse(["HEAD"]),
-    };
-  } catch (error) {
-    log.error("Failed to get git info", getErrorDetails(error));
-    return {
-      branch: null,
-      commit: null,
-    };
   }
 };

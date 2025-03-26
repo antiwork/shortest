@@ -10,7 +10,6 @@ import {
   LayoutInfo,
 } from "./types";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
-import { getGitInfo } from "@/core/app-analyzer/utils/get-git-info";
 import {
   getPaths,
   getTreeStructure,
@@ -18,6 +17,7 @@ import {
 import { getLogger } from "@/log";
 import { assertDefined } from "@/utils/assert";
 import { getErrorDetails, ShortestError } from "@/utils/errors";
+import { getGitInfo } from "@/utils/get-git-info";
 
 const require = createRequire(import.meta.url);
 const traverse = require("@babel/traverse").default;
