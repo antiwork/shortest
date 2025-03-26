@@ -88,12 +88,13 @@ export class TestPlanner {
   }
 
   private async createTestPlans(): Promise<TestPlan[]> {
-    this.log.trace("Creating test plan...");
     await initializeConfig({});
 
     const analysis = await getExistingAnalysis(this.framework);
 
     const model = createProvider(getConfig().ai);
+
+    this.log.trace("Making AI request to generate test plans");
     const resp = await generateText({
       system: SYSTEM_PROMPT,
       model,
