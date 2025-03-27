@@ -58,10 +58,11 @@ export class TestGenerator {
   private async generateTestFile(): Promise<void> {
     const rawFileContent = await this.generateRawFileOutput();
     const formattedCode = await this.formatCode(rawFileContent);
+    const lintedCode = await this.lintCode(formattedCode);
 
     try {
       await fs.mkdir(SHORTEST_DIR_PATH, { recursive: true });
-      await fs.writeFile(this.outputPath, formattedCode);
+      await fs.writeFile(this.outputPath, lintedCode);
       this.log.info("Test file generated successfully", {
         path: this.outputPath,
       });
@@ -103,17 +104,14 @@ export class TestGenerator {
         statements.push(t.expressionStatement(expectChain));
         return statements;
       })
-      .flat()
-      .reduce((acc: t.Statement[], stmt, i) => {
-        acc.push(stmt);
-        if (i < testPlans.length - 1) {
-          acc.push(t.emptyStatement());
-        }
-        return acc;
-      }, []);
+      .flat();
 
     const program = t.program([importStatement, ...testStatements]);
-    return generate(program, { retainLines: true, compact: false }).code;
+
+    return generate(program, {
+      retainLines: true,
+      compact: false,
+    }).code;
   }
 
   private async getTestPlans(): Promise<TestPlan[]> {
@@ -123,6 +121,59 @@ export class TestGenerator {
     );
     const testPlanJson = await fs.readFile(testPlanJsonPath, "utf-8");
     return JSON.parse(testPlanJson).data.testPlans;
+  }
+
+  private async lintCode(code: string): Promise<string> {
+    this.log.trace("Linting code using ESLint");
+    let lintedCode = code;
+    try {
+      this.log.trace("Loading ESLint", { rootDir: this.rootDir });
+      const eslintPath = require.resolve("eslint", {
+        paths: [this.rootDir],
+      });
+      const { ESLint } = await import(eslintPath);
+
+      const customConfig = {
+        rules: {
+          "padding-line-between-statements": [
+            "error",
+            { blankLine: "always", prev: "expression", next: "expression" },
+            { blankLine: "always", prev: "import", next: "*" },
+          ],
+        },
+      };
+
+      const eslint = new ESLint({
+        fix: true,
+        cwd: this.rootDir,
+        overrideConfig: customConfig,
+      });
+
+      const results = await eslint.lintText(code, {
+        filePath: this.outputPath,
+      });
+
+      if (results[0]?.output) {
+        lintedCode = results[0].output;
+        this.log.trace("ESLint applied fixes to the code");
+      } else {
+        this.log.trace("ESLint found no issues to fix");
+      }
+
+      if (results[0]?.messages?.length > 0) {
+        const issueCount = results[0].messages.length;
+        this.log.trace(
+          `ESLint found ${issueCount} issues that couldn't be automatically fixed`,
+        );
+      }
+    } catch (error) {
+      this.log.error(
+        "Could not use ESLint to lint code, skipping linting",
+        getErrorDetails(error),
+      );
+    }
+
+    return lintedCode;
   }
 
   private async formatCode(code: string): Promise<string> {
