@@ -10,7 +10,7 @@ export const getGitHubStarCount = async () => {
   if (cachedStarCount !== null && cacheTime !== null) {
     const now = Date.now();
     if (now - cacheTime < CACHE_DURATION) {
-      return cachedStarCount;
+      return cachedStarCount.toLocaleString();
     }
   }
 
@@ -24,9 +24,9 @@ export const getGitHubStarCount = async () => {
     cachedStarCount = data.stargazers_count;
     cacheTime = Date.now();
 
-    return cachedStarCount;
+    return cachedStarCount.toLocaleString();
   } catch (error) {
     console.error("Error fetching GitHub star count:", error);
-    return cachedStarCount || 0;
+    return (cachedStarCount || 0).toLocaleString();
   }
 };

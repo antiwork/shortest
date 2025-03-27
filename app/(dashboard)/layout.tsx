@@ -23,10 +23,10 @@ const GitHubButton = async () => {
       target="_blank"
       rel="noopener noreferrer"
     >
-      <Button variant="outline" size="sm" className="gap-2">
-        <Github size={16} />
+      <Button className="bg-white hover:bg-gray-100 text-black border border-gray-200 rounded-full text-xl px-12 py-6 inline-flex items-center justify-center">
+        <Github size={24} className="mr-2" />
         <span>{starCount}</span>
-        <Star size={16} className="text-yellow-400" />
+        <Star size={24} className="ml-2 text-yellow-400" />
       </Button>
     </a>
   );
