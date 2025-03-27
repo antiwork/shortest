@@ -14,8 +14,12 @@ import { getGitInfo, GitInfo } from "@/utils/get-git-info";
 const TestPlanSchema = z.object({
   testPlans: z.array(
     z.object({
-      steps: z.array(z.string()),
-      requiresAuth: z.boolean(),
+      steps: z.array(
+        z.object({
+          statement: z.string(),
+          requiresAuth: z.boolean().optional(),
+        }),
+      ),
     }),
   ),
 });
@@ -35,6 +39,8 @@ export interface TestPlanInfo {
 }
 
 export class TestPlanner {
+  public static readonly TEST_PLAN_FILE_NAME = "test-plan.json";
+
   private rootDir: string;
   private framework: string;
   private log = getLogger();
@@ -68,7 +74,10 @@ export class TestPlanner {
   private async getExistingTestPlans(): Promise<TestPlanInfo | null> {
     try {
       const frameworkDir = path.join(DOT_SHORTEST_DIR_PATH, this.framework);
-      const testPlanJsonPath = path.join(frameworkDir, "test-plan.json");
+      const testPlanJsonPath = path.join(
+        frameworkDir,
+        TestPlanner.TEST_PLAN_FILE_NAME,
+      );
 
       try {
         await fs.access(testPlanJsonPath);
