@@ -4,9 +4,14 @@ import path from "path";
 import * as t from "@babel/types";
 import prettier from "prettier";
 import { TestPlan, TestPlanner } from "../test-planner";
-import { DOT_SHORTEST_DIR_PATH, SHORTEST_DIR_PATH } from "@/cache";
+import { DOT_SHORTEST_DIR_PATH } from "@/cache";
+import { SHORTEST_NAME } from "@/cli/commands/shortest";
 import { getLogger } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
+
+export const SHORTEST_DIR_NAME = "shortest";
+export const SHORTEST_DIR_PATH = path.join(process.cwd(), SHORTEST_DIR_NAME);
+const SHORTEST_EXPECT_NAME = "expect";
 
 const require = createRequire(import.meta.url);
 const generate = require("@babel/generator").default;
@@ -55,7 +60,12 @@ export class TestGenerator {
     const testPlans = await this.getTestPlans();
 
     const importStatement = t.importDeclaration(
-      [t.importSpecifier(t.identifier("shortest"), t.identifier("shortest"))],
+      [
+        t.importSpecifier(
+          t.identifier(SHORTEST_NAME),
+          t.identifier(SHORTEST_NAME),
+        ),
+      ],
       t.stringLiteral("@antiwork/shortest"),
     );
 
@@ -63,13 +73,13 @@ export class TestGenerator {
       .map((plan) => {
         const statements: t.Statement[] = [];
 
-        const shortestCall = t.callExpression(t.identifier("shortest"), [
+        const shortestCall = t.callExpression(t.identifier(SHORTEST_NAME), [
           t.stringLiteral(plan.steps[0].statement),
         ]);
 
         const expectChain = plan.steps.slice(1).reduce((acc, step) => {
           const expectCall = t.callExpression(
-            t.memberExpression(acc, t.identifier("expect")),
+            t.memberExpression(acc, t.identifier(SHORTEST_EXPECT_NAME)),
             [t.stringLiteral(step.statement)],
           );
           return expectCall;

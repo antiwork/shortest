@@ -14,9 +14,10 @@ import { CLIOptions, cliOptionsSchema } from "@/types/config";
 import { getErrorDetails } from "@/utils/errors";
 import { ShortestError } from "@/utils/errors";
 
+export const SHORTEST_NAME = "shortest";
 const { version: currentVersion } = require("../../../package.json");
 
-export const shortestCommand = new Command("shortest")
+export const shortestCommand = new Command(SHORTEST_NAME)
   .description(`${pc.cyan("AI-powered end-to-end testing framework")}`)
   .version(currentVersion)
   .configureHelp({

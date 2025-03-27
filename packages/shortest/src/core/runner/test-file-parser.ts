@@ -5,6 +5,7 @@ import type { NodePath } from "@babel/traverse";
 import type * as t from "@babel/types";
 import * as babelTypes from "@babel/types";
 import { z } from "zod";
+import { SHORTEST_NAME } from "@/cli/commands/shortest";
 import { getLogger } from "@/log";
 
 const require = createRequire(import.meta.url);
@@ -71,7 +72,7 @@ export const parseShortestTestFile = (filePath: string): TestLocation[] => {
           node.type !== "CallExpression" ||
           !node.callee ||
           node.callee.type !== "Identifier" ||
-          node.callee.name !== "shortest"
+          node.callee.name !== SHORTEST_NAME
         ) {
           return;
         }
