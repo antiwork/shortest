@@ -96,9 +96,28 @@ export class TestGenerator {
         ]);
 
         const expectChain = plan.steps.slice(1).reduce((acc, step) => {
+          const expectArgs: any[] = [t.stringLiteral(step.statement)];
+
+          if (step.requiresAuth) {
+            expectArgs.push(
+              t.objectExpression([
+                t.objectProperty(
+                  t.identifier("email"),
+                  t.memberExpression(
+                    t.memberExpression(
+                      t.identifier("process"),
+                      t.identifier("env"),
+                    ),
+                    t.identifier("SHORTEST_EMAIL"),
+                  ),
+                ),
+              ]),
+            );
+          }
+
           const expectCall = t.callExpression(
             t.memberExpression(acc, t.identifier(SHORTEST_EXPECT_NAME)),
-            [t.stringLiteral(step.statement)],
+            expectArgs,
           );
           return expectCall;
         }, shortestCall);
