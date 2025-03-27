@@ -126,13 +126,13 @@ export class TestGenerator {
   }
 
   private async formatCode(code: string): Promise<string> {
+    this.log.trace("Formatting code using Prettier");
     let formattedCode = code;
     try {
       this.log.trace("Loading prettier", { rootDir: this.rootDir });
       const prettierPath = require.resolve("prettier", {
         paths: [this.rootDir],
       });
-      this.log.trace("Prettier path", { prettierPath });
       let prettier = await import(prettierPath);
 
       // Handle ESM default export
@@ -141,29 +141,13 @@ export class TestGenerator {
       }
 
       let prettierConfig = await prettier.resolveConfig(this.rootDir);
-      this.log.trace("Prettier config", { prettierConfig });
 
-      // Fallback to direct .prettierrc reading if resolveConfig doesn't find it
       if (!prettierConfig) {
-        try {
-          const prettierrcPath = path.join(this.rootDir, ".prettierrc");
-          const fileExists = await fs
-            .access(prettierrcPath)
-            .then(() => true)
-            .catch(() => false);
-
-          if (fileExists) {
-            this.log.trace("Found .prettierrc file, loading directly");
-            const configContent = await fs.readFile(prettierrcPath, "utf8");
-            prettierConfig = JSON.parse(configContent);
-            this.log.trace("Loaded .prettierrc directly", { prettierConfig });
-          }
-        } catch (configError) {
-          this.log.debug(
-            "Error loading .prettierrc directly",
-            getErrorDetails(configError),
-          );
-        }
+        this.log.trace("No prettier config found, loading from .prettierrc");
+        const prettierrcPath = path.join(this.rootDir, ".prettierrc");
+        const configContent = await fs.readFile(prettierrcPath, "utf8");
+        prettierConfig = JSON.parse(configContent);
+        this.log.trace("Loaded .prettierrc directly", { prettierConfig });
       }
 
       if (prettierConfig) {
@@ -175,7 +159,7 @@ export class TestGenerator {
       }
     } catch (error) {
       this.log.error(
-        "Prettier not found in host project, skipping formatting",
+        "Could not use Prettier to format code, skipping formatting",
         getErrorDetails(error),
       );
     }
