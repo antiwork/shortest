@@ -2,7 +2,6 @@ import fs from "fs/promises";
 import { createRequire } from "module";
 import path from "path";
 import * as t from "@babel/types";
-import prettier from "prettier";
 import { TestPlan, TestPlanner } from "../test-planner";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { SHORTEST_NAME } from "@/cli/commands/shortest";
@@ -57,6 +56,22 @@ export class TestGenerator {
   }
 
   private async generateTestFile(): Promise<void> {
+    const rawFileContent = await this.generateRawFileOutput();
+    const formattedCode = await this.formatCode(rawFileContent);
+
+    try {
+      await fs.mkdir(SHORTEST_DIR_PATH, { recursive: true });
+      await fs.writeFile(this.outputPath, formattedCode);
+      this.log.info("Test file generated successfully", {
+        path: this.outputPath,
+      });
+    } catch (error) {
+      this.log.error("Failed to write tests to file", getErrorDetails(error));
+      throw error;
+    }
+  }
+
+  private async generateRawFileOutput(): Promise<string> {
     const testPlans = await this.getTestPlans();
 
     const importStatement = t.importDeclaration(
@@ -98,26 +113,7 @@ export class TestGenerator {
       }, []);
 
     const program = t.program([importStatement, ...testStatements]);
-    const output = generate(program, { retainLines: true, compact: false });
-
-    try {
-      await fs.mkdir(SHORTEST_DIR_PATH, { recursive: true });
-
-      const prettierConfig = await prettier.resolveConfig(this.rootDir);
-      const formattedCode = await prettier.format(output.code, {
-        ...prettierConfig,
-        parser: "typescript",
-        filepath: this.outputPath,
-      });
-
-      await fs.writeFile(this.outputPath, formattedCode);
-      this.log.info("Test file generated successfully", {
-        path: this.outputPath,
-      });
-    } catch (error) {
-      this.log.error("Failed to write tests to file", getErrorDetails(error));
-      throw error;
-    }
+    return generate(program, { retainLines: true, compact: false }).code;
   }
 
   private async getTestPlans(): Promise<TestPlan[]> {
@@ -127,5 +123,63 @@ export class TestGenerator {
     );
     const testPlanJson = await fs.readFile(testPlanJsonPath, "utf-8");
     return JSON.parse(testPlanJson).data.testPlans;
+  }
+
+  private async formatCode(code: string): Promise<string> {
+    let formattedCode = code;
+    try {
+      this.log.trace("Loading prettier", { rootDir: this.rootDir });
+      const prettierPath = require.resolve("prettier", {
+        paths: [this.rootDir],
+      });
+      this.log.trace("Prettier path", { prettierPath });
+      let prettier = await import(prettierPath);
+
+      // Handle ESM default export
+      if (prettier.default) {
+        prettier = prettier.default;
+      }
+
+      let prettierConfig = await prettier.resolveConfig(this.rootDir);
+      this.log.trace("Prettier config", { prettierConfig });
+
+      // Fallback to direct .prettierrc reading if resolveConfig doesn't find it
+      if (!prettierConfig) {
+        try {
+          const prettierrcPath = path.join(this.rootDir, ".prettierrc");
+          const fileExists = await fs
+            .access(prettierrcPath)
+            .then(() => true)
+            .catch(() => false);
+
+          if (fileExists) {
+            this.log.trace("Found .prettierrc file, loading directly");
+            const configContent = await fs.readFile(prettierrcPath, "utf8");
+            prettierConfig = JSON.parse(configContent);
+            this.log.trace("Loaded .prettierrc directly", { prettierConfig });
+          }
+        } catch (configError) {
+          this.log.debug(
+            "Error loading .prettierrc directly",
+            getErrorDetails(configError),
+          );
+        }
+      }
+
+      if (prettierConfig) {
+        formattedCode = await prettier.format(formattedCode, {
+          ...prettierConfig,
+          parser: "typescript",
+          filepath: this.outputPath,
+        });
+      }
+    } catch (error) {
+      this.log.error(
+        "Prettier not found in host project, skipping formatting",
+        getErrorDetails(error),
+      );
+    }
+
+    return formattedCode;
   }
 }
