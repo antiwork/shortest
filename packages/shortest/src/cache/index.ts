@@ -12,6 +12,8 @@ export const DOT_SHORTEST_DIR_PATH = path.join(
   process.cwd(),
   DOT_SHORTEST_DIR_NAME,
 );
+export const SHORTEST_DIR_NAME = "shortest";
+export const SHORTEST_DIR_PATH = path.join(process.cwd(), SHORTEST_DIR_NAME);
 export const CACHE_DIR_PATH = path.join(DOT_SHORTEST_DIR_PATH, "cache");
 export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 

@@ -54,6 +54,8 @@
     "simple-git": "^3.27.0"
   },
   "devDependencies": {
+    "@babel/generator": "^7.27.0",
+    "@types/babel__generator": "^7.6.8",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.17.17",
     "package-manager-detector": "0.2.9",
