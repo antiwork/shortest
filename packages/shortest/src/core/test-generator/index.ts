@@ -5,6 +5,8 @@ import * as t from "@babel/types";
 import { TestPlan, TestPlanner } from "../test-planner";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { SHORTEST_NAME } from "@/cli/commands/shortest";
+import { formatCode } from "@/core/test-generator/utils/format-code";
+import { lintCode } from "@/core/test-generator/utils/lint-code";
 import { getLogger } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
 
@@ -57,8 +59,8 @@ export class TestGenerator {
 
   private async generateTestFile(): Promise<void> {
     const rawFileContent = await this.generateRawFileOutput();
-    const formattedCode = await this.formatCode(rawFileContent);
-    const lintedCode = await this.lintCode(formattedCode);
+    const formattedCode = await formatCode(rawFileContent, this.rootDir);
+    const lintedCode = await lintCode(formattedCode, this.rootDir);
 
     try {
       await fs.mkdir(SHORTEST_DIR_PATH, { recursive: true });
@@ -121,100 +123,5 @@ export class TestGenerator {
     );
     const testPlanJson = await fs.readFile(testPlanJsonPath, "utf-8");
     return JSON.parse(testPlanJson).data.testPlans;
-  }
-
-  private async lintCode(code: string): Promise<string> {
-    this.log.trace("Linting code using ESLint");
-    let lintedCode = code;
-    try {
-      this.log.trace("Loading ESLint", { rootDir: this.rootDir });
-      const eslintPath = require.resolve("eslint", {
-        paths: [this.rootDir],
-      });
-      const { ESLint } = await import(eslintPath);
-
-      const customConfig = {
-        rules: {
-          "padding-line-between-statements": [
-            "error",
-            { blankLine: "always", prev: "expression", next: "expression" },
-            { blankLine: "always", prev: "import", next: "*" },
-          ],
-        },
-      };
-
-      const eslint = new ESLint({
-        fix: true,
-        cwd: this.rootDir,
-        overrideConfig: customConfig,
-      });
-
-      const results = await eslint.lintText(code, {
-        filePath: this.outputPath,
-      });
-
-      if (results[0]?.output) {
-        lintedCode = results[0].output;
-        this.log.trace("ESLint applied fixes to the code");
-      } else {
-        this.log.trace("ESLint found no issues to fix");
-      }
-
-      if (results[0]?.messages?.length > 0) {
-        const issueCount = results[0].messages.length;
-        this.log.trace(
-          `ESLint found ${issueCount} issues that couldn't be automatically fixed`,
-        );
-      }
-    } catch (error) {
-      this.log.error(
-        "Could not use ESLint to lint code, skipping linting",
-        getErrorDetails(error),
-      );
-    }
-
-    return lintedCode;
-  }
-
-  private async formatCode(code: string): Promise<string> {
-    this.log.trace("Formatting code using Prettier");
-    let formattedCode = code;
-    try {
-      this.log.trace("Loading prettier", { rootDir: this.rootDir });
-      const prettierPath = require.resolve("prettier", {
-        paths: [this.rootDir],
-      });
-      let prettier = await import(prettierPath);
-
-      // Handle ESM default export
-      if (prettier.default) {
-        prettier = prettier.default;
-      }
-
-      let prettierConfig = await prettier.resolveConfig(this.rootDir);
-
-      if (!prettierConfig) {
-        this.log.trace("No prettier config found, loading from .prettierrc");
-        const prettierrcPath = path.join(this.rootDir, ".prettierrc");
-        const configContent = await fs.readFile(prettierrcPath, "utf8");
-        prettierConfig = JSON.parse(configContent);
-        this.log.trace("Loaded .prettierrc directly", { prettierConfig });
-      }
-
-      if (prettierConfig) {
-        formattedCode = await prettier.format(formattedCode, {
-          ...prettierConfig,
-          parser: "typescript",
-          filepath: this.outputPath,
-        });
-      }
-    } catch (error) {
-      this.log.error(
-        "Could not use Prettier to format code, skipping formatting",
-        getErrorDetails(error),
-      );
-    }
-
-    return formattedCode;
   }
 }
