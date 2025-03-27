@@ -48,10 +48,10 @@ const executePlanCommand = async (
     );
   }
 
-  const framework = supportedFrameworks[0].id;
-  log.info(`Generating test plans for ${framework} application...`);
+  const framework = supportedFrameworks[0];
+  log.info(`Generating test plans for ${framework.name} application...`);
 
-  const planner = new TestPlanner(cwd, framework);
+  const planner = new TestPlanner(cwd, framework.id);
   const testPlans = await planner.execute(options);
 
   log.info(`Test planning complete. Generated ${testPlans.length} test plans.`);
