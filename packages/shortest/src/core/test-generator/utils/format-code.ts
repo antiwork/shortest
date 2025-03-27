@@ -26,11 +26,51 @@ export const formatCode = async (
     let prettierConfig = await prettier.resolveConfig(rootDir);
 
     if (!prettierConfig) {
-      log.trace("No prettier config found, loading from .prettierrc");
-      const prettierrcPath = path.join(rootDir, ".prettierrc");
-      const configContent = await fs.readFile(prettierrcPath, "utf8");
-      prettierConfig = JSON.parse(configContent);
-      log.trace("Loaded .prettierrc directly", { prettierConfig });
+      log.trace(
+        "No Prettier config found via resolveConfig, checking for config files",
+      );
+
+      const prettierConfigMjsPath = path.join(rootDir, "prettier.config.mjs");
+      try {
+        if (
+          await fs
+            .stat(prettierConfigMjsPath)
+            .then(() => true)
+            .catch(() => false)
+        ) {
+          log.trace("Found prettier.config.mjs, loading config");
+          const configModule = await import(`file://${prettierConfigMjsPath}`);
+          prettierConfig = configModule.default;
+          log.trace("Loaded prettier.config.mjs", { prettierConfig });
+        }
+      } catch (configError) {
+        log.trace(
+          "Error loading prettier.config.mjs",
+          getErrorDetails(configError),
+        );
+      }
+
+      if (!prettierConfig) {
+        try {
+          const prettierrcPath = path.join(rootDir, ".prettierrc");
+          if (
+            await fs
+              .stat(prettierrcPath)
+              .then(() => true)
+              .catch(() => false)
+          ) {
+            log.trace("Loading from .prettierrc");
+            const configContent = await fs.readFile(prettierrcPath, "utf8");
+            prettierConfig = JSON.parse(configContent);
+            log.trace("Loaded .prettierrc directly", { prettierConfig });
+          }
+        } catch (prettierrcError) {
+          log.trace(
+            "Error loading .prettierrc",
+            getErrorDetails(prettierrcError),
+          );
+        }
+      }
     }
 
     if (prettierConfig) {

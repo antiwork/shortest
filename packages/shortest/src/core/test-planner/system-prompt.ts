@@ -13,10 +13,9 @@ For each test plan, include the following:
 Return a JSON object with the following fields:
 - testPlans: An array of test plans
 Each test plan must have the following fields:
-- steps: An array of steps
-Each step must be an object with the following fields:
-- step.statement: A string representing the step (simple sentence, not more than 10 words)
-- step.requiresAuth: Optional, only one step must have this set to true within a given test plan. A boolean indicating if the step requires authentication.
+- steps: An array of strings representing the step (simple sentence, not more than 10 words)
+- options: An object with the following fields:
+  - options.requiresAuth: Optional. A boolean indicating if the step requires authentication.
 
 The final response MUST return only the JSON object, nothing else.
 
