@@ -91,33 +91,34 @@ export class TestGenerator {
       .map((plan) => {
         const statements: t.Statement[] = [];
 
-        const shortestCall = t.callExpression(t.identifier(SHORTEST_NAME), [
-          t.stringLiteral(plan.steps[0].statement),
-        ]);
+        const statementArgs: any[] = [t.stringLiteral(plan.steps[0])];
+
+        if (plan.options?.requiresAuth) {
+          statementArgs.push(
+            t.objectExpression([
+              t.objectProperty(
+                t.identifier("email"),
+                t.memberExpression(
+                  t.memberExpression(
+                    t.identifier("process"),
+                    t.identifier("env"),
+                  ),
+                  t.identifier("SHORTEST_EMAIL"),
+                ),
+              ),
+            ]),
+          );
+        }
+
+        const shortestCall = t.callExpression(
+          t.identifier(SHORTEST_NAME),
+          statementArgs,
+        );
 
         const expectChain = plan.steps.slice(1).reduce((acc, step) => {
-          const expectArgs: any[] = [t.stringLiteral(step.statement)];
-
-          if (step.requiresAuth) {
-            expectArgs.push(
-              t.objectExpression([
-                t.objectProperty(
-                  t.identifier("email"),
-                  t.memberExpression(
-                    t.memberExpression(
-                      t.identifier("process"),
-                      t.identifier("env"),
-                    ),
-                    t.identifier("SHORTEST_EMAIL"),
-                  ),
-                ),
-              ]),
-            );
-          }
-
           const expectCall = t.callExpression(
             t.memberExpression(acc, t.identifier(SHORTEST_EXPECT_NAME)),
-            expectArgs,
+            [t.stringLiteral(step)],
           );
           return expectCall;
         }, shortestCall);
