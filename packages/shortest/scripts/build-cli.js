@@ -12,7 +12,7 @@ const externalDeps = [
   "esbuild", "playwright", "expect", "dotenv", "otplib", "picocolors",
   "punycode", "mailosaur", "ai", "@ai-sdk/*", "@babel/*", "commander",
   "@netlify/framework-info", "normalize-package-data", "hosted-git-info", "glob",
-  "simple-git", "globby", "listr2"
+  "simple-git", "globby", "listr2", "@inquirer/prompts", "@listr2/prompt-adapter-inquirer"
 ];
 
 const cmd = [

@@ -43,6 +43,8 @@
     "@babel/parser": "^7.26.9",
     "@babel/traverse": "^7.26.9",
     "@babel/types": "^7.26.9",
+    "@inquirer/prompts": "^7.4.0",
+    "@listr2/prompt-adapter-inquirer": "^2.0.18",
     "@netlify/framework-info": "^9.9.2",
     "@types/babel__traverse": "^7.20.6",
     "chromium-bidi": "^0.5.24",

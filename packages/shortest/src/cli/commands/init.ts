@@ -3,6 +3,8 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "path";
 import type { Readable } from "stream";
 import { fileURLToPath } from "url";
+import { select, input } from "@inquirer/prompts";
+import { ListrInquirerPromptAdapter } from "@listr2/prompt-adapter-inquirer";
 import { Command, Option } from "commander";
 import { Listr } from "listr2";
 import { detect, resolveCommand } from "package-manager-detector";
@@ -43,8 +45,14 @@ initCommand
     });
   });
 
+interface Ctx {
+  alreadyInstalled: boolean;
+  anthropicApiKey: string;
+  envFile: EnvFile;
+}
+
 export const executeInitCommand = async () => {
-  const tasks = new Listr(
+  const tasks = new Listr<Ctx>(
     [
       {
         title: "Checking for existing installation",
@@ -77,21 +85,6 @@ export const executeInitCommand = async () => {
         },
       },
       {
-        title: `Creating ${CONFIG_FILENAME}`,
-        enabled: (ctx): boolean => !ctx.alreadyInstalled,
-        task: async (_, task) => {
-          const configPath = join(process.cwd(), CONFIG_FILENAME);
-          const exampleConfigPath = join(
-            fileURLToPath(new URL("../../src", import.meta.url)),
-            `${CONFIG_FILENAME}.example`,
-          );
-
-          const exampleConfig = await readFile(exampleConfigPath, "utf8");
-          await writeFile(configPath, exampleConfig, "utf8");
-          task.title = `${CONFIG_FILENAME} created.`;
-        },
-      },
-      {
         title: `Setting up environment variables`,
         enabled: (ctx): boolean => !ctx.alreadyInstalled,
         task: (_, task): Listr =>
@@ -110,18 +103,33 @@ export const executeInitCommand = async () => {
               },
               {
                 title: `Adding ANTHROPIC_API_KEY`,
-                task: async (ctx, task) => {
-                  const keyAdded = await ctx.envFile.add({
-                    key: "ANTHROPIC_API_KEY",
-                    value: "your_value_here",
-                    comment: "Shortest variables",
-                  });
-                  if (keyAdded) {
-                    task.title = `ANTHROPIC_API_KEY added`;
-                  } else {
-                    task.title = `ANTHROPIC_API_KEY already exists, skipped`;
-                  }
-                },
+                task: async (_, task): Promise<Listr> =>
+                  task.newListr([
+                    {
+                      title: "Enter value for ANTHROPIC_API_KEY",
+                      task: async (ctx, task) =>
+                        (ctx.anthropicApiKey = await task
+                          .prompt(ListrInquirerPromptAdapter)
+                          .run(input, {
+                            message: "Please give me some input",
+                          })),
+                    },
+                    {
+                      title: "Save ANTHROPIC_API_KEY",
+                      task: async (ctx, task) => {
+                        const keyAdded = await ctx.envFile.add({
+                          key: "ANTHROPIC_API_KEY",
+                          value: ctx.anthropicApiKey,
+                          comment: "Shortest variables",
+                        });
+                        if (keyAdded) {
+                          task.title = `ANTHROPIC_API_KEY added`;
+                        } else {
+                          task.title = `ANTHROPIC_API_KEY already exists, skipped`;
+                        }
+                      },
+                    },
+                  ]),
               },
             ],
             {
@@ -130,6 +138,21 @@ export const executeInitCommand = async () => {
               },
             },
           ),
+      },
+      {
+        title: `Creating ${CONFIG_FILENAME}`,
+        enabled: (ctx): boolean => !ctx.alreadyInstalled,
+        task: async (_, task) => {
+          const configPath = join(process.cwd(), CONFIG_FILENAME);
+          const exampleConfigPath = join(
+            fileURLToPath(new URL("../../src", import.meta.url)),
+            `${CONFIG_FILENAME}.example`,
+          );
+
+          const exampleConfig = await readFile(exampleConfigPath, "utf8");
+          await writeFile(configPath, exampleConfig, "utf8");
+          task.title = `${CONFIG_FILENAME} created.`;
+        },
       },
       {
         title: "Updating .gitignore",
@@ -162,7 +185,6 @@ export const executeInitCommand = async () => {
   try {
     await tasks.run();
     console.log(pc.green("\nInitialization complete! Next steps:"));
-    console.log(`1. Update ${ENV_LOCAL_FILENAME} with your values`);
     console.log("2. Create your first test file: example.test.ts");
     console.log("3. Run tests with: npx/pnpm test example.test.ts");
   } catch (error) {
