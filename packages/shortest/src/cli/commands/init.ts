@@ -1,16 +1,18 @@
-import { execSync } from "child_process";
+import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "path";
+import type { Readable } from "stream";
 import { fileURLToPath } from "url";
 import { Command, Option } from "commander";
+import { Listr } from "listr2";
 import { detect, resolveCommand } from "package-manager-detector";
 import pc from "picocolors";
 import { DOT_SHORTEST_DIR_NAME } from "@/cache";
 import { executeCommand } from "@/cli/utils/command-builder";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
 import { LOG_LEVELS } from "@/log/config";
-import { addToEnv } from "@/utils/add-to-env";
 import { addToGitignore } from "@/utils/add-to-gitignore";
+import { EnvFile } from "@/utils/env-file";
 import { ShortestError } from "@/utils/errors";
 
 export const initCommand = new Command("init")
@@ -36,88 +38,135 @@ initCommand
     new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
   )
   .action(async function () {
-    await executeCommand(this.name(), this.optsWithGlobals(), async () =>
-      executeInitCommand(),
-    );
+    await executeCommand(this.name(), this.optsWithGlobals(), async () => {
+      await executeInitCommand();
+    });
   });
 
 export const executeInitCommand = async () => {
-  console.log(pc.blue("Setting up Shortest..."));
+  const tasks = new Listr(
+    [
+      {
+        title: "Checking for existing installation",
+        task: async (ctx, task): Promise<void> => {
+          const packageJson = await getPackageJson();
+          ctx.alreadyInstalled = !!(
+            packageJson?.dependencies?.["@antiwork/shortest"] ||
+            packageJson?.devDependencies?.["@antiwork/shortest"]
+          );
+          if (ctx.alreadyInstalled) {
+            task.output = `Shortest is already installed`;
+          } else {
+            task.output = "Shortest is not installed, starting installation.";
+          }
+        },
+        rendererOptions: {
+          persistentOutput: true,
+        },
+      },
+      {
+        title: "Installing dependencies",
+        enabled: (ctx): boolean => !ctx.alreadyInstalled,
+        task: async (_, task): Promise<Readable> => {
+          const installCmd = await getInstallCmd();
+          task.title = `Executing ${installCmd.toString()}`;
+          return spawn(installCmd.cmd, installCmd.args).stdout;
+        },
+        rendererOptions: {
+          persistentOutput: true,
+        },
+      },
+      {
+        title: `Creating ${CONFIG_FILENAME}`,
+        enabled: (ctx): boolean => !ctx.alreadyInstalled,
+        task: async (_, task) => {
+          const configPath = join(process.cwd(), CONFIG_FILENAME);
+          const exampleConfigPath = join(
+            fileURLToPath(new URL("../../src", import.meta.url)),
+            `${CONFIG_FILENAME}.example`,
+          );
+
+          const exampleConfig = await readFile(exampleConfigPath, "utf8");
+          await writeFile(configPath, exampleConfig, "utf8");
+          task.title = `${CONFIG_FILENAME} created.`;
+        },
+      },
+      {
+        title: `Setting up environment variables`,
+        enabled: (ctx): boolean => !ctx.alreadyInstalled,
+        task: (_, task): Listr =>
+          task.newListr(
+            [
+              {
+                title: `Checking for ${ENV_LOCAL_FILENAME}`,
+                task: async (ctx, task) => {
+                  ctx.envFile = new EnvFile(process.cwd(), ENV_LOCAL_FILENAME);
+                  if (ctx.envFile.isNewFile()) {
+                    task.title = `Creating ${ENV_LOCAL_FILENAME}`;
+                  } else {
+                    task.title = `Found ${ENV_LOCAL_FILENAME}`;
+                  }
+                },
+              },
+              {
+                title: `Adding ANTHROPIC_API_KEY`,
+                task: async (ctx, task) => {
+                  const keyAdded = await ctx.envFile.add({
+                    key: "ANTHROPIC_API_KEY",
+                    value: "your_value_here",
+                    comment: "Shortest variables",
+                  });
+                  if (keyAdded) {
+                    task.title = `ANTHROPIC_API_KEY added`;
+                  } else {
+                    task.title = `ANTHROPIC_API_KEY already exists, skipped`;
+                  }
+                },
+              },
+            ],
+            {
+              rendererOptions: {
+                collapseSubtasks: false,
+              },
+            },
+          ),
+      },
+      {
+        title: "Updating .gitignore",
+        enabled: (ctx): boolean => !ctx.alreadyInstalled,
+        task: async (_, task) => {
+          const resultGitignore = await addToGitignore(process.cwd(), [
+            ".env*.local",
+            `${DOT_SHORTEST_DIR_NAME}/`,
+          ]);
+
+          if (resultGitignore.error) {
+            throw new Error(
+              `Failed to update .gitignore: ${resultGitignore.error}`,
+            );
+          }
+
+          task.title = `.gitignore ${resultGitignore.wasCreated ? "created" : "updated"}`;
+        },
+      },
+    ],
+    {
+      exitOnError: true,
+      concurrent: false,
+      rendererOptions: {
+        collapseErrors: false,
+      },
+    },
+  );
 
   try {
-    const packageJson = await getPackageJson();
-    if (
-      packageJson?.dependencies?.["@antiwork/shortest"] ||
-      packageJson?.devDependencies?.["@antiwork/shortest"]
-    ) {
-      console.log(pc.green("✔ Package already installed"));
-      return;
-    }
-    console.log("Installing @antiwork/shortest...");
-    const installCmd = await getInstallCmd();
-    execSync(installCmd, { stdio: "inherit" });
-    console.log(pc.green("✔ Dependencies installed"));
-
-    const configPath = join(process.cwd(), CONFIG_FILENAME);
-    const exampleConfigPath = join(
-      fileURLToPath(new URL("../../src", import.meta.url)),
-      `${CONFIG_FILENAME}.example`,
-    );
-
-    const exampleConfig = await readFile(exampleConfigPath, "utf8");
-    await writeFile(configPath, exampleConfig, "utf8");
-    console.log(pc.green(`✔ ${CONFIG_FILENAME} created`));
-
-    const envResult = await addToEnv(process.cwd(), {
-      ANTHROPIC_API_KEY: {
-        value: "your_value_here",
-        comment: "Shortest variables",
-      },
-    });
-    if (envResult.error) {
-      console.error(
-        pc.red(`Failed to update ${ENV_LOCAL_FILENAME}`),
-        envResult.error,
-      );
-    } else if (envResult.added.length > 0) {
-      const added = envResult.added.join(", ");
-      const skipped = envResult.skipped.join(", ");
-      const detailsString = [
-        added ? `${added} added` : "",
-        skipped ? `${skipped} skipped` : "",
-      ]
-        .filter(Boolean)
-        .join(", ");
-      console.log(
-        pc.green(
-          `✔ ${ENV_LOCAL_FILENAME} ${envResult.wasCreated ? "created" : "updated"} (${detailsString})`,
-        ),
-      );
-    }
-
-    const resultGitignore = await addToGitignore(process.cwd(), [
-      ".env*.local",
-      `${DOT_SHORTEST_DIR_NAME}/`,
-    ]);
-    if (resultGitignore.error) {
-      console.error(
-        pc.red("Failed to update .gitignore"),
-        resultGitignore.error,
-      );
-    } else {
-      console.log(
-        pc.green(
-          `✔ .gitignore ${resultGitignore.wasCreated ? "created" : "updated"}`,
-        ),
-      );
-    }
-
+    await tasks.run();
     console.log(pc.green("\nInitialization complete! Next steps:"));
     console.log(`1. Update ${ENV_LOCAL_FILENAME} with your values`);
     console.log("2. Create your first test file: example.test.ts");
     console.log("3. Run tests with: npx/pnpm test example.test.ts");
   } catch (error) {
-    console.error(pc.red("Initialization failed:"), error);
+    console.error(pc.red("Initialization failed"));
     throw error;
   }
 };
@@ -153,7 +202,10 @@ export const getInstallCmd = async () => {
   }
 
   const cmdString = `${command.command} ${command.args.join(" ")}`;
-  console.log(pc.dim(cmdString));
 
-  return cmdString;
+  return {
+    cmd: command.command,
+    args: command.args,
+    toString: () => cmdString,
+  };
 };
