@@ -103,7 +103,7 @@ export class TestGenerator {
                     t.identifier("process"),
                     t.identifier("env"),
                   ),
-                  t.identifier("SHORTEST_EMAIL"),
+                  t.identifier("SHORTEST_LOGIN_EMAIL"),
                 ),
               ),
             ]),
