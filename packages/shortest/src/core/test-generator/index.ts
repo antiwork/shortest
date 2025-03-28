@@ -106,6 +106,16 @@ export class TestGenerator {
                   t.identifier("SHORTEST_LOGIN_EMAIL"),
                 ),
               ),
+              t.objectProperty(
+                t.identifier("password"),
+                t.memberExpression(
+                  t.memberExpression(
+                    t.identifier("process"),
+                    t.identifier("env"),
+                  ),
+                  t.identifier("SHORTEST_LOGIN_PASSWORD"),
+                ),
+              ),
             ]),
           );
         }
