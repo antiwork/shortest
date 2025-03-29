@@ -7,7 +7,6 @@ import { select, input, confirm } from "@inquirer/prompts";
 import { ListrInquirerPromptAdapter } from "@listr2/prompt-adapter-inquirer";
 import { Command, Option } from "commander";
 import {
-  delay,
   Listr,
   SimpleRenderer,
   ListrTaskWrapper as TaskWrapper,
@@ -72,6 +71,8 @@ interface Ctx {
   envFile: EnvFile;
   generateSampleTestFile: boolean;
   supportedFramework: SupportedFramework | null;
+  shortestLoginEmail: string;
+  shortestLoginPassword: string;
 }
 
 export const executeInitCommand = async () => {
@@ -96,7 +97,6 @@ export const executeInitCommand = async () => {
               {
                 title: "Checking for existing installation",
                 task: async (ctx, task): Promise<void> => {
-                  await delay(5000);
                   const packageJson = await getPackageJson();
                   ctx.alreadyInstalled = !!(
                     packageJson?.dependencies?.["@antiwork/shortest"] ||
@@ -151,11 +151,7 @@ export const executeInitCommand = async () => {
                                 title: "Checking for Anthropic API key",
                                 task: async (ctx, _) => {
                                   ctx.anthropicApiKeyExists =
-                                    ctx.envFile.keyExists(
-                                      ctx.envFile.keyExists(
-                                        "ANTHROPIC_API_KEY",
-                                      ),
-                                    );
+                                    ctx.envFile.keyExists("ANTHROPIC_API_KEY");
                                 },
                               },
                               {
@@ -230,11 +226,12 @@ export const executeInitCommand = async () => {
                                 (ctx.shortestLoginEmail = await task
                                   .prompt(ListrInquirerPromptAdapter)
                                   .run(input, {
-                                    message: `Enter value for SHORTEST_LOGIN_EMAIL`,
+                                    message: `Enter value for SHORTEST_LOGIN_EMAIL. Skip if the application does not require authentication.`,
                                   })),
                             },
                             {
                               title: "Saving SHORTEST_LOGIN_EMAIL key",
+                              skip: (ctx): boolean => !ctx.shortestLoginEmail,
                               task: async (ctx, task) => {
                                 const keyAdded = await ctx.envFile.add({
                                   key: "SHORTEST_LOGIN_EMAIL",
@@ -249,6 +246,7 @@ export const executeInitCommand = async () => {
                             },
                             {
                               title: "Enter the password for the test account",
+                              skip: (ctx): boolean => !ctx.shortestLoginEmail,
                               task: async (ctx, task) =>
                                 (ctx.shortestLoginPassword = await task
                                   .prompt(ListrInquirerPromptAdapter)
@@ -258,6 +256,8 @@ export const executeInitCommand = async () => {
                             },
                             {
                               title: "Saving SHORTEST_LOGIN_EMAIL key",
+                              skip: (ctx): boolean =>
+                                !ctx.shortestLoginPassword,
                               task: async (ctx, task) => {
                                 const keyAdded = await ctx.envFile.add({
                                   key: "SHORTEST_LOGIN_PASSWORD",
@@ -306,7 +306,7 @@ export const executeInitCommand = async () => {
                   ]);
 
                   if (resultGitignore.error) {
-                    throw new Error(
+                    throw new ShortestError(
                       `Failed to update .gitignore: ${resultGitignore.error}`,
                     );
                   }
@@ -432,8 +432,8 @@ export const executeInitCommand = async () => {
       console.log("Run tests with: npx/pnpm shortest");
     } else {
       console.log(pc.green("\nInitialization complete! Next steps:"));
-      console.log("2. Create your first test file: example.test.ts");
-      console.log("3. Run tests with: npx/pnpm shortest example.test.ts");
+      console.log("1. Create your first test file: example.test.ts");
+      console.log("2. Run tests with: npx/pnpm shortest example.test.ts");
     }
   } catch (error) {
     console.error(pc.red("Initialization failed"));
