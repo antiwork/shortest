@@ -77,168 +77,234 @@ export const executeInitCommand = async () => {
   const tasks = new Listr<Ctx>(
     [
       {
-        title: "Checking for existing installation",
-        task: async (ctx, task): Promise<void> => {
-          await delay(5000);
-          const packageJson = await getPackageJson();
-          ctx.alreadyInstalled = !!(
-            packageJson?.dependencies?.["@antiwork/shortest"] ||
-            packageJson?.devDependencies?.["@antiwork/shortest"]
-          );
-          if (ctx.alreadyInstalled) {
-            task.title = `Shortest is already installed`;
-          } else {
-            task.title = "Shortest is not installed, starting installation.";
-          }
-        },
+        title: "[🧪 Experimental Next.js] Confirm sample test file generation",
+        task: async (ctx, task) =>
+          (ctx.generateSampleTestFile = await task
+            .prompt(ListrInquirerPromptAdapter)
+            .run(confirm, {
+              message:
+                "Do you want to generate a sample test file after installation? This is an experimental feature for Next.js projects.",
+              default: true,
+            })),
       },
       {
-        title: "Installing dependencies",
-        enabled: (ctx): boolean => !ctx.alreadyInstalled,
-        task: async (_, task): Promise<Readable> => {
-          const installCmd = await getInstallCmd();
-          task.title = `Executing ${installCmd.toString()}`;
-          return spawn(installCmd.cmd, installCmd.args).stdout;
-        },
-        rendererOptions: {
-          persistentOutput: true,
-          bottomBar: 5,
-        },
-      },
-      {
-        title: `Setting up environment variables`,
-        enabled: (ctx): boolean => !ctx.alreadyInstalled,
+        title: "Install Shortest",
         task: (_, task): Listr =>
           task.newListr(
             [
               {
-                title: `Checking for ${ENV_LOCAL_FILENAME}`,
-                task: async (ctx, task) => {
-                  ctx.envFile = new EnvFile(process.cwd(), ENV_LOCAL_FILENAME);
-                  if (ctx.envFile.isNewFile()) {
-                    task.title = `Creating ${ENV_LOCAL_FILENAME}`;
+                title: "Checking for existing installation",
+                task: async (ctx, task): Promise<void> => {
+                  await delay(5000);
+                  const packageJson = await getPackageJson();
+                  ctx.alreadyInstalled = !!(
+                    packageJson?.dependencies?.["@antiwork/shortest"] ||
+                    packageJson?.devDependencies?.["@antiwork/shortest"]
+                  );
+                  if (ctx.alreadyInstalled) {
+                    task.title = `Shortest is already installed`;
                   } else {
-                    task.title = `Found ${ENV_LOCAL_FILENAME}`;
+                    task.title =
+                      "Shortest is not installed, starting installation.";
                   }
                 },
               },
               {
-                title: `Adding Anthropic API key`,
-                task: async (_, task): Promise<Listr> =>
-                  task.newListr([
-                    {
-                      title: "Checking for Anthropic API key",
-                      task: async (ctx, _) => {
-                        ctx.anthropicApiKeyExists = ctx.envFile.keyExists(
-                          ctx.envFile.keyExists("ANTHROPIC_API_KEY"),
-                        );
-                      },
-                    },
-                    {
-                      title: "Select Anthropic API key name",
-                      task: async (ctx, task) =>
-                        (ctx.anthropicApiKeyName = await task
-                          .prompt(ListrInquirerPromptAdapter)
-                          .run(select, {
-                            message: ctx.anthropicApiKeyExists
-                              ? "Anthropic API key already exists. Select the name of the key you want to use."
-                              : "Select the name of the Anthropic API key you want to use.",
-                            choices: [
-                              {
-                                name: "ANTHROPIC_API_KEY",
-                                value: "ANTHROPIC_API_KEY",
-                                description: ctx.anthropicApiKeyExists
-                                  ? "Use existing API key"
-                                  : "Use the default API key name",
-                              },
-                              {
-                                name: "SHORTEST_ANTHROPIC_API_KEY",
-                                value: "SHORTEST_ANTHROPIC_API_KEY",
-                                description:
-                                  "Use a dedicated API key for Shortest",
-                              },
-                            ],
-                          })),
-                    },
-                    {
-                      title: "Enter API key value",
-                      enabled: (ctx): boolean => !ctx.anthropicApiKeyExists,
-                      task: async (ctx, task) =>
-                        (ctx.anthropicApiKeyValue = await task
-                          .prompt(ListrInquirerPromptAdapter)
-                          .run(input, {
-                            message: `Enter value for ${ctx.anthropicApiKeyName}`,
-                            required: true,
-                          })),
-                    },
-                    {
-                      title: "Saving API key",
-                      enabled: (ctx): boolean => !!ctx.anthropicApiKeyValue,
-                      task: async (ctx, task) => {
-                        const keyAdded = await ctx.envFile.add({
-                          key: ctx.anthropicApiKeyName,
-                          value: ctx.anthropicApiKeyValue,
-                        });
-                        if (keyAdded) {
-                          task.title = `${ctx.anthropicApiKeyName} added`;
-                        } else {
-                          task.title = `${ctx.anthropicApiKeyName} already exists, skipped`;
-                        }
-                      },
-                    },
-                  ]),
+                title: "Installing dependencies",
+                enabled: (ctx): boolean => !ctx.alreadyInstalled,
+                task: async (_, task): Promise<Readable> => {
+                  const installCmd = await getInstallCmd();
+                  task.title = `Executing ${installCmd.toString()}`;
+                  return spawn(installCmd.cmd, installCmd.args).stdout;
+                },
+                rendererOptions: {
+                  bottomBar: 5,
+                },
               },
               {
-                title: "Adding Shortest login credentials for testing",
-                task: async (_, task): Promise<Listr> =>
-                  task.newListr([
+                title: `Setting up environment variables`,
+                enabled: (ctx): boolean => !ctx.alreadyInstalled,
+                task: (_, task): Listr =>
+                  task.newListr(
+                    [
+                      {
+                        title: `Checking for ${ENV_LOCAL_FILENAME}`,
+                        task: async (ctx, task) => {
+                          ctx.envFile = new EnvFile(
+                            process.cwd(),
+                            ENV_LOCAL_FILENAME,
+                          );
+                          if (ctx.envFile.isNewFile()) {
+                            task.title = `Creating ${ENV_LOCAL_FILENAME}`;
+                          } else {
+                            task.title = `Found ${ENV_LOCAL_FILENAME}`;
+                          }
+                        },
+                      },
+                      {
+                        title: `Adding Anthropic API key`,
+                        task: async (_, task): Promise<Listr> =>
+                          task.newListr([
+                            {
+                              title: "Checking for Anthropic API key",
+                              task: async (ctx, _) => {
+                                ctx.anthropicApiKeyExists =
+                                  ctx.envFile.keyExists(
+                                    ctx.envFile.keyExists("ANTHROPIC_API_KEY"),
+                                  );
+                              },
+                            },
+                            {
+                              title: "Select Anthropic API key name",
+                              task: async (ctx, task) =>
+                                (ctx.anthropicApiKeyName = await task
+                                  .prompt(ListrInquirerPromptAdapter)
+                                  .run(select, {
+                                    message: ctx.anthropicApiKeyExists
+                                      ? "Anthropic API key already exists. Select the name of the key you want to use."
+                                      : "Select the name of the Anthropic API key you want to use.",
+                                    choices: [
+                                      {
+                                        name: "ANTHROPIC_API_KEY",
+                                        value: "ANTHROPIC_API_KEY",
+                                        description: ctx.anthropicApiKeyExists
+                                          ? "Use existing API key"
+                                          : "Use the default API key name",
+                                      },
+                                      {
+                                        name: "SHORTEST_ANTHROPIC_API_KEY",
+                                        value: "SHORTEST_ANTHROPIC_API_KEY",
+                                        description:
+                                          "Use a dedicated API key for Shortest",
+                                      },
+                                    ],
+                                  })),
+                            },
+                            {
+                              title: "Enter API key value",
+                              enabled: (ctx): boolean =>
+                                !ctx.anthropicApiKeyExists,
+                              task: async (ctx, task) =>
+                                (ctx.anthropicApiKeyValue = await task
+                                  .prompt(ListrInquirerPromptAdapter)
+                                  .run(input, {
+                                    message: `Enter value for ${ctx.anthropicApiKeyName}`,
+                                    required: true,
+                                  })),
+                            },
+                            {
+                              title: "Saving API key",
+                              enabled: (ctx): boolean =>
+                                !!ctx.anthropicApiKeyValue,
+                              task: async (ctx, task) => {
+                                const keyAdded = await ctx.envFile.add({
+                                  key: ctx.anthropicApiKeyName,
+                                  value: ctx.anthropicApiKeyValue,
+                                });
+                                if (keyAdded) {
+                                  task.title = `${ctx.anthropicApiKeyName} added`;
+                                } else {
+                                  task.title = `${ctx.anthropicApiKeyName} already exists, skipped`;
+                                }
+                              },
+                            },
+                          ]),
+                      },
+                      {
+                        title: "Adding Shortest login credentials for testing",
+                        task: async (_, task): Promise<Listr> =>
+                          task.newListr([
+                            {
+                              title: "Enter the email for the test account",
+                              task: async (ctx, task) =>
+                                (ctx.shortestLoginEmail = await task
+                                  .prompt(ListrInquirerPromptAdapter)
+                                  .run(input, {
+                                    message: `Enter value for SHORTEST_LOGIN_EMAIL`,
+                                  })),
+                            },
+                            {
+                              title: "Saving SHORTEST_LOGIN_EMAIL key",
+                              task: async (ctx, task) => {
+                                const keyAdded = await ctx.envFile.add({
+                                  key: "SHORTEST_LOGIN_EMAIL",
+                                  value: ctx.shortestLoginEmail,
+                                });
+                                if (keyAdded) {
+                                  task.title = `SHORTEST_LOGIN_EMAIL added`;
+                                } else {
+                                  task.title = `SHORTEST_LOGIN_EMAIL already exists, skipped`;
+                                }
+                              },
+                            },
+                            {
+                              title: "Enter the password for the test account",
+                              task: async (ctx, task) =>
+                                (ctx.shortestLoginPassword = await task
+                                  .prompt(ListrInquirerPromptAdapter)
+                                  .run(input, {
+                                    message: `Enter value for SHORTEST_LOGIN_PASSWORD`,
+                                  })),
+                            },
+                            {
+                              title: "Saving SHORTEST_LOGIN_EMAIL key",
+                              task: async (ctx, task) => {
+                                const keyAdded = await ctx.envFile.add({
+                                  key: "SHORTEST_LOGIN_PASSWORD",
+                                  value: ctx.shortestLoginPassword,
+                                });
+                                if (keyAdded) {
+                                  task.title = `SHORTEST_LOGIN_PASSWORD added`;
+                                } else {
+                                  task.title = `SHORTEST_LOGIN_PASSWORD already exists, skipped`;
+                                }
+                              },
+                            },
+                          ]),
+                      },
+                    ],
                     {
-                      title: "Enter the email for the test account",
-                      task: async (ctx, task) =>
-                        (ctx.shortestLoginEmail = await task
-                          .prompt(ListrInquirerPromptAdapter)
-                          .run(input, {
-                            message: `Enter value for SHORTEST_LOGIN_EMAIL`,
-                          })),
-                    },
-                    {
-                      title: "Saving SHORTEST_LOGIN_EMAIL key",
-                      task: async (ctx, task) => {
-                        const keyAdded = await ctx.envFile.add({
-                          key: "SHORTEST_LOGIN_EMAIL",
-                          value: ctx.shortestLoginEmail,
-                        });
-                        if (keyAdded) {
-                          task.title = `SHORTEST_LOGIN_EMAIL added`;
-                        } else {
-                          task.title = `SHORTEST_LOGIN_EMAIL already exists, skipped`;
-                        }
+                      rendererOptions: {
+                        collapseSubtasks: false,
                       },
                     },
-                    {
-                      title: "Enter the password for the test account",
-                      task: async (ctx, task) =>
-                        (ctx.shortestLoginPassword = await task
-                          .prompt(ListrInquirerPromptAdapter)
-                          .run(input, {
-                            message: `Enter value for SHORTEST_LOGIN_PASSWORD`,
-                          })),
-                    },
-                    {
-                      title: "Saving SHORTEST_LOGIN_EMAIL key",
-                      task: async (ctx, task) => {
-                        const keyAdded = await ctx.envFile.add({
-                          key: "SHORTEST_LOGIN_PASSWORD",
-                          value: ctx.shortestLoginPassword,
-                        });
-                        if (keyAdded) {
-                          task.title = `SHORTEST_LOGIN_PASSWORD added`;
-                        } else {
-                          task.title = `SHORTEST_LOGIN_PASSWORD already exists, skipped`;
-                        }
-                      },
-                    },
-                  ]),
+                  ),
+              },
+              {
+                title: `Creating ${CONFIG_FILENAME}`,
+                enabled: (ctx): boolean => !ctx.alreadyInstalled,
+                task: async (_, task) => {
+                  const configPath = join(process.cwd(), CONFIG_FILENAME);
+                  const exampleConfigPath = join(
+                    fileURLToPath(new URL("../../src", import.meta.url)),
+                    `${CONFIG_FILENAME}.example`,
+                  );
+
+                  const exampleConfig = await readFile(
+                    exampleConfigPath,
+                    "utf8",
+                  );
+                  await writeFile(configPath, exampleConfig, "utf8");
+                  task.title = `${CONFIG_FILENAME} created.`;
+                },
+              },
+              {
+                title: "Updating .gitignore",
+                enabled: (ctx): boolean => !ctx.alreadyInstalled,
+                task: async (_, task) => {
+                  const resultGitignore = await addToGitignore(process.cwd(), [
+                    ".env*.local",
+                    `${DOT_SHORTEST_DIR_NAME}/`,
+                  ]);
+
+                  if (resultGitignore.error) {
+                    throw new Error(
+                      `Failed to update .gitignore: ${resultGitignore.error}`,
+                    );
+                  }
+
+                  task.title = `.gitignore ${resultGitignore.wasCreated ? "created" : "updated"}`;
+                },
               },
             ],
             {
@@ -249,57 +315,13 @@ export const executeInitCommand = async () => {
           ),
       },
       {
-        title: `Creating ${CONFIG_FILENAME}`,
-        enabled: (ctx): boolean => !ctx.alreadyInstalled,
-        task: async (_, task) => {
-          const configPath = join(process.cwd(), CONFIG_FILENAME);
-          const exampleConfigPath = join(
-            fileURLToPath(new URL("../../src", import.meta.url)),
-            `${CONFIG_FILENAME}.example`,
-          );
-
-          const exampleConfig = await readFile(exampleConfigPath, "utf8");
-          await writeFile(configPath, exampleConfig, "utf8");
-          task.title = `${CONFIG_FILENAME} created.`;
-        },
-      },
-      {
-        title: "Updating .gitignore",
-        enabled: (ctx): boolean => !ctx.alreadyInstalled,
-        task: async (_, task) => {
-          const resultGitignore = await addToGitignore(process.cwd(), [
-            ".env*.local",
-            `${DOT_SHORTEST_DIR_NAME}/`,
-          ]);
-
-          if (resultGitignore.error) {
-            throw new Error(
-              `Failed to update .gitignore: ${resultGitignore.error}`,
-            );
-          }
-
-          task.title = `.gitignore ${resultGitignore.wasCreated ? "created" : "updated"}`;
-        },
-      },
-      {
-        title: "[🧪 Experimental] Generate sample test file",
+        title: "Generate sample test file",
+        skip: (ctx): boolean => !ctx.generateSampleTestFile,
         task: async (_, task): Promise<Listr> =>
           task.newListr(
             [
               {
-                title: "Confirm sample test file generation",
-                task: async (ctx, task) =>
-                  (ctx.generateSampleTestFile = await task
-                    .prompt(ListrInquirerPromptAdapter)
-                    .run(confirm, {
-                      message:
-                        "Do you want to generate a sample test file? This is an experimental feature.",
-                      default: true,
-                    })),
-              },
-              {
                 title: "Detecting Next.js framework",
-                enabled: (ctx): boolean => ctx.generateSampleTestFile,
                 task: async (ctx, task) => {
                   await taskWithCustomLogOutput(task, async () => {
                     await detectFramework({ force: true });
