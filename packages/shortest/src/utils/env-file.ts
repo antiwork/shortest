@@ -49,6 +49,10 @@ export class EnvFile {
     return existsSync(this.filePath);
   }
 
+  keyExists(key: string): boolean {
+    return this._existingEntries.has(key);
+  }
+
   async add(entry: {
     key: string;
     value: string;
@@ -60,7 +64,7 @@ export class EnvFile {
 
     const { key, value, comment } = entry;
 
-    if (this._existingEntries.has(key)) {
+    if (this.keyExists(key)) {
       this._keysSkipped.push(key);
       return false;
     }

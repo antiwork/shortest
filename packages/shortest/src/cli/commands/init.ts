@@ -47,7 +47,10 @@ initCommand
 
 interface Ctx {
   alreadyInstalled: boolean;
-  anthropicApiKey: string;
+  anthropicApiKeyExists: boolean;
+  anthropicApiKeyName: string;
+  anthropicApiKeyValueNeeded: boolean;
+  anthropicApiKeyValue: string;
   envFile: EnvFile;
 }
 
@@ -63,9 +66,9 @@ export const executeInitCommand = async () => {
             packageJson?.devDependencies?.["@antiwork/shortest"]
           );
           if (ctx.alreadyInstalled) {
-            task.output = `Shortest is already installed`;
+            task.title = `Shortest is already installed`;
           } else {
-            task.output = "Shortest is not installed, starting installation.";
+            task.title = "Shortest is not installed, starting installation.";
           }
         },
         rendererOptions: {
@@ -102,30 +105,118 @@ export const executeInitCommand = async () => {
                 },
               },
               {
-                title: `Adding ANTHROPIC_API_KEY`,
+                title: `Adding Anthropic API key`,
                 task: async (_, task): Promise<Listr> =>
                   task.newListr([
                     {
-                      title: "Enter value for ANTHROPIC_API_KEY",
+                      title: "Checking for Anthropic API key",
+                      task: async (ctx, _) => {
+                        ctx.anthropicApiKeyExists = ctx.envFile.keyExists(
+                          ctx.envFile.keyExists("ANTHROPIC_API_KEY"),
+                        );
+                      },
+                    },
+                    {
+                      title: "Select Anthropic API key name",
                       task: async (ctx, task) =>
-                        (ctx.anthropicApiKey = await task
+                        (ctx.anthropicApiKeyName = await task
                           .prompt(ListrInquirerPromptAdapter)
-                          .run(input, {
-                            message: "Please give me some input",
+                          .run(select, {
+                            message: ctx.anthropicApiKeyExists
+                              ? "Anthropic API key already exists. Select the name of the key you want to use."
+                              : "Select the name of the Anthropic API key you want to use.",
+                            choices: [
+                              {
+                                name: "ANTHROPIC_API_KEY",
+                                value: "ANTHROPIC_API_KEY",
+                                description: ctx.anthropicApiKeyExists
+                                  ? "Use existing API key"
+                                  : "Use the default API key name",
+                              },
+                              {
+                                name: "SHORTEST_ANTHROPIC_API_KEY",
+                                value: "SHORTEST_ANTHROPIC_API_KEY",
+                                description:
+                                  "Use a dedicated API key for Shortest",
+                              },
+                            ],
                           })),
                     },
                     {
-                      title: "Save ANTHROPIC_API_KEY",
+                      title: "Enter API key value",
+                      enabled: (ctx): boolean => !ctx.anthropicApiKeyExists,
+                      task: async (ctx, task) =>
+                        (ctx.anthropicApiKeyValue = await task
+                          .prompt(ListrInquirerPromptAdapter)
+                          .run(input, {
+                            message: `Enter value for ${ctx.anthropicApiKeyName}`,
+                            required: true,
+                          })),
+                    },
+                    {
+                      title: "Saving API key",
+                      enabled: (ctx): boolean => !!ctx.anthropicApiKeyValue,
                       task: async (ctx, task) => {
                         const keyAdded = await ctx.envFile.add({
-                          key: "ANTHROPIC_API_KEY",
-                          value: ctx.anthropicApiKey,
-                          comment: "Shortest variables",
+                          key: ctx.anthropicApiKeyName,
+                          value: ctx.anthropicApiKeyValue,
                         });
                         if (keyAdded) {
-                          task.title = `ANTHROPIC_API_KEY added`;
+                          task.title = `${ctx.anthropicApiKeyName} added`;
                         } else {
-                          task.title = `ANTHROPIC_API_KEY already exists, skipped`;
+                          task.title = `${ctx.anthropicApiKeyName} already exists, skipped`;
+                        }
+                      },
+                    },
+                  ]),
+              },
+              {
+                title: "Adding Shortest login credentials for testing",
+                task: async (_, task): Promise<Listr> =>
+                  task.newListr([
+                    {
+                      title: "Enter the email for the test account",
+                      task: async (ctx, task) =>
+                        (ctx.shortestLoginEmail = await task
+                          .prompt(ListrInquirerPromptAdapter)
+                          .run(input, {
+                            message: `Enter value for SHORTEST_LOGIN_EMAIL`,
+                          })),
+                    },
+                    {
+                      title: "Saving SHORTEST_LOGIN_EMAIL key",
+                      task: async (ctx, task) => {
+                        const keyAdded = await ctx.envFile.add({
+                          key: "SHORTEST_LOGIN_EMAIL",
+                          value: ctx.shortestLoginEmail,
+                        });
+                        if (keyAdded) {
+                          task.title = `SHORTEST_LOGIN_EMAIL added`;
+                        } else {
+                          task.title = `SHORTEST_LOGIN_EMAIL already exists, skipped`;
+                        }
+                      },
+                    },
+                    {
+                      title: "Enter the password for the test account",
+                      task: async (ctx, task) =>
+                        (ctx.shortestLoginPassword = await task
+                          .prompt(ListrInquirerPromptAdapter)
+                          .run(input, {
+                            message: `Enter value for SHORTEST_LOGIN_PASSWORD`,
+                          })),
+                    },
+                    {
+                      title: "Saving SHORTEST_LOGIN_EMAIL key",
+                      task: async (ctx, task) => {
+                        const keyAdded = await ctx.envFile.add({
+                          key: "SHORTEST_LOGIN_PASSWORD",
+                          value: ctx.shortestLoginPassword,
+                        });
+                        if (keyAdded) {
+                          task.title = `SHORTEST_LOGIN_PASSWORD added`;
+                        } else {
+                          task.title = `SHORTEST_LOGIN_PASSWORD already exists, skipped`;
                         }
                       },
                     },
