@@ -4,12 +4,13 @@ import path from "path";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { NextJsAnalyzer } from "@/core/app-analyzer/next-js-analyzer";
 import { AppAnalysis } from "@/core/app-analyzer/types";
+import { getProjectInfo } from "@/core/framework-detector";
 import { getLogger } from "@/log";
 import { ShortestError, getErrorDetails } from "@/utils/errors";
 
 export const SUPPORTED_FRAMEWORKS = ["next"];
 // eslint-disable-next-line zod/require-zod-schema-types
-type SupportedFramework = (typeof SUPPORTED_FRAMEWORKS)[number];
+export type SupportedFramework = (typeof SUPPORTED_FRAMEWORKS)[number];
 
 export class AppAnalyzer {
   private rootDir: string;
@@ -92,3 +93,23 @@ export const getExistingAnalysis = async (
     return null;
   }
 };
+
+export const detectSupportedFramework =
+  async (): Promise<SupportedFramework> => {
+    const projectInfo = await getProjectInfo();
+    const supportedFrameworks = projectInfo.data.frameworks.filter((f) =>
+      SUPPORTED_FRAMEWORKS.includes(f.id),
+    );
+
+    if (supportedFrameworks.length === 0) {
+      throw new ShortestError(`No supported framework found`);
+    }
+
+    if (supportedFrameworks.length > 1) {
+      throw new ShortestError(
+        `Multiple supported frameworks found: ${supportedFrameworks.map((f) => f.name).join(", ")}`,
+      );
+    }
+
+    return supportedFrameworks[0].id;
+  };

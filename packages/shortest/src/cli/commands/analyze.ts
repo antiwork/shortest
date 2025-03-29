@@ -1,10 +1,8 @@
 import { Command, Option } from "commander";
 import { executeCommand } from "@/cli/utils/command-builder";
-import { AppAnalyzer, SUPPORTED_FRAMEWORKS } from "@/core/app-analyzer";
-import { getProjectInfo } from "@/core/framework-detector";
+import { AppAnalyzer, detectSupportedFramework } from "@/core/app-analyzer";
 import { getLogger } from "@/log";
 import { LOG_LEVELS } from "@/log/config";
-import { ShortestError } from "@/utils/errors";
 
 export const analyzeCommand = new Command("analyze").description(
   "Analyze the structure of the project",
@@ -31,26 +29,10 @@ const executeAnalyzeCommand = async (
 ): Promise<void> => {
   const log = getLogger();
   const cwd = process.cwd();
-  const projectInfo = await getProjectInfo();
-  const supportedFrameworks = projectInfo.data.frameworks.filter((f) =>
-    SUPPORTED_FRAMEWORKS.includes(f.id),
-  );
+  const supportedFramework = await detectSupportedFramework();
+  log.info(`Analyzing ${supportedFramework} application structure...`);
 
-  if (supportedFrameworks.length === 0) {
-    throw new ShortestError(`No supported framework found`);
-  }
-
-  if (supportedFrameworks.length > 1) {
-    throw new ShortestError(
-      `Multiple supported frameworks found: ${supportedFrameworks.map((f) => f.name).join(", ")}`,
-    );
-  }
-
-  const framework = supportedFrameworks[0].id;
-
-  log.info(`Analyzing ${framework} application structure...`);
-
-  const analyzer = new AppAnalyzer(cwd, framework);
+  const analyzer = new AppAnalyzer(cwd, supportedFramework);
   const analysis = await analyzer.execute(options);
 
   log.info(

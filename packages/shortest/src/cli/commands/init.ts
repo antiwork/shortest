@@ -3,17 +3,26 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "path";
 import type { Readable } from "stream";
 import { fileURLToPath } from "url";
-import { select, input } from "@inquirer/prompts";
+import { select, input, confirm } from "@inquirer/prompts";
 import { ListrInquirerPromptAdapter } from "@listr2/prompt-adapter-inquirer";
 import { Command, Option } from "commander";
-import { Listr } from "listr2";
+import { delay, Listr } from "listr2";
 import { detect, resolveCommand } from "package-manager-detector";
 import pc from "picocolors";
 import { DOT_SHORTEST_DIR_NAME } from "@/cache";
 import { executeCommand } from "@/cli/utils/command-builder";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
+import {
+  AppAnalyzer,
+  detectSupportedFramework,
+  SupportedFramework,
+} from "@/core/app-analyzer";
+import { detectFramework } from "@/core/framework-detector";
+import { TestGenerator } from "@/core/test-generator";
+import { TestPlanner } from "@/core/test-planner";
 import { LOG_LEVELS } from "@/log/config";
 import { addToGitignore } from "@/utils/add-to-gitignore";
+import { assertDefined } from "@/utils/assert";
 import { EnvFile } from "@/utils/env-file";
 import { ShortestError } from "@/utils/errors";
 
@@ -52,6 +61,8 @@ interface Ctx {
   anthropicApiKeyValueNeeded: boolean;
   anthropicApiKeyValue: string;
   envFile: EnvFile;
+  generateSampleTestFile: boolean;
+  supportedFramework: SupportedFramework | null;
 }
 
 export const executeInitCommand = async () => {
@@ -60,6 +71,7 @@ export const executeInitCommand = async () => {
       {
         title: "Checking for existing installation",
         task: async (ctx, task): Promise<void> => {
+          await delay(5000);
           const packageJson = await getPackageJson();
           ctx.alreadyInstalled = !!(
             packageJson?.dependencies?.["@antiwork/shortest"] ||
@@ -70,9 +82,6 @@ export const executeInitCommand = async () => {
           } else {
             task.title = "Shortest is not installed, starting installation.";
           }
-        },
-        rendererOptions: {
-          persistentOutput: true,
         },
       },
       {
@@ -85,6 +94,7 @@ export const executeInitCommand = async () => {
         },
         rendererOptions: {
           persistentOutput: true,
+          bottomBar: 5,
         },
       },
       {
@@ -263,8 +273,69 @@ export const executeInitCommand = async () => {
           task.title = `.gitignore ${resultGitignore.wasCreated ? "created" : "updated"}`;
         },
       },
+      {
+        title: "Generating sample test file",
+        task: async (ctx, task) =>
+          (ctx.generateSampleTestFile = await task
+            .prompt(ListrInquirerPromptAdapter)
+            .run(confirm, {
+              message: "Do you want to generate a sample test file?",
+              default: true,
+            })),
+      },
+      {
+        title: "Detecting Next.js framework",
+        enabled: (ctx): boolean => ctx.generateSampleTestFile,
+        task: async (ctx, task) => {
+          await detectFramework({ force: true });
+          try {
+            ctx.supportedFramework = await detectSupportedFramework();
+            task.title = `Next.js framework detected`;
+          } catch (error) {
+            if (!(error instanceof ShortestError)) throw error;
+            task.title = `Next.js framework not detected (${error.message})`;
+          }
+        },
+      },
+      {
+        title: "Analyzing the codebase",
+        enabled: (ctx): boolean => !!ctx.supportedFramework,
+        task: async (ctx, task) => {
+          const supportedFramework = assertDefined(ctx.supportedFramework);
+          const analyzer = new AppAnalyzer(process.cwd(), supportedFramework);
+          await analyzer.execute({ force: true });
+          task.title = "Analysis complete";
+        },
+        rendererOptions: {
+          bottomBar: 5,
+        },
+      },
+      {
+        title: "Creating test plans",
+        enabled: (ctx): boolean => !!ctx.supportedFramework,
+        task: async (ctx, task) => {
+          const supportedFramework = assertDefined(ctx.supportedFramework);
+          const planner = new TestPlanner(process.cwd(), supportedFramework);
+          await planner.execute({ force: true });
+          task.title = `Test planning complete`;
+        },
+      },
+      {
+        title: "Generating test file",
+        enabled: (ctx): boolean => !!ctx.supportedFramework,
+        task: async (ctx, task) => {
+          const supportedFramework = assertDefined(ctx.supportedFramework);
+          const generator = new TestGenerator(
+            process.cwd(),
+            supportedFramework,
+          );
+          await generator.execute({ force: true });
+          task.title = "Test file generated";
+        },
+      },
     ],
     {
+      renderer: "default",
       exitOnError: true,
       concurrent: false,
       rendererOptions: {
