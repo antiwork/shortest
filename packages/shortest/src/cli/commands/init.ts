@@ -283,81 +283,106 @@ export const executeInitCommand = async () => {
       },
       {
         title: "[🧪 Experimental] Generate sample test file",
-        task: async (ctx, task) =>
-          (ctx.generateSampleTestFile = await task
-            .prompt(ListrInquirerPromptAdapter)
-            .run(confirm, {
-              message:
-                "Do you want to generate a sample test file? This is an experimental feature.",
-              default: true,
-            })),
-      },
-      {
-        title: "Detecting Next.js framework",
-        enabled: (ctx): boolean => ctx.generateSampleTestFile,
-        task: async (ctx, task) => {
-          await taskWithCustomLogOutput(task, async () => {
-            await detectFramework({ force: true });
-            try {
-              ctx.supportedFramework = await detectSupportedFramework();
-              task.title = `Next.js framework detected`;
-            } catch (error) {
-              if (!(error instanceof ShortestError)) throw error;
-              task.title = `Next.js framework not detected (${error.message})`;
-            }
-          });
-        },
-        rendererOptions: {
-          bottomBar: 5,
-        },
-      },
-      {
-        title: "Analyzing the codebase",
-        enabled: (ctx): boolean => !!ctx.supportedFramework,
-        task: async (ctx, task) => {
-          await taskWithCustomLogOutput(task, async () => {
-            const supportedFramework = assertDefined(ctx.supportedFramework);
-            const analyzer = new AppAnalyzer(process.cwd(), supportedFramework);
-            await analyzer.execute({ force: true });
-          });
-          task.title = "Analysis complete";
-        },
-        rendererOptions: {
-          bottomBar: 5,
-        },
-      },
-      {
-        title: "Creating test plans",
-        enabled: (ctx): boolean => !!ctx.supportedFramework,
-        task: async (ctx, task) => {
-          await taskWithCustomLogOutput(task, async () => {
-            const supportedFramework = assertDefined(ctx.supportedFramework);
-            const planner = new TestPlanner(process.cwd(), supportedFramework);
-            await planner.execute({ force: true });
-            task.title = `Test planning complete`;
-          });
-        },
-        rendererOptions: {
-          bottomBar: 5,
-        },
-      },
-      {
-        title: "Generating test file",
-        enabled: (ctx): boolean => !!ctx.supportedFramework,
-        task: async (ctx, task) => {
-          await taskWithCustomLogOutput(task, async () => {
-            const supportedFramework = assertDefined(ctx.supportedFramework);
-            const generator = new TestGenerator(
-              process.cwd(),
-              supportedFramework,
-            );
-            await generator.execute({ force: true });
-            task.title = "Test file generated";
-          });
-        },
-        rendererOptions: {
-          bottomBar: 5,
-        },
+        task: async (_, task): Promise<Listr> =>
+          task.newListr(
+            [
+              {
+                title: "Confirm sample test file generation",
+                task: async (ctx, task) =>
+                  (ctx.generateSampleTestFile = await task
+                    .prompt(ListrInquirerPromptAdapter)
+                    .run(confirm, {
+                      message:
+                        "Do you want to generate a sample test file? This is an experimental feature.",
+                      default: true,
+                    })),
+              },
+              {
+                title: "Detecting Next.js framework",
+                enabled: (ctx): boolean => ctx.generateSampleTestFile,
+                task: async (ctx, task) => {
+                  await taskWithCustomLogOutput(task, async () => {
+                    await detectFramework({ force: true });
+                    try {
+                      ctx.supportedFramework = await detectSupportedFramework();
+                      task.title = `Next.js framework detected`;
+                    } catch (error) {
+                      if (!(error instanceof ShortestError)) throw error;
+                      task.title = `Next.js framework not detected (${error.message})`;
+                    }
+                  });
+                },
+                rendererOptions: {
+                  bottomBar: 5,
+                },
+              },
+              {
+                title: "Analyzing the codebase",
+                enabled: (ctx): boolean => !!ctx.supportedFramework,
+                task: async (ctx, task) => {
+                  await taskWithCustomLogOutput(task, async () => {
+                    const supportedFramework = assertDefined(
+                      ctx.supportedFramework,
+                    );
+                    const analyzer = new AppAnalyzer(
+                      process.cwd(),
+                      supportedFramework,
+                    );
+                    await analyzer.execute({ force: true });
+                  });
+                  task.title = "Analysis complete";
+                },
+                rendererOptions: {
+                  bottomBar: 5,
+                },
+              },
+              {
+                title: "Creating test plans",
+                enabled: (ctx): boolean => !!ctx.supportedFramework,
+                task: async (ctx, task) => {
+                  await taskWithCustomLogOutput(task, async () => {
+                    const supportedFramework = assertDefined(
+                      ctx.supportedFramework,
+                    );
+                    const planner = new TestPlanner(
+                      process.cwd(),
+                      supportedFramework,
+                    );
+                    await planner.execute({ force: true });
+                    task.title = `Test planning complete`;
+                  });
+                },
+                rendererOptions: {
+                  bottomBar: 5,
+                },
+              },
+              {
+                title: "Generating test file",
+                enabled: (ctx): boolean => !!ctx.supportedFramework,
+                task: async (ctx, task) => {
+                  await taskWithCustomLogOutput(task, async () => {
+                    const supportedFramework = assertDefined(
+                      ctx.supportedFramework,
+                    );
+                    const generator = new TestGenerator(
+                      process.cwd(),
+                      supportedFramework,
+                    );
+                    await generator.execute({ force: true });
+                    task.title = "Test file generated";
+                  });
+                },
+                rendererOptions: {
+                  bottomBar: 5,
+                },
+              },
+            ],
+            {
+              rendererOptions: {
+                collapseSubtasks: false,
+              },
+            },
+          ),
       },
     ],
     {
@@ -372,9 +397,14 @@ export const executeInitCommand = async () => {
 
   try {
     await tasks.run();
-    console.log(pc.green("\nInitialization complete! Next steps:"));
-    console.log("2. Create your first test file: example.test.ts");
-    console.log("3. Run tests with: npx/pnpm test example.test.ts");
+    if (tasks.ctx.generateSampleTestFile) {
+      console.log(pc.green("\nSetup complete!"));
+      console.log("Run tests with: npx/pnpm shortest");
+    } else {
+      console.log(pc.green("\nInitialization complete! Next steps:"));
+      console.log("2. Create your first test file: example.test.ts");
+      console.log("3. Run tests with: npx/pnpm shortest example.test.ts");
+    }
   } catch (error) {
     console.error(pc.red("Initialization failed"));
     throw error;
