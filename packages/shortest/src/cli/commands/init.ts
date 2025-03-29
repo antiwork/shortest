@@ -1,12 +1,19 @@
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
+import { Writable } from "node:stream";
 import { join } from "path";
 import type { Readable } from "stream";
 import { fileURLToPath } from "url";
 import { select, input, confirm } from "@inquirer/prompts";
 import { ListrInquirerPromptAdapter } from "@listr2/prompt-adapter-inquirer";
 import { Command, Option } from "commander";
-import { delay, Listr } from "listr2";
+import {
+  delay,
+  Listr,
+  SimpleRenderer,
+  ListrTaskWrapper as TaskWrapper,
+  DefaultRenderer,
+} from "listr2";
 import { detect, resolveCommand } from "package-manager-detector";
 import pc from "picocolors";
 import { DOT_SHORTEST_DIR_NAME } from "@/cache";
@@ -20,6 +27,7 @@ import {
 import { detectFramework } from "@/core/framework-detector";
 import { TestGenerator } from "@/core/test-generator";
 import { TestPlanner } from "@/core/test-planner";
+import { getLogger } from "@/log";
 import { LOG_LEVELS } from "@/log/config";
 import { addToGitignore } from "@/utils/add-to-gitignore";
 import { assertDefined } from "@/utils/assert";
@@ -274,12 +282,13 @@ export const executeInitCommand = async () => {
         },
       },
       {
-        title: "Generating sample test file",
+        title: "[🧪 Experimental] Generate sample test file",
         task: async (ctx, task) =>
           (ctx.generateSampleTestFile = await task
             .prompt(ListrInquirerPromptAdapter)
             .run(confirm, {
-              message: "Do you want to generate a sample test file?",
+              message:
+                "Do you want to generate a sample test file? This is an experimental feature.",
               default: true,
             })),
       },
@@ -287,23 +296,30 @@ export const executeInitCommand = async () => {
         title: "Detecting Next.js framework",
         enabled: (ctx): boolean => ctx.generateSampleTestFile,
         task: async (ctx, task) => {
-          await detectFramework({ force: true });
-          try {
-            ctx.supportedFramework = await detectSupportedFramework();
-            task.title = `Next.js framework detected`;
-          } catch (error) {
-            if (!(error instanceof ShortestError)) throw error;
-            task.title = `Next.js framework not detected (${error.message})`;
-          }
+          await taskWithCustomLogOutput(task, async () => {
+            await detectFramework({ force: true });
+            try {
+              ctx.supportedFramework = await detectSupportedFramework();
+              task.title = `Next.js framework detected`;
+            } catch (error) {
+              if (!(error instanceof ShortestError)) throw error;
+              task.title = `Next.js framework not detected (${error.message})`;
+            }
+          });
+        },
+        rendererOptions: {
+          bottomBar: 5,
         },
       },
       {
         title: "Analyzing the codebase",
         enabled: (ctx): boolean => !!ctx.supportedFramework,
         task: async (ctx, task) => {
-          const supportedFramework = assertDefined(ctx.supportedFramework);
-          const analyzer = new AppAnalyzer(process.cwd(), supportedFramework);
-          await analyzer.execute({ force: true });
+          await taskWithCustomLogOutput(task, async () => {
+            const supportedFramework = assertDefined(ctx.supportedFramework);
+            const analyzer = new AppAnalyzer(process.cwd(), supportedFramework);
+            await analyzer.execute({ force: true });
+          });
           task.title = "Analysis complete";
         },
         rendererOptions: {
@@ -314,23 +330,33 @@ export const executeInitCommand = async () => {
         title: "Creating test plans",
         enabled: (ctx): boolean => !!ctx.supportedFramework,
         task: async (ctx, task) => {
-          const supportedFramework = assertDefined(ctx.supportedFramework);
-          const planner = new TestPlanner(process.cwd(), supportedFramework);
-          await planner.execute({ force: true });
-          task.title = `Test planning complete`;
+          await taskWithCustomLogOutput(task, async () => {
+            const supportedFramework = assertDefined(ctx.supportedFramework);
+            const planner = new TestPlanner(process.cwd(), supportedFramework);
+            await planner.execute({ force: true });
+            task.title = `Test planning complete`;
+          });
+        },
+        rendererOptions: {
+          bottomBar: 5,
         },
       },
       {
         title: "Generating test file",
         enabled: (ctx): boolean => !!ctx.supportedFramework,
         task: async (ctx, task) => {
-          const supportedFramework = assertDefined(ctx.supportedFramework);
-          const generator = new TestGenerator(
-            process.cwd(),
-            supportedFramework,
-          );
-          await generator.execute({ force: true });
-          task.title = "Test file generated";
+          await taskWithCustomLogOutput(task, async () => {
+            const supportedFramework = assertDefined(ctx.supportedFramework);
+            const generator = new TestGenerator(
+              process.cwd(),
+              supportedFramework,
+            );
+            await generator.execute({ force: true });
+            task.title = "Test file generated";
+          });
+        },
+        rendererOptions: {
+          bottomBar: 5,
         },
       },
     ],
@@ -392,4 +418,38 @@ export const getInstallCmd = async () => {
     args: command.args,
     toString: () => cmdString,
   };
+};
+
+export const taskWithCustomLogOutput = <T>(
+  task: TaskWrapper<Ctx, typeof DefaultRenderer, typeof SimpleRenderer>,
+  callback: () => Promise<T> | T,
+): Promise<T> => {
+  const log = getLogger();
+  const originalFormat = log.config.format;
+  const originalLevel = log.config.level;
+
+  log.config.level = "trace";
+  const streamAdapter = new Writable({
+    write(chunk, _encoding, callback) {
+      task.stdout().write(chunk.toString());
+      callback();
+    },
+  });
+
+  log.setOutputStream(streamAdapter);
+
+  try {
+    const result = callback();
+    return Promise.resolve(result).then((value) => {
+      log.resetOutputStream();
+      log.config.format = originalFormat;
+      log.config.level = originalLevel;
+      return value;
+    });
+  } catch (error) {
+    log.resetOutputStream();
+    log.config.format = originalFormat;
+    log.config.level = originalLevel;
+    throw error;
+  }
 };
