@@ -1,9 +1,8 @@
 import { spawn } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { Writable } from "node:stream";
 import { join } from "path";
 import type { Readable } from "stream";
-import { fileURLToPath } from "url";
 import { select, input, confirm } from "@inquirer/prompts";
 import { ListrInquirerPromptAdapter } from "@listr2/prompt-adapter-inquirer";
 import { Command, Option } from "commander";
@@ -16,6 +15,7 @@ import {
 } from "listr2";
 import { detect, resolveCommand } from "package-manager-detector";
 import pc from "picocolors";
+import { generateConfigFile } from "./init/generate-config-file";
 import { DOT_SHORTEST_DIR_NAME } from "@/cache";
 import { executeCommand } from "@/cli/utils/command-builder";
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
@@ -29,6 +29,7 @@ import { TestGenerator } from "@/core/test-generator";
 import { TestPlanner } from "@/core/test-planner";
 import { getLogger } from "@/log";
 import { LOG_LEVELS } from "@/log/config";
+import { testPatternSchema } from "@/types/config";
 import { addToGitignore } from "@/utils/add-to-gitignore";
 import { assertDefined } from "@/utils/assert";
 import { EnvFile } from "@/utils/env-file";
@@ -144,71 +145,80 @@ export const executeInitCommand = async () => {
                       {
                         title: `Adding Anthropic API key`,
                         task: async (_, task): Promise<Listr> =>
-                          task.newListr([
+                          task.newListr(
+                            (parent) => [
+                              {
+                                title: "Checking for Anthropic API key",
+                                task: async (ctx, _) => {
+                                  ctx.anthropicApiKeyExists =
+                                    ctx.envFile.keyExists(
+                                      ctx.envFile.keyExists(
+                                        "ANTHROPIC_API_KEY",
+                                      ),
+                                    );
+                                },
+                              },
+                              {
+                                title: "Select Anthropic API key name",
+                                task: async (ctx, task) =>
+                                  (ctx.anthropicApiKeyName = await task
+                                    .prompt(ListrInquirerPromptAdapter)
+                                    .run(select, {
+                                      message: ctx.anthropicApiKeyExists
+                                        ? "Anthropic API key already exists. Select the name of the key you want to use."
+                                        : "Select the name of the Anthropic API key you want to use.",
+                                      choices: [
+                                        {
+                                          name: "ANTHROPIC_API_KEY",
+                                          value: "ANTHROPIC_API_KEY",
+                                          description: ctx.anthropicApiKeyExists
+                                            ? "Use existing API key"
+                                            : "Use the default API key name",
+                                        },
+                                        {
+                                          name: "SHORTEST_ANTHROPIC_API_KEY",
+                                          value: "SHORTEST_ANTHROPIC_API_KEY",
+                                          description:
+                                            "Use a dedicated API key for Shortest",
+                                        },
+                                      ],
+                                    })),
+                              },
+                              {
+                                title: "Enter API key value",
+                                enabled: (ctx): boolean =>
+                                  !ctx.anthropicApiKeyExists,
+                                task: async (ctx, task) =>
+                                  (ctx.anthropicApiKeyValue = await task
+                                    .prompt(ListrInquirerPromptAdapter)
+                                    .run(input, {
+                                      message: `Enter value for ${ctx.anthropicApiKeyName}`,
+                                      required: true,
+                                    })),
+                              },
+                              {
+                                title: "Saving API key",
+                                enabled: (ctx): boolean =>
+                                  !!ctx.anthropicApiKeyValue,
+                                task: async (ctx, _) => {
+                                  const keyAdded = await ctx.envFile.add({
+                                    key: ctx.anthropicApiKeyName,
+                                    value: ctx.anthropicApiKeyValue,
+                                  });
+                                  if (keyAdded) {
+                                    parent.title = `${ctx.anthropicApiKeyName} added`;
+                                  } else {
+                                    parent.title = `${ctx.anthropicApiKeyName} already exists, skipped`;
+                                  }
+                                },
+                              },
+                            ],
                             {
-                              title: "Checking for Anthropic API key",
-                              task: async (ctx, _) => {
-                                ctx.anthropicApiKeyExists =
-                                  ctx.envFile.keyExists(
-                                    ctx.envFile.keyExists("ANTHROPIC_API_KEY"),
-                                  );
+                              rendererOptions: {
+                                collapseSubtasks: true,
                               },
                             },
-                            {
-                              title: "Select Anthropic API key name",
-                              task: async (ctx, task) =>
-                                (ctx.anthropicApiKeyName = await task
-                                  .prompt(ListrInquirerPromptAdapter)
-                                  .run(select, {
-                                    message: ctx.anthropicApiKeyExists
-                                      ? "Anthropic API key already exists. Select the name of the key you want to use."
-                                      : "Select the name of the Anthropic API key you want to use.",
-                                    choices: [
-                                      {
-                                        name: "ANTHROPIC_API_KEY",
-                                        value: "ANTHROPIC_API_KEY",
-                                        description: ctx.anthropicApiKeyExists
-                                          ? "Use existing API key"
-                                          : "Use the default API key name",
-                                      },
-                                      {
-                                        name: "SHORTEST_ANTHROPIC_API_KEY",
-                                        value: "SHORTEST_ANTHROPIC_API_KEY",
-                                        description:
-                                          "Use a dedicated API key for Shortest",
-                                      },
-                                    ],
-                                  })),
-                            },
-                            {
-                              title: "Enter API key value",
-                              enabled: (ctx): boolean =>
-                                !ctx.anthropicApiKeyExists,
-                              task: async (ctx, task) =>
-                                (ctx.anthropicApiKeyValue = await task
-                                  .prompt(ListrInquirerPromptAdapter)
-                                  .run(input, {
-                                    message: `Enter value for ${ctx.anthropicApiKeyName}`,
-                                    required: true,
-                                  })),
-                            },
-                            {
-                              title: "Saving API key",
-                              enabled: (ctx): boolean =>
-                                !!ctx.anthropicApiKeyValue,
-                              task: async (ctx, task) => {
-                                const keyAdded = await ctx.envFile.add({
-                                  key: ctx.anthropicApiKeyName,
-                                  value: ctx.anthropicApiKeyValue,
-                                });
-                                if (keyAdded) {
-                                  task.title = `${ctx.anthropicApiKeyName} added`;
-                                } else {
-                                  task.title = `${ctx.anthropicApiKeyName} already exists, skipped`;
-                                }
-                              },
-                            },
-                          ]),
+                          ),
                       },
                       {
                         title: "Adding Shortest login credentials for testing",
@@ -273,18 +283,16 @@ export const executeInitCommand = async () => {
               {
                 title: `Creating ${CONFIG_FILENAME}`,
                 enabled: (ctx): boolean => !ctx.alreadyInstalled,
-                task: async (_, task) => {
-                  const configPath = join(process.cwd(), CONFIG_FILENAME);
-                  const exampleConfigPath = join(
-                    fileURLToPath(new URL("../../src", import.meta.url)),
-                    `${CONFIG_FILENAME}.example`,
+                task: async (ctx, task) => {
+                  const testPattern = ctx.generateSampleTestFile
+                    ? "shortest/**/*.test.ts"
+                    : testPatternSchema._def.defaultValue();
+                  await generateConfigFile(
+                    join(process.cwd(), CONFIG_FILENAME),
+                    {
+                      testPattern,
+                    },
                   );
-
-                  const exampleConfig = await readFile(
-                    exampleConfigPath,
-                    "utf8",
-                  );
-                  await writeFile(configPath, exampleConfig, "utf8");
                   task.title = `${CONFIG_FILENAME} created.`;
                 },
               },

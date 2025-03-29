@@ -1,4 +1,4 @@
-import { simpleGit, SimpleGit, CleanOptions } from "simple-git";
+import { simpleGit, SimpleGit } from "simple-git";
 import { getLogger } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
 

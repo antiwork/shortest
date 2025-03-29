@@ -53,7 +53,7 @@ const mailosaurSchema = z
   })
   .optional();
 
-const testPatternSchema = z.string().default("**/*.test.ts");
+export const testPatternSchema = z.string().default("**/*.test.ts");
 
 const browserSchema = z.object({
   /**
