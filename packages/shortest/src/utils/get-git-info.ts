@@ -14,7 +14,7 @@ export const getGitInfo = async (): Promise<GitInfo> => {
   const log = getLogger();
 
   try {
-    const git: SimpleGit = simpleGit().clean(CleanOptions.FORCE);
+    const git: SimpleGit = simpleGit();
     const branchInfo = await git.branch();
     return {
       branch: branchInfo.current,
