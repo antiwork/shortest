@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { Writable } from "node:stream";
 import { join } from "path";
 import type { Readable } from "stream";
-import { select, input, confirm } from "@inquirer/prompts";
+import { select, input, confirm, password } from "@inquirer/prompts";
 import { ListrInquirerPromptAdapter } from "@listr2/prompt-adapter-inquirer";
 import { Command, Option } from "commander";
 import {
@@ -187,9 +187,9 @@ export const executeInitCommand = async () => {
                                 task: async (ctx, task) =>
                                   (ctx.anthropicApiKeyValue = await task
                                     .prompt(ListrInquirerPromptAdapter)
-                                    .run(input, {
+                                    .run(password, {
                                       message: `Enter value for ${ctx.anthropicApiKeyName}`,
-                                      required: true,
+                                      mask: true,
                                     })),
                               },
                               {
