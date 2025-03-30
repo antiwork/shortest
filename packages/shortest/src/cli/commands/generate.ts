@@ -31,10 +31,10 @@ const executeGenerateCommand = async (
 ): Promise<void> => {
   const log = getLogger();
   const cwd = process.cwd();
-  const supportedFramework = await detectSupportedFramework();
+  const supportedFrameworkInfo = await detectSupportedFramework();
   log.info(`Generating tests...`);
 
-  const generator = new TestGenerator(cwd, supportedFramework);
+  const generator = new TestGenerator(cwd, supportedFrameworkInfo);
   await generator.execute(options);
 
   log.info(`Test generation complete.`);

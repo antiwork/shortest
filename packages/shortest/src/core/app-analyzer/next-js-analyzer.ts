@@ -10,6 +10,7 @@ import {
   LayoutInfo,
 } from "./types";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
+import { FrameworkInfo } from "@/core/app-analyzer";
 import {
   getPaths,
   getTreeStructure,
@@ -61,14 +62,15 @@ export class NextJsAnalyzer implements BaseAnalyzer {
   private fileInfos: FileInfo[] = [];
   private log = getLogger();
 
-  private readonly NEXT_FRAMEWORK_NAME = "next";
-  private readonly NEXT_ANALYSIS_VERSION = 1;
-  private readonly frameworkDir: string;
+  private readonly NEXT_ANALYSIS_VERSION = 2;
+  private readonly frameworkInfo: FrameworkInfo;
+  private readonly cacheFrameworkDir: string;
 
-  constructor(private rootDir: string) {
-    this.frameworkDir = path.join(
+  constructor(frameworkInfo: FrameworkInfo) {
+    this.frameworkInfo = frameworkInfo;
+    this.cacheFrameworkDir = path.join(
       DOT_SHORTEST_DIR_PATH,
-      this.NEXT_FRAMEWORK_NAME,
+      this.frameworkInfo.id,
     );
   }
 
@@ -105,25 +107,28 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
   private async setPaths(): Promise<void> {
     this.log.trace("Retrieving folder paths for NextJs analyzer");
-    this.paths = await getPaths(this.rootDir);
+    this.paths = await getPaths(this.frameworkInfo.dirPath);
 
-    await fs.mkdir(this.frameworkDir, { recursive: true });
+    await fs.mkdir(this.cacheFrameworkDir, { recursive: true });
     const pathsOutput = {
       metadata: {
         timestamp: Date.now(),
         version: this.NEXT_ANALYSIS_VERSION,
         git: await getGitInfo(),
       },
-      data: this.paths,
+      data: {
+        framework: this.frameworkInfo,
+        paths: this.paths,
+      },
     };
 
     await fs.writeFile(
-      path.join(this.frameworkDir, "paths.json"),
+      path.join(this.cacheFrameworkDir, "paths.json"),
       JSON.stringify(pathsOutput, null, 2),
     );
 
     this.log.trace("Paths saved", {
-      path: path.join(this.frameworkDir, "paths.json"),
+      path: path.join(this.cacheFrameworkDir, "paths.json"),
     });
   }
 
@@ -131,12 +136,12 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.log.setGroup("🌳");
     this.log.trace("Building tree structure for NextJs analyzer");
     try {
-      const treeNode = await getTreeStructure(this.rootDir);
+      const treeNode = await getTreeStructure(this.frameworkInfo.dirPath);
 
       this.setFileInfos(treeNode);
 
-      await fs.mkdir(this.frameworkDir, { recursive: true });
-      const treeJsonPath = path.join(this.frameworkDir, "tree.json");
+      await fs.mkdir(this.cacheFrameworkDir, { recursive: true });
+      const treeJsonPath = path.join(this.cacheFrameworkDir, "tree.json");
 
       const treeOutput = {
         metadata: {
@@ -144,7 +149,10 @@ export class NextJsAnalyzer implements BaseAnalyzer {
           version: this.NEXT_ANALYSIS_VERSION,
           git: await getGitInfo(),
         },
-        data: treeNode,
+        data: {
+          framework: this.frameworkInfo,
+          node: treeNode,
+        },
       };
 
       await fs.writeFile(treeJsonPath, JSON.stringify(treeOutput, null, 2));
@@ -166,7 +174,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       this.fileInfos.push({
         relativeFilePath: node.path,
         relativeDirPath: path.dirname(node.path),
-        absoluteFilePath: path.resolve(this.rootDir, node.path),
+        absoluteFilePath: path.resolve(this.frameworkInfo.dirPath, node.path),
         name: node.name,
         extension: node.extension,
         content: null,
@@ -199,7 +207,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     const layoutInfoList = Object.values(this.layouts);
 
     return {
-      framework: this.NEXT_FRAMEWORK_NAME,
+      framework: this.frameworkInfo,
       routerType: this.isAppRouter
         ? "app"
         : this.isPagesRouter
@@ -259,8 +267,11 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
   private async saveAnalysisToFile(analysis: AppAnalysis): Promise<void> {
     try {
-      await fs.mkdir(this.frameworkDir, { recursive: true });
-      const analysisJsonPath = path.join(this.frameworkDir, "analysis.json");
+      await fs.mkdir(this.cacheFrameworkDir, { recursive: true });
+      const analysisJsonPath = path.join(
+        this.cacheFrameworkDir,
+        "analysis.json",
+      );
 
       const output = {
         metadata: {
@@ -295,7 +306,10 @@ export class NextJsAnalyzer implements BaseAnalyzer {
           if (!file.content) {
             try {
               this.log.trace("Reading file", { path: file.relativeFilePath });
-              file.content = await fs.readFile(file.relativeFilePath, "utf-8");
+              file.content = await fs.readFile(
+                path.join(this.frameworkInfo.dirPath, file.relativeFilePath),
+                "utf-8",
+              );
             } catch (readError) {
               this.log.error(
                 `Error reading file ${file.relativeFilePath}:`,
@@ -350,9 +364,18 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       const ast = assertDefined(layoutFileInfo.ast);
       const content = assertDefined(layoutFileInfo.content);
 
-      let layoutName = undefined;
+      let componentFunctions = new Map();
+      let layoutName = null;
 
       traverse(ast, {
+        // Collect all function declarations
+        FunctionDeclaration(path: any) {
+          if (path.node.id) {
+            componentFunctions.set(path.node.id.name, path.node);
+          }
+        },
+
+        // Try to find which one is exported
         ExportDefaultDeclaration(path: any) {
           if (
             t.isFunctionDeclaration(path.node.declaration) &&
@@ -361,9 +384,20 @@ export class NextJsAnalyzer implements BaseAnalyzer {
             layoutName = path.node.declaration.id.name;
           } else if (t.isIdentifier(path.node.declaration)) {
             layoutName = path.node.declaration.name;
+          } else if (t.isCallExpression(path.node.declaration)) {
+            // Try to extract from HOCs
+            let arg = path.node.declaration.arguments[0];
+            if (t.isIdentifier(arg)) {
+              layoutName = arg.name;
+            }
           }
         },
       });
+
+      // Fallback if export detection fails
+      if (!layoutName && componentFunctions.size > 0) {
+        layoutName = [...componentFunctions.keys()][0];
+      }
 
       if (!layoutName) {
         this.log.error("Could not determine layout name", {

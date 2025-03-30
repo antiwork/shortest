@@ -30,11 +30,10 @@ const executePlanCommand = async (
   options: { force?: boolean } = {},
 ): Promise<void> => {
   const log = getLogger();
-  const cwd = process.cwd();
-  const supportedFramework = await detectSupportedFramework();
+  const supportedFrameworkInfo = await detectSupportedFramework();
   log.info(`Generating test plans...`);
 
-  const planner = new TestPlanner(cwd, supportedFramework);
+  const planner = new TestPlanner(supportedFrameworkInfo);
   const testPlans = await planner.execute(options);
 
   log.info(`Test planning complete. Generated ${testPlans.length} test plans.`);

@@ -1,3 +1,5 @@
+import { FrameworkInfo } from "@/core/app-analyzer";
+
 /**
  * Base analyzer interface that all framework-specific analyzers must implement
  */
@@ -12,7 +14,7 @@ export interface FileAnalysisResult {
 }
 
 export interface AppAnalysis {
-  framework: string;
+  framework: FrameworkInfo;
   routerType: "app" | "pages" | "unknown";
   stats: {
     fileCount: number;

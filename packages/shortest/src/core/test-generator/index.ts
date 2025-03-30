@@ -2,11 +2,12 @@ import fs from "fs/promises";
 import { createRequire } from "module";
 import path from "path";
 import * as t from "@babel/types";
-import { TestPlan, TestPlanner } from "../test-planner";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
 import { SHORTEST_NAME } from "@/cli/commands/shortest";
+import { FrameworkInfo } from "@/core/app-analyzer";
 import { formatCode } from "@/core/test-generator/utils/format-code";
 import { lintCode } from "@/core/test-generator/utils/lint-code";
+import { TestPlan, TestPlanner } from "@/core/test-planner";
 import { getLogger } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
 
@@ -18,23 +19,25 @@ const require = createRequire(import.meta.url);
 const generate = require("@babel/generator").default;
 
 export class TestGenerator {
-  private rootDir: string;
-  private framework: string;
-  private log = getLogger();
-
+  private readonly rootDir: string;
+  private readonly frameworkInfo: FrameworkInfo;
+  private readonly log = getLogger();
   private readonly outputPath: string;
   private readonly TEST_FILE_NAME = "functional.test.ts";
-  private readonly frameworkDir: string;
+  private readonly cacheFrameworkDir: string;
 
-  constructor(rootDir: string, framework: string) {
+  constructor(rootDir: string, frameworkInfo: FrameworkInfo) {
     this.rootDir = rootDir;
-    this.framework = framework;
-    this.frameworkDir = path.join(DOT_SHORTEST_DIR_PATH, this.framework);
+    this.frameworkInfo = frameworkInfo;
+    this.cacheFrameworkDir = path.join(
+      DOT_SHORTEST_DIR_PATH,
+      this.frameworkInfo.id,
+    );
     this.outputPath = path.join(SHORTEST_DIR_PATH, this.TEST_FILE_NAME);
   }
 
   public async execute(options: { force?: boolean } = {}): Promise<void> {
-    this.log.trace("Generating tests...", { framework: this.framework });
+    this.log.trace("Generating tests...", { framework: this.frameworkInfo });
 
     if (!options.force) {
       if (await this.testFileExists()) {
@@ -148,7 +151,7 @@ export class TestGenerator {
 
   private async getTestPlans(): Promise<TestPlan[]> {
     const testPlanJsonPath = path.join(
-      this.frameworkDir,
+      this.cacheFrameworkDir,
       TestPlanner.TEST_PLAN_FILE_NAME,
     );
     const testPlanJson = await fs.readFile(testPlanJsonPath, "utf-8");

@@ -8,44 +8,54 @@ import { getProjectInfo } from "@/core/framework-detector";
 import { getLogger } from "@/log";
 import { ShortestError, getErrorDetails } from "@/utils/errors";
 
-export const SUPPORTED_FRAMEWORKS = ["next"];
+export interface FrameworkInfo {
+  id: string;
+  name: string;
+  dirPath: string;
+}
+
+export const SUPPORTED_FRAMEWORKS_IDS = ["next"];
 // eslint-disable-next-line zod/require-zod-schema-types
-export type SupportedFramework = (typeof SUPPORTED_FRAMEWORKS)[number];
+export type SupportedFrameworkId = (typeof SUPPORTED_FRAMEWORKS_IDS)[number];
 
 export class AppAnalyzer {
-  private rootDir: string;
-  private framework: SupportedFramework;
-  private log = getLogger();
+  private readonly frameworkInfo: FrameworkInfo;
+  private readonly log = getLogger();
 
-  constructor(rootDir: string, framework: SupportedFramework) {
-    this.rootDir = rootDir;
-    this.framework = framework;
+  constructor(frameworkInfo: FrameworkInfo) {
+    this.frameworkInfo = frameworkInfo;
   }
 
   public async execute(
     options: { force?: boolean } = {},
   ): Promise<AppAnalysis> {
-    this.log.trace("Analyzing application...", { framework: this.framework });
+    this.log.trace("Analyzing application...", {
+      framework: this.frameworkInfo.id,
+    });
 
     let analysis: AppAnalysis;
 
     if (!options.force) {
-      const existingAnalysis = await getExistingAnalysis(this.framework);
+      const existingAnalysis = await getExistingAnalysis(this.frameworkInfo.id);
       if (existingAnalysis) {
         this.log.trace("Using existing analysis from cache");
         return existingAnalysis;
       }
     }
 
-    switch (this.framework) {
+    switch (this.frameworkInfo.id) {
       case "next":
         analysis = await this.analyzeNextJs();
         break;
       default:
-        throw new ShortestError(`Unsupported framework: ${this.framework}`);
+        throw new ShortestError(
+          `Unsupported framework: ${this.frameworkInfo.id}`,
+        );
     }
 
-    this.log.trace(`Analysis complete for ${this.framework} framework`);
+    this.log.trace(
+      `Analysis complete for ${this.frameworkInfo.name} framework`,
+    );
     return analysis;
   }
 
@@ -53,7 +63,7 @@ export class AppAnalyzer {
     this.log.trace("Starting Next.js analysis");
 
     try {
-      const nextAnalyzer = new NextJsAnalyzer(this.rootDir);
+      const nextAnalyzer = new NextJsAnalyzer(this.frameworkInfo);
       const analysis = await nextAnalyzer.execute();
 
       this.log.trace("Next.js analysis completed successfully");
@@ -69,14 +79,14 @@ export class AppAnalyzer {
 }
 
 export const getExistingAnalysis = async (
-  framework: SupportedFramework,
+  frameworkId: SupportedFrameworkId,
 ): Promise<AppAnalysis | null> => {
   const log = getLogger();
-  log.trace("Getting existing analysis", { framework });
+  log.trace("Getting existing analysis", { frameworkId });
 
   try {
-    const frameworkDir = path.join(DOT_SHORTEST_DIR_PATH, framework);
-    const analysisJsonPath = path.join(frameworkDir, "analysis.json");
+    const cacheFrameworkDir = path.join(DOT_SHORTEST_DIR_PATH, frameworkId);
+    const analysisJsonPath = path.join(cacheFrameworkDir, "analysis.json");
 
     try {
       await fs.access(analysisJsonPath);
@@ -94,22 +104,21 @@ export const getExistingAnalysis = async (
   }
 };
 
-export const detectSupportedFramework =
-  async (): Promise<SupportedFramework> => {
-    const projectInfo = await getProjectInfo();
-    const supportedFrameworks = projectInfo.data.frameworks.filter((f) =>
-      SUPPORTED_FRAMEWORKS.includes(f.id),
+export const detectSupportedFramework = async (): Promise<FrameworkInfo> => {
+  const projectInfo = await getProjectInfo();
+  const supportedFrameworks = projectInfo.data.frameworks.filter((f) =>
+    SUPPORTED_FRAMEWORKS_IDS.includes(f.id),
+  );
+
+  if (supportedFrameworks.length === 0) {
+    throw new ShortestError(`No supported framework found`);
+  }
+
+  if (supportedFrameworks.length > 1) {
+    throw new ShortestError(
+      `Multiple supported frameworks found: ${supportedFrameworks.map((f) => f.name).join(", ")}`,
     );
+  }
 
-    if (supportedFrameworks.length === 0) {
-      throw new ShortestError(`No supported framework found`);
-    }
-
-    if (supportedFrameworks.length > 1) {
-      throw new ShortestError(
-        `Multiple supported frameworks found: ${supportedFrameworks.map((f) => f.name).join(", ")}`,
-      );
-    }
-
-    return supportedFrameworks[0].id;
-  };
+  return supportedFrameworks[0];
+};

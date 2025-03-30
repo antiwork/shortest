@@ -42,7 +42,7 @@ describe("LogOutput", () => {
   describe("terminal format", () => {
     it("renders basic log message", () => {
       const event = new LogEvent("info", "test message");
-      LogOutput.render(event, "terminal");
+      LogOutput.render(event, "terminal", process.stdout);
 
       expect(console.info).toHaveBeenCalledWith(
         `cyan(info${" ".repeat(maxLevelLength - 4)}) | ${mockTimestamp} | test message`,
@@ -54,7 +54,7 @@ describe("LogOutput", () => {
         userId: 123,
         details: { key: "value" },
       });
-      LogOutput.render(event, "terminal");
+      LogOutput.render(event, "terminal", process.stdout);
 
       expect(console.debug).toHaveBeenCalledWith(
         `green(debug${" ".repeat(maxLevelLength - 5)}) | ${mockTimestamp} | test with metadata | dim(userId)=123 dim(details)={\n  "key": "value"\n}\n`,
@@ -65,7 +65,7 @@ describe("LogOutput", () => {
   describe("reporter format", () => {
     it("renders basic message", () => {
       const event = new LogEvent("info", "test message");
-      LogOutput.render(event, "reporter");
+      LogOutput.render(event, "reporter", process.stdout);
 
       expect(process.stdout.write).toHaveBeenCalledWith("test message\n");
     });
@@ -75,7 +75,7 @@ describe("LogOutput", () => {
       const child = new LogGroup({} as any, "Child", root);
       const event = new LogEvent("info", "test message");
 
-      LogOutput.render(event, "reporter", child);
+      LogOutput.render(event, "reporter", process.stdout, child);
 
       expect(process.stdout.write).toHaveBeenCalledWith("    test message\n");
     });
@@ -84,9 +84,9 @@ describe("LogOutput", () => {
   describe("error handling", () => {
     it("throws on unsupported format", () => {
       const event = new LogEvent("info", "test");
-      expect(() => LogOutput.render(event, "invalid" as any)).toThrow(
-        "Unsupported log format: invalid",
-      );
+      expect(() =>
+        LogOutput.render(event, "invalid" as any, process.stdout),
+      ).toThrow("Unsupported log format: invalid");
     });
   });
 
@@ -99,7 +99,7 @@ describe("LogOutput", () => {
       ["trace", "gray", "log"],
     ])("uses correct color and method for %s level", (level, color, method) => {
       const event = new LogEvent(level as any, "test message");
-      LogOutput.render(event, "terminal");
+      LogOutput.render(event, "terminal", process.stdout);
 
       const paddedLevel = level.padEnd(maxLevelLength);
       let message = "test message";

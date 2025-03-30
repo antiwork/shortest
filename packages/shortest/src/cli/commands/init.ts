@@ -21,7 +21,7 @@ import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
 import {
   AppAnalyzer,
   detectSupportedFramework,
-  SupportedFramework,
+  FrameworkInfo,
 } from "@/core/app-analyzer";
 import { detectFramework } from "@/core/framework-detector";
 import { TestGenerator } from "@/core/test-generator";
@@ -70,7 +70,7 @@ interface Ctx {
   anthropicApiKeyValue: string;
   envFile: EnvFile;
   generateSampleTestFile: boolean;
-  supportedFramework: SupportedFramework | null;
+  supportedFrameworkInfo: FrameworkInfo | null;
   shortestLoginEmail: string;
   shortestLoginPassword: string;
 }
@@ -334,8 +334,9 @@ export const executeInitCommand = async () => {
                   await taskWithCustomLogOutput(task, async () => {
                     await detectFramework({ force: true });
                     try {
-                      ctx.supportedFramework = await detectSupportedFramework();
-                      task.title = `Next.js framework detected`;
+                      ctx.supportedFrameworkInfo =
+                        await detectSupportedFramework();
+                      task.title = `${ctx.supportedFrameworkInfo.name} framework detected`;
                     } catch (error) {
                       if (!(error instanceof ShortestError)) throw error;
                       task.title = `Next.js framework not detected (${error.message})`;
@@ -348,16 +349,13 @@ export const executeInitCommand = async () => {
               },
               {
                 title: "Analyzing the codebase",
-                enabled: (ctx): boolean => !!ctx.supportedFramework,
+                enabled: (ctx): boolean => !!ctx.supportedFrameworkInfo,
                 task: async (ctx, task) => {
                   await taskWithCustomLogOutput(task, async () => {
-                    const supportedFramework = assertDefined(
-                      ctx.supportedFramework,
+                    const supportedFrameworkInfo = assertDefined(
+                      ctx.supportedFrameworkInfo,
                     );
-                    const analyzer = new AppAnalyzer(
-                      process.cwd(),
-                      supportedFramework,
-                    );
+                    const analyzer = new AppAnalyzer(supportedFrameworkInfo);
                     await analyzer.execute({ force: true });
                   });
                   task.title = "Analysis complete";
@@ -368,16 +366,13 @@ export const executeInitCommand = async () => {
               },
               {
                 title: "Creating test plans",
-                enabled: (ctx): boolean => !!ctx.supportedFramework,
+                enabled: (ctx): boolean => !!ctx.supportedFrameworkInfo,
                 task: async (ctx, task) => {
                   await taskWithCustomLogOutput(task, async () => {
-                    const supportedFramework = assertDefined(
-                      ctx.supportedFramework,
+                    const supportedFrameworkInfo = assertDefined(
+                      ctx.supportedFrameworkInfo,
                     );
-                    const planner = new TestPlanner(
-                      process.cwd(),
-                      supportedFramework,
-                    );
+                    const planner = new TestPlanner(supportedFrameworkInfo);
                     await planner.execute({ force: true });
                     task.title = `Test planning complete`;
                   });
@@ -388,15 +383,15 @@ export const executeInitCommand = async () => {
               },
               {
                 title: "Generating test file",
-                enabled: (ctx): boolean => !!ctx.supportedFramework,
+                enabled: (ctx): boolean => !!ctx.supportedFrameworkInfo,
                 task: async (ctx, task) => {
                   await taskWithCustomLogOutput(task, async () => {
-                    const supportedFramework = assertDefined(
-                      ctx.supportedFramework,
+                    const supportedFrameworkInfo = assertDefined(
+                      ctx.supportedFrameworkInfo,
                     );
                     const generator = new TestGenerator(
                       process.cwd(),
-                      supportedFramework,
+                      supportedFrameworkInfo,
                     );
                     await generator.execute({ force: true });
                     task.title = "Test file generated";

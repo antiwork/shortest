@@ -5,7 +5,7 @@ import { z } from "zod";
 import { SYSTEM_PROMPT } from "./system-prompt";
 import { createProvider } from "@/ai/provider";
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
-import { getExistingAnalysis } from "@/core/app-analyzer";
+import { FrameworkInfo, getExistingAnalysis } from "@/core/app-analyzer";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
@@ -39,21 +39,24 @@ export interface TestPlanInfo {
 export class TestPlanner {
   public static readonly TEST_PLAN_FILE_NAME = "test-plan.json";
 
-  private rootDir: string;
-  private framework: string;
+  private readonly frameworkInfo: FrameworkInfo;
   private log = getLogger();
 
   private readonly TEST_PLAN_VERSION = 1;
-  private readonly frameworkDir: string;
+  private readonly cacheFrameworkDir: string;
 
-  constructor(rootDir: string, framework: string) {
-    this.rootDir = rootDir;
-    this.framework = framework;
-    this.frameworkDir = path.join(DOT_SHORTEST_DIR_PATH, this.framework);
+  constructor(frameworkInfo: FrameworkInfo) {
+    this.frameworkInfo = frameworkInfo;
+    this.cacheFrameworkDir = path.join(
+      DOT_SHORTEST_DIR_PATH,
+      this.frameworkInfo.id,
+    );
   }
 
   public async execute(options: { force?: boolean } = {}): Promise<TestPlan[]> {
-    this.log.trace("Executing test plan...", { framework: this.framework });
+    this.log.trace("Executing test plan...", {
+      framework: this.frameworkInfo,
+    });
 
     if (!options.force) {
       const existingTestPlanInfo = await this.getExistingTestPlans();
@@ -71,9 +74,8 @@ export class TestPlanner {
 
   private async getExistingTestPlans(): Promise<TestPlanInfo | null> {
     try {
-      const frameworkDir = path.join(DOT_SHORTEST_DIR_PATH, this.framework);
       const testPlanJsonPath = path.join(
-        frameworkDir,
+        this.cacheFrameworkDir,
         TestPlanner.TEST_PLAN_FILE_NAME,
       );
 
@@ -97,7 +99,7 @@ export class TestPlanner {
   private async createTestPlans(): Promise<TestPlan[]> {
     await initializeConfig({});
 
-    const analysis = await getExistingAnalysis(this.framework);
+    const analysis = await getExistingAnalysis(this.frameworkInfo.id);
 
     const model = createProvider(getConfig().ai);
 
@@ -118,8 +120,11 @@ export class TestPlanner {
 
   private async saveTestPlansToFile(testPlans: TestPlan[]): Promise<void> {
     try {
-      await fs.mkdir(this.frameworkDir, { recursive: true });
-      const testPlanJsonPath = path.join(this.frameworkDir, "test-plan.json");
+      await fs.mkdir(this.cacheFrameworkDir, { recursive: true });
+      const testPlanJsonPath = path.join(
+        this.cacheFrameworkDir,
+        TestPlanner.TEST_PLAN_FILE_NAME,
+      );
 
       const output = {
         metadata: {

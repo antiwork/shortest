@@ -28,11 +28,10 @@ const executeAnalyzeCommand = async (
   options: { force?: boolean } = {},
 ): Promise<void> => {
   const log = getLogger();
-  const cwd = process.cwd();
-  const supportedFramework = await detectSupportedFramework();
-  log.info(`Analyzing ${supportedFramework} application structure...`);
+  const supportedFrameworkInfo = await detectSupportedFramework();
+  log.info(`Analyzing ${supportedFrameworkInfo.name} application structure...`);
 
-  const analyzer = new AppAnalyzer(cwd, supportedFramework);
+  const analyzer = new AppAnalyzer(supportedFrameworkInfo);
   const analysis = await analyzer.execute(options);
 
   log.info(
