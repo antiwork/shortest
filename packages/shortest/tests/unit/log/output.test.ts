@@ -25,13 +25,9 @@ describe("LogOutput", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-01T19:00:00"));
-    // Mock all console methods
-    vi.spyOn(console, "log").mockImplementation(() => {});
-    vi.spyOn(console, "info").mockImplementation(() => {});
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(console, "debug").mockImplementation(() => {});
+    // Mock write methods for stdout and stderr
     vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -44,8 +40,8 @@ describe("LogOutput", () => {
       const event = new LogEvent("info", "test message");
       LogOutput.render(event, "terminal", process.stdout);
 
-      expect(console.info).toHaveBeenCalledWith(
-        `cyan(info${" ".repeat(maxLevelLength - 4)}) | ${mockTimestamp} | test message`,
+      expect(process.stdout.write).toHaveBeenCalledWith(
+        `cyan(info${" ".repeat(maxLevelLength - 4)}) | ${mockTimestamp} | test message\n`,
       );
     });
 
@@ -56,8 +52,8 @@ describe("LogOutput", () => {
       });
       LogOutput.render(event, "terminal", process.stdout);
 
-      expect(console.debug).toHaveBeenCalledWith(
-        `green(debug${" ".repeat(maxLevelLength - 5)}) | ${mockTimestamp} | test with metadata | dim(userId)=123 dim(details)={\n  "key": "value"\n}\n`,
+      expect(process.stdout.write).toHaveBeenCalledWith(
+        `green(debug${" ".repeat(maxLevelLength - 5)}) | ${mockTimestamp} | test with metadata | dim(userId)=123 dim(details)={\n  "key": "value"\n}\n\n`,
       );
     });
   });
@@ -92,12 +88,12 @@ describe("LogOutput", () => {
 
   describe("log levels", () => {
     it.each([
-      ["error", "red", "error"],
-      ["warn", "yellow", "warn"],
-      ["info", "cyan", "info"],
-      ["debug", "green", "debug"],
-      ["trace", "gray", "log"],
-    ])("uses correct color and method for %s level", (level, color, method) => {
+      ["error", "red", process.stderr],
+      ["warn", "yellow", process.stderr],
+      ["info", "cyan", process.stdout],
+      ["debug", "green", process.stdout],
+      ["trace", "gray", process.stdout],
+    ])("uses correct color and method for %s level", (level, color, stream) => {
       const event = new LogEvent(level as any, "test message");
       LogOutput.render(event, "terminal", process.stdout);
 
@@ -110,9 +106,7 @@ describe("LogOutput", () => {
       const expectedOutput =
         level === "warn" ? `yellowBright(${output})` : output;
 
-      expect(console[method as keyof Console]).toHaveBeenCalledWith(
-        expectedOutput,
-      );
+      expect(stream.write).toHaveBeenCalledWith(`${expectedOutput}\n`);
     });
   });
 });
