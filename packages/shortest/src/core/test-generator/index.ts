@@ -62,8 +62,14 @@ export class TestGenerator {
 
   private async generateTestFile(): Promise<void> {
     const rawFileContent = await this.generateRawFileOutput();
-    const formattedCode = await formatCode(rawFileContent, this.rootDir);
-    const lintedCode = await lintCode(formattedCode, this.rootDir);
+    const formattedCode = await formatCode(
+      rawFileContent,
+      this.frameworkInfo.dirPath,
+    );
+    const lintedCode = await lintCode(
+      formattedCode,
+      this.frameworkInfo.dirPath,
+    );
 
     try {
       await fs.mkdir(SHORTEST_DIR_PATH, { recursive: true });

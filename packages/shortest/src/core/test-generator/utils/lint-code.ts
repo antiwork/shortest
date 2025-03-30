@@ -16,6 +16,7 @@ export const lintCode = async (
     const eslintPath = require.resolve("eslint", {
       paths: [rootDir],
     });
+    log.trace("ESLint path", { eslintPath });
     const { ESLint } = await import(eslintPath);
 
     const customConfig = {

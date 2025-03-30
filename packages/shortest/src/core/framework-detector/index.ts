@@ -60,17 +60,19 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
   let frameworkInfos: FrameworkInfo[] = [];
 
   const nextJsDirPath = await detectNextJsDirPathFromConfig();
-  console.log("nextJsDirPath", nextJsDirPath);
+
   if (nextJsDirPath) {
     frameworks = await listFrameworks({ projectDir: nextJsDirPath });
     frameworks.map((framework) => {
       frameworkInfos.push({
         id: framework.id,
         name: framework.name,
-        dirPath: process.cwd(),
+        dirPath: nextJsDirPath,
       });
     });
   }
+
+  log.trace("Frameworks detected", { frameworkInfos });
 
   await fs.mkdir(DOT_SHORTEST_DIR_PATH, { recursive: true });
 
@@ -103,14 +105,19 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
 };
 
 const detectNextJsDirPathFromConfig = async (): Promise<string | undefined> => {
+  const log = getLogger();
   const paths = await getPaths(process.cwd());
 
-  const nextConfigFile = paths.find((filePath) =>
-    /next\.config\.(js|ts|mjs|cjs)$/.test(filePath),
-  );
+  const nextDirConfigPaths = paths
+    .filter((filePath) => /next\.config\.(js|ts|mjs|cjs)$/.test(filePath))
+    .map((filePath) => path.dirname(filePath));
 
-  if (nextConfigFile) {
-    return path.dirname(path.join(process.cwd(), nextConfigFile));
+  if (nextDirConfigPaths.length > 0) {
+    log.trace("Detected Next.js config paths", { nextDirConfigPaths });
+    const nextNamedDir = nextDirConfigPaths.find((dirPath) =>
+      /next/i.test(dirPath),
+    );
+    return path.join(process.cwd(), nextNamedDir || nextDirConfigPaths[0]);
   }
 
   return undefined;
