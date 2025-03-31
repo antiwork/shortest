@@ -312,9 +312,6 @@ importers:
       playwright:
         specifier: ^1.50.1
         version: 1.50.1
-      simple-git:
-        specifier: ^3.27.0
-        version: 3.27.0
     devDependencies:
       '@babel/generator':
         specifier: ^7.27.0
@@ -334,6 +331,9 @@ importers:
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
+      simple-git:
+        specifier: ^3.27.0
+        version: 3.27.0
       tsup:
         specifier: ^8.3.6
         version: 8.3.6(@microsoft/api-extractor@7.48.1(@types/node@20.17.17))(jiti@1.21.7)(postcss@8.5.2)(tsx@4.19.3)(typescript@5.7.3)(yaml@2.6.1)
