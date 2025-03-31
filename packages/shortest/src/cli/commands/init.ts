@@ -255,7 +255,7 @@ export const executeInitCommand = async () => {
                                   })),
                             },
                             {
-                              title: "Saving SHORTEST_LOGIN_EMAIL key",
+                              title: "Saving SHORTEST_LOGIN_PASSWORD key",
                               skip: (ctx): boolean =>
                                 !ctx.shortestLoginPassword,
                               task: async (ctx, task) => {
