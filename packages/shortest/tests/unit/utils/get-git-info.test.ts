@@ -1,11 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getGitInfo } from "@/utils/get-git-info";
-import { SimpleGit } from "simple-git";
-
-interface MockGit {
-  branch: ReturnType<typeof vi.fn>;
-  revparse: ReturnType<typeof vi.fn>;
-}
 
 const mockBranch = vi.fn();
 const mockRevparse = vi.fn();
@@ -63,8 +57,8 @@ describe("getGitInfo", () => {
     });
 
     expect(mockLoggerError).toHaveBeenCalledWith(
-      "Failed to get git info", 
-      gitError
+      "Failed to get git info",
+      gitError,
     );
   });
 });
