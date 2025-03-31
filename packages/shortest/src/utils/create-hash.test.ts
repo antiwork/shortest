@@ -55,8 +55,8 @@ describe("createHash", () => {
     const data = "test string";
     const hash = createHash(data, { length: 0 });
 
-    expect(hash).toHaveLength(0);
-    expect(hash).toBe("");
+    expect(hash).toHaveLength(64);
+    expect(hash).toBe(createHash(data));
   });
 
   it("should handle length greater than hash length", () => {
