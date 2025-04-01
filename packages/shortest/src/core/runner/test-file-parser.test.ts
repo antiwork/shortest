@@ -7,7 +7,7 @@ import {
 } from "./test-file-parser.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const fixturesPath = path.resolve(__dirname, "../../../fixtures");
+const fixturesPath = path.resolve(__dirname, "../../../tests/fixtures");
 
 describe("test-file-parser", () => {
   describe("parseShortestTestFile", () => {
