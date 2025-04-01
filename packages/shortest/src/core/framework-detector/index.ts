@@ -57,7 +57,7 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
   }
 
   let frameworks: Framework[] = [];
-  let frameworkInfos: FrameworkInfo[] = [];
+  const frameworkInfos: FrameworkInfo[] = [];
 
   const nextJsDirPath = await detectNextJsDirPathFromConfig();
 

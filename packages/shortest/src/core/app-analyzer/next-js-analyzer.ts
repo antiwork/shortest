@@ -364,7 +364,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       const ast = assertDefined(layoutFileInfo.ast);
       const content = assertDefined(layoutFileInfo.content);
 
-      let componentFunctions = new Map();
+      const componentFunctions = new Map();
       let layoutName = null;
 
       traverse(ast, {
@@ -386,7 +386,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
             layoutName = path.node.declaration.name;
           } else if (t.isCallExpression(path.node.declaration)) {
             // Try to extract from HOCs
-            let arg = path.node.declaration.arguments[0];
+            const arg = path.node.declaration.arguments[0];
             if (t.isIdentifier(arg)) {
               layoutName = arg.name;
             }

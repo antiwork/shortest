@@ -93,6 +93,7 @@ export default [
       "no-useless-call": "error",
       "no-useless-computed-key": "error",
       "object-shorthand": "error",
+      "prefer-const": "error",
       "zod/require-zod-schema-types": "error",
     },
     settings: {

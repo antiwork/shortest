@@ -225,7 +225,7 @@ export class AIClient {
                 args.action === "mouse_move" && args.coordinate.length;
 
               for (const toolResult of result.toolResults as any[]) {
-                let extras: Record<string, unknown> = {};
+                const extras: Record<string, unknown> = {};
                 if (isMouseMove(toolResult.args)) {
                   const [x, y] = (toolResult.args as any).coordinate;
                   extras.componentStr =
