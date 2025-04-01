@@ -24,10 +24,10 @@ import { LogEvent } from "@/log/event";
  * @private
  */
 export class LogGroup {
-  private log: Log;
   readonly parent?: LogGroup;
   readonly name: string;
   readonly event: LogEvent;
+  private log: Log;
 
   constructor(log: Log, name: string, parent?: LogGroup) {
     this.log = log;

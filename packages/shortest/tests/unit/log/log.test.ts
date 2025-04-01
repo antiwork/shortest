@@ -75,6 +75,7 @@ describe("Log", () => {
           message,
         }),
         "terminal",
+        process.stdout,
         undefined,
       );
     });
@@ -86,6 +87,7 @@ describe("Log", () => {
           message: "Hello World 123",
         }),
         "terminal",
+        process.stdout,
         undefined,
       );
     });
@@ -99,6 +101,7 @@ describe("Log", () => {
           metadata,
         }),
         "terminal",
+        process.stdout,
         undefined,
       );
     });
@@ -124,6 +127,7 @@ describe("Log", () => {
           metadata: { userId: 123, action: "login" },
         }),
         "terminal",
+        process.stdout,
         undefined,
       );
     });
@@ -135,6 +139,7 @@ describe("Log", () => {
           message: "undefined null message",
         }),
         "terminal",
+        process.stdout,
         undefined,
       );
     });
@@ -147,6 +152,7 @@ describe("Log", () => {
           message: `Time is ${date}`,
         }),
         "terminal",
+        process.stdout,
         undefined,
       );
     });
@@ -166,6 +172,7 @@ describe("Log", () => {
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.any(Object),
         "terminal",
+        process.stdout,
         expect.objectContaining({
           name: "Database",
         }),
@@ -180,6 +187,7 @@ describe("Log", () => {
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.any(Object),
         "terminal",
+        process.stdout,
         expect.objectContaining({
           name: "Query",
           parent: expect.objectContaining({
@@ -198,6 +206,7 @@ describe("Log", () => {
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.any(Object),
         "terminal",
+        process.stdout,
         expect.objectContaining({
           name: "Parent",
           parent: undefined,
@@ -214,6 +223,7 @@ describe("Log", () => {
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.any(Object),
         "terminal",
+        process.stdout,
         undefined,
       );
     });

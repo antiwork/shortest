@@ -3,8 +3,8 @@ import { z } from "zod";
 
 export const cliOptionsSchema = z.object({
   headless: z.boolean().optional(),
-  baseUrl: z.string().optional(),
-  testPattern: z.string().optional(),
+  baseUrl: z.string().optional().default("http://localhost:3000"),
+  testPattern: z.string().optional().default("**/*.test.ts"),
   noCache: z.boolean().optional(),
 });
 export type CLIOptions = z.infer<typeof cliOptionsSchema>;
@@ -53,7 +53,7 @@ const mailosaurSchema = z
   })
   .optional();
 
-const testPatternSchema = z.string().default("**/*.test.ts");
+export const testPatternSchema = z.string().default("**/*.test.ts");
 
 const browserSchema = z.object({
   /**

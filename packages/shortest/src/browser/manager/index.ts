@@ -18,15 +18,6 @@ export class BrowserManager {
     this.log = getLogger();
   }
 
-  private normalizeUrl(url: string): string {
-    try {
-      const parsedUrl = new URL(url);
-      return parsedUrl.toString();
-    } catch {
-      return url;
-    }
-  }
-
   async launch(): Promise<BrowserContext> {
     try {
       this.browser = await chromium.launch({
@@ -112,13 +103,6 @@ export class BrowserManager {
     return this.clearContext();
   }
 
-  private async closeContext(): Promise<void> {
-    if (this.context) {
-      await this.context.close();
-      this.context = null;
-    }
-  }
-
   async close(): Promise<void> {
     if (this.context) {
       await this.context.close();
@@ -136,5 +120,14 @@ export class BrowserManager {
 
   getBrowser(): Browser | null {
     return this.browser;
+  }
+
+  private normalizeUrl(url: string): string {
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.toString();
+    } catch {
+      return url;
+    }
   }
 }

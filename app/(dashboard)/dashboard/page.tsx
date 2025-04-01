@@ -58,6 +58,7 @@ export default function DashboardPage() {
         const data = await getAssignedPullRequests();
         if ("error" in data) {
           setError(data.error as string);
+
           setPullRequests([]);
         } else {
           setPullRequests(
@@ -73,15 +74,19 @@ export default function DashboardPage() {
               },
             })),
           );
+
           setError(null);
         }
         setLoading(false);
       } catch (error) {
         console.error("Error fetching pull requests:", error);
+
         setLoading(false);
+
         setError(
           "Failed to fetch pull requests. Please reconnect your GitHub account.",
         );
+
         setPullRequests([]);
       }
     };
