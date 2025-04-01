@@ -1,18 +1,18 @@
 import { Command, Option } from "commander";
 import pc from "picocolors";
-import { cleanUpCache } from "@/cache";
-import { purgeLegacyScreenshots } from "@/cache";
-import { purgeLegacyCache } from "@/cache";
+import {
+  cleanUpCache,
+  purgeLegacyScreenshots,
+  purgeLegacyCache,
+} from "@/cache";
 import { executeCommand } from "@/cli/utils/command-builder";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
-import { getConfig } from "@/index";
-import { initializeConfig } from "@/index";
+import { getConfig, initializeConfig } from "@/index";
 import { getLogger } from "@/log";
 import { LOG_LEVELS } from "@/log/config";
 import { CLIOptions, cliOptionsSchema } from "@/types/config";
-import { getErrorDetails } from "@/utils/errors";
-import { ShortestError } from "@/utils/errors";
+import { getErrorDetails, ShortestError } from "@/utils/errors";
 
 export const SHORTEST_NAME = "shortest";
 const { version: currentVersion } = require("../../../package.json");

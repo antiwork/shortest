@@ -119,7 +119,7 @@ export const parseShortestTestFile = (filePath: string): TestLocation[] => {
       const nextLine = sortedStartLines[i + 1] || Number.MAX_SAFE_INTEGER;
       const { name, node } = testCallsByLine.get(currentLine)!;
 
-      let path = node;
+      const path = node;
       let endLine = path.node.loc?.end?.line || 0;
 
       let currentPath: NodePath<t.Node> = path;

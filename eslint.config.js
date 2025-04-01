@@ -40,6 +40,7 @@ export default [
       },
     },
     rules: {
+      "no-var": "error",
       "react/react-in-jsx-scope": "off",
       "@typescript-eslint/member-ordering": ["error", {
         default: {
@@ -76,8 +77,10 @@ export default [
       "logical-assignment-operators": "error",
       "prefer-arrow-callback": "error",
       "require-await": "error",
+      "prefer-spread": "error",
       "prefer-object-spread": "error",
       "import/order": ["error", { alphabetize: { order: "asc" } }],
+      "import/no-duplicates": "error",
       "padding-line-between-statements": [
           "error",
           { blankLine: "always", prev: "import", next: "*" },
@@ -94,6 +97,7 @@ export default [
       "no-useless-call": "error",
       "no-useless-computed-key": "error",
       "object-shorthand": "error",
+      "prefer-const": "error",
       "zod/require-zod-schema-types": "error",
     },
     settings: {

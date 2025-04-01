@@ -1,4 +1,6 @@
+// eslint-disable-next-line import/no-duplicates
 import type { Page, Browser, APIRequest, APIRequestContext } from "playwright";
+// eslint-disable-next-line import/no-duplicates
 import type * as playwright from "playwright";
 import { TestRun } from "@/core/runner/test-run";
 

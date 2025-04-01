@@ -72,7 +72,7 @@ export class LogOutput {
     const { message } = event;
     const groupIdentifiers = group ? group.getGroupIdentifiers() : [];
 
-    let outputParts = [];
+    const outputParts = [];
     if (groupIdentifiers.length > 0) {
       outputParts.push(INDENTATION_CHARACTER.repeat(groupIdentifiers.length));
     }
@@ -108,7 +108,7 @@ export class LogOutput {
       message = pc.red(message);
     }
 
-    let outputParts = [];
+    const outputParts = [];
     outputParts.push(colorFn(`${level}`.padEnd(LogOutput.MAX_LEVEL_LENGTH)));
     outputParts.push(
       timestamp.toLocaleTimeString("en-US", {

@@ -71,7 +71,7 @@ export const initializeConfig = async ({
     CONFIG_FILENAME.replace(/\.ts$/, ".mjs"),
   ];
 
-  let configs = [];
+  const configs = [];
   for (const file of configFiles) {
     try {
       const module = await compiler.loadModule(file, configDir);
@@ -189,7 +189,7 @@ const createTestChain = (
     expectations: [],
   });
 
-  let existingTests = registry.tests.get(name) || [];
+  const existingTests = registry.tests.get(name) || [];
   registry.tests.set(name, [...existingTests, testCase]);
   registry.currentFileTests.push(testCase);
 

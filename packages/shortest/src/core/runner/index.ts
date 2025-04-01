@@ -1,8 +1,12 @@
 import { pathToFileURL } from "url";
 import { glob } from "glob";
-import { APIRequest, BrowserContext } from "playwright";
+import {
+  APIRequest,
+  BrowserContext,
+  request,
+  APIRequestContext,
+} from "playwright";
 import * as playwright from "playwright";
-import { request, APIRequestContext } from "playwright";
 import { z } from "zod";
 import { AIClient, AIClientResponse } from "@/ai/client";
 import { BrowserTool } from "@/browser/core/browser-tool";
