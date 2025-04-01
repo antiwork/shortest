@@ -1,7 +1,7 @@
 import pc from "picocolors";
 import { test } from "@/index";
 
-export const main = async () => {
+export const main = () => {
   console.log(pc.cyan("\n🧪 Testing Assertion Implementation"));
   console.log(pc.cyan("================================"));
 
@@ -12,7 +12,7 @@ export const main = async () => {
     // Test 1: Verify failing assertions are caught
     console.log(pc.cyan("\nTest 1: Verify failing assertions"));
     try {
-      test("Test failing assertion", async () => {
+      test("Test failing assertion", () => {
         expect(true).toBe(false);
       });
 

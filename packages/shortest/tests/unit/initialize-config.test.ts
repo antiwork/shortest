@@ -126,7 +126,7 @@ describe("initializeConfig", () => {
     });
   });
 
-  describe("CLI options", async () => {
+  describe("CLI options", () => {
     beforeEach(async () => {
       await fs.writeFile(
         path.join(tempDir, "shortest.config.ts"),
