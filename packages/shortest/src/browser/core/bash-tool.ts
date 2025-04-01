@@ -12,7 +12,7 @@ export class BashTool {
     this.log = getLogger();
   }
 
-  public async execute(command: string): Promise<string> {
+  public execute(command: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const child = spawn(command, { shell: true });
 

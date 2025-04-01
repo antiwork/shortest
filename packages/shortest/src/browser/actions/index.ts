@@ -101,7 +101,7 @@ export const showClickAnimation = async (
   page: Page,
   type: "left" | "right" | "double" = "left",
 ) =>
-  page.evaluate(
+  await page.evaluate(
     (clickType) =>
       new Promise<void>((resolve) => {
         const cursor = document.getElementById("ai-cursor");

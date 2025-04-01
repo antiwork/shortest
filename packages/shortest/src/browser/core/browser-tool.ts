@@ -623,7 +623,7 @@ export class BrowserTool extends BaseBrowserTool {
     await this.page.press(selector, key);
   }
 
-  public async findElement(selector: string) {
+  public findElement(selector: string) {
     this.log.debug("Finding element", { selector });
     return this.page.$(selector);
   }

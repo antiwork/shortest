@@ -51,18 +51,18 @@ export const POST = async (request: NextRequest) => {
   }
 };
 
-const handlePushEvent = async (payload: any) => {
+const handlePushEvent = (payload: any) => {
   const { repository } = payload;
   console.log(`New push to ${repository.full_name}`);
 };
 
-const handlePullRequestEvent = async (payload: any) => {
+const handlePullRequestEvent = (payload: any) => {
   const { action, pull_request, repository } = payload;
   console.log(`Pull request ${action} in ${repository.full_name}`);
   revalidateTag(`pullRequest-${pull_request.id}`);
 };
 
-const handleCheckRunEvent = async (payload: any) => {
+const handleCheckRunEvent = (payload: any) => {
   const { action, check_run, repository } = payload;
   console.log(`Check run ${action} in ${repository.full_name}`);
   if (check_run.pull_requests && check_run.pull_requests.length > 0) {
@@ -72,7 +72,7 @@ const handleCheckRunEvent = async (payload: any) => {
   }
 };
 
-const handleCheckSuiteEvent = async (payload: any) => {
+const handleCheckSuiteEvent = (payload: any) => {
   const { action, check_suite, repository } = payload;
   console.log(`Check suite ${action} in ${repository.full_name}`);
   if (check_suite.pull_requests && check_suite.pull_requests.length > 0) {

@@ -228,12 +228,10 @@ describe("AIClient", () => {
       ])(
         "handles $name",
         async ({ finishReason, expectedMessage, expectedType }) => {
-          vi.spyOn(client as any, "runConversation").mockImplementation(
-            async () => {
-              (client as any).throwOnErrorFinishReason(finishReason);
-              return {};
-            },
-          );
+          vi.spyOn(client as any, "runConversation").mockImplementation(() => {
+            (client as any).throwOnErrorFinishReason(finishReason);
+            return {};
+          });
 
           await expect(client.runAction("test prompt")).rejects.toMatchObject({
             message: expectedMessage,

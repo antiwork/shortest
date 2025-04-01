@@ -25,7 +25,10 @@ export const createAnthropicComputer20241022 = (
         });
         return { output: `Action '${action}' not supported` };
       }
-      return browserTool.execute({ action: internalAction, ...restOfInput });
+      return await browserTool.execute({
+        action: internalAction,
+        ...restOfInput,
+      });
     },
     experimental_toToolResultContent: browserTool.resultToToolResultContent,
   });
