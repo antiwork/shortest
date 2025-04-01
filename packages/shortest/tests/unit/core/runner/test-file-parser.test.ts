@@ -30,7 +30,7 @@ describe("test-file-parser", () => {
       expect(testLocations[1]).toEqual({
         testName: `Test Google's advanced search features`,
         startLine: 16,
-        endLine: 37,
+        endLine: 38,
       });
 
       expect(testLocations[2]).toEqual({
