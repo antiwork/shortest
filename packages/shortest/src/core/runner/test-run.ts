@@ -73,12 +73,10 @@ export class TestRun {
       typeof cacheEntry.metadata.version === "string"
         ? parseInt(cacheEntry.metadata.version, 10) || 0
         : cacheEntry.metadata.version || 0;
-
     testRun.state = {
       status: cacheEntry.metadata.status,
       reason: cacheEntry.metadata.reason,
     } as TestRunState;
-
     testRun.tokenUsage = cacheEntry.metadata.tokenUsage;
     if (cacheEntry.data.steps) {
       testRun.steps = [...cacheEntry.data.steps];
@@ -111,13 +109,9 @@ export class TestRun {
     }: { runId: string; timestamp: number; executedFromCache: boolean },
   ) {
     this.testCase = testCase;
-
     this.log = getLogger();
-
     this.runId = runId;
-
     this.timestamp = timestamp;
-
     this._executedFromCache = executedFromCache;
   }
 
@@ -184,7 +178,6 @@ export class TestRun {
    */
   markPassedFromCache({ reason }: { reason: string }) {
     this.markPassed({ reason });
-
     // Used for transient test runs that are executed from cache so that
     // are not saved to the cache, as their steps are not valid to be
     // used in a future test run.

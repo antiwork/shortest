@@ -199,7 +199,6 @@ describe("AIClient", () => {
           }).rejects.toSatisfy((value: unknown) => {
             const e = value as Error;
             expect(e).toBeInstanceOf(expectedInstance);
-
             expect(e.message).toBe(expectedMessage);
             return true;
           });

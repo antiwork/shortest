@@ -52,9 +52,7 @@ describe("shortest command", () => {
 
   test("shortestCommand is a Command instance", () => {
     expect(shortestCommand).toBeInstanceOf(Command);
-
     expect(shortestCommand.name()).toBe("shortest");
-
     expect(shortestCommand.description()).toContain(
       "AI-powered end-to-end testing framework",
     );
@@ -64,15 +62,12 @@ describe("shortest command", () => {
     expect(
       shortestCommand.options.find((opt) => opt.long === "--log-level"),
     ).toBeDefined();
-
     expect(
       shortestCommand.options.find((opt) => opt.long === "--headless"),
     ).toBeDefined();
-
     expect(
       shortestCommand.options.find((opt) => opt.long === "--target"),
     ).toBeDefined();
-
     expect(
       shortestCommand.options.find((opt) => opt.long === "--no-cache"),
     ).toBeDefined();
@@ -123,13 +118,10 @@ describe("shortest command", () => {
     });
 
     expect(purgeLegacyCache).toHaveBeenCalled();
-
     expect(purgeLegacyScreenshots).toHaveBeenCalled();
 
     expect(TestRunner).toHaveBeenCalled();
-
     expect(mockInitialize).toHaveBeenCalled();
-
     expect(mockExecute).toHaveBeenCalledWith("test-pattern", 123);
 
     expect(cleanUpCache).toHaveBeenCalled();

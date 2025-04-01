@@ -12,7 +12,6 @@ export const main = async () => {
 
   try {
     await initializeConfig({});
-
     console.log(pc.cyan("\n🚀 Launching browser..."));
     const context = await browserManager.launch();
     const page = context.pages()[0];
@@ -82,11 +81,9 @@ export const main = async () => {
     console.error(pc.red("\n❌ Test failed:"), error);
   } finally {
     console.log(pc.cyan("\n🧹 Cleaning up..."));
-
     await browserManager.close();
   }
 };
 
 console.log(pc.cyan("🧪 Keyboard Handling Test"));
-
 console.log(pc.cyan("======================="));

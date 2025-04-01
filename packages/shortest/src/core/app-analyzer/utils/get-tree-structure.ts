@@ -84,7 +84,6 @@ export const getTreeStructure = async (
     };
 
     parentNode.children.push(dirNode);
-
     dirMap.set(dirPath, dirNode);
 
     return dirNode;

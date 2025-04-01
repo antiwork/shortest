@@ -47,7 +47,6 @@ export class TestPlanner {
 
   constructor(frameworkInfo: FrameworkInfo) {
     this.frameworkInfo = frameworkInfo;
-
     this.cacheFrameworkDir = path.join(
       DOT_SHORTEST_DIR_PATH,
       this.frameworkInfo.id,
@@ -139,7 +138,6 @@ export class TestPlanner {
       };
 
       await fs.writeFile(testPlanJsonPath, JSON.stringify(output, null, 2));
-
       this.log.trace(`Test plan saved to ${testPlanJsonPath}`);
     } catch (error) {
       this.log.error(

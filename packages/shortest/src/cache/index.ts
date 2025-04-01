@@ -30,7 +30,6 @@ export const cleanUpCache = async ({
 } = {}) => {
   const log = getLogger();
   log.setGroup("🧹");
-
   log.trace("Cleaning up cache", { forcePurge });
 
   if (!existsSync(dirPath)) {
@@ -40,7 +39,6 @@ export const cleanUpCache = async ({
 
   if (forcePurge) {
     await fs.rm(dirPath, { recursive: true, force: true });
-
     log.debug("Cache directory purged", { dirPath });
     return;
   }
@@ -70,9 +68,7 @@ export const cleanUpCache = async ({
 
       if (isOutdatedVersion || !testFileExists) {
         await fs.unlink(cacheFilePath);
-
         await fs.rm(cacheDirPath, { recursive: true, force: true });
-
         log.trace("Cache removed", {
           file: cacheFile,
           reason: isOutdatedVersion
@@ -85,16 +81,12 @@ export const cleanUpCache = async ({
         file: cacheFilePath,
         ...getErrorDetails(error),
       });
-
       await fs.unlink(cacheFilePath);
-
       await fs.rm(cacheDirPath, { recursive: true, force: true });
-
       log.error("Invalid cache file removed", { file: cacheFilePath });
     }
   }
   log.trace("Cache clean-up complete");
-
   log.resetGroup();
 };
 
@@ -120,7 +112,6 @@ export const purgeLegacyCache = async ({
 
   try {
     await fs.unlink(legacyCachePath);
-
     log.debug(`Legacy cache file ${legacyCachePath} purged`);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
@@ -149,7 +140,6 @@ export const purgeLegacyScreenshots = async () => {
 
   try {
     await fs.rm(legacyScreenshotsPath, { recursive: true, force: true });
-
     log.debug(`Legacy screenshots directory ${legacyScreenshotsPath} purged`);
   } catch (error) {
     log.error("Failed to purge legacy screenshots directory", {

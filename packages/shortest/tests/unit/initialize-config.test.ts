@@ -7,9 +7,7 @@ describe("initializeConfig", () => {
 
   beforeEach(async () => {
     vi.resetModules();
-
     delete process.env.ANTHROPIC_API_KEY;
-
     await fs.mkdir(tempDir, { recursive: true });
   });
 

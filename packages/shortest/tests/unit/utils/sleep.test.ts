@@ -18,20 +18,16 @@ describe("sleep", () => {
     promise.then(() => {
       resolved = true;
     });
-
     expect(resolved).toBe(false);
 
     vi.advanceTimersByTime(1);
-
     await promise;
-
     expect(resolved).toBe(true);
   });
 
   it("uses setTimeout with correct delay", () => {
     const spy = vi.spyOn(global, "setTimeout");
     sleep(500);
-
     expect(spy).toHaveBeenCalledWith(expect.any(Function), 500);
   });
 });

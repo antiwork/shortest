@@ -12,11 +12,8 @@ export abstract class BaseBrowserTool {
 
   constructor(options: BrowserToolOptions) {
     this.width = options.width;
-
     this.height = options.height;
-
     this.displayNum = options.displayNum || 1;
-
     this.screenshotDelay = options.screenshotDelay || 2000;
   }
 

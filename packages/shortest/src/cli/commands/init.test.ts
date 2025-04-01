@@ -14,9 +14,7 @@ describe("init command", () => {
 
   test("initCommand is a Command instance", () => {
     expect(initCommand).toBeInstanceOf(Command);
-
     expect(initCommand.name()).toBe("init");
-
     expect(initCommand.description()).toBe(
       "Initialize Shortest in current directory",
     );

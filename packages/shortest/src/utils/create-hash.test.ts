@@ -7,7 +7,6 @@ describe("createHash", () => {
     const hash = createHash(data);
 
     expect(hash).toHaveLength(64);
-
     expect(hash).toBe(createHash(data));
   });
 
@@ -16,7 +15,6 @@ describe("createHash", () => {
     const hash = createHash(data);
 
     expect(hash).toHaveLength(64);
-
     expect(hash).toBe(createHash(data));
   });
 
@@ -25,7 +23,6 @@ describe("createHash", () => {
     const hash = createHash(data);
 
     expect(hash).toHaveLength(64);
-
     expect(hash).toBe(createHash(data));
   });
 
@@ -34,7 +31,6 @@ describe("createHash", () => {
     const hash = createHash(data);
 
     expect(hash).toHaveLength(64);
-
     expect(hash).toBe(createHash(data));
   });
 
@@ -43,7 +39,6 @@ describe("createHash", () => {
     const hash = createHash(data);
 
     expect(hash).toHaveLength(64);
-
     expect(hash).toBe(createHash(data));
   });
 
@@ -53,7 +48,6 @@ describe("createHash", () => {
     const hash = createHash(data, { length });
 
     expect(hash).toHaveLength(length);
-
     expect(createHash(data).startsWith(hash)).toBe(true);
   });
 
@@ -62,7 +56,6 @@ describe("createHash", () => {
     const hash = createHash(data, { length: 0 });
 
     expect(hash).toHaveLength(64);
-
     expect(hash).toBe(createHash(data));
   });
 
@@ -71,7 +64,6 @@ describe("createHash", () => {
     const hash = createHash(data, { length: 100 });
 
     expect(hash).toHaveLength(64);
-
     expect(hash).toBe(createHash(data));
   });
 });

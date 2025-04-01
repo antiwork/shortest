@@ -27,7 +27,6 @@ describe("logger singleton", () => {
     const secondLogger = getLogger({ level: "info" as const });
 
     expect(firstLogger.config.level).toBe("debug");
-
     expect(firstLogger).toBe(secondLogger);
   });
 });

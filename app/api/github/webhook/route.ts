@@ -59,7 +59,6 @@ const handlePushEvent = async (payload: any) => {
 const handlePullRequestEvent = async (payload: any) => {
   const { action, pull_request, repository } = payload;
   console.log(`Pull request ${action} in ${repository.full_name}`);
-
   revalidateTag(`pullRequest-${pull_request.id}`);
 };
 

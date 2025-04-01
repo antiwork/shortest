@@ -17,7 +17,6 @@ export const executeCommand = async (
 
   try {
     log.trace(`Executing ${name} command`, { options });
-
     await fn(options);
   } catch (error) {
     log.error(`Command ${name} failed`, getErrorDetails(error));

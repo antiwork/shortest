@@ -12,9 +12,7 @@ export class MailosaurTool {
     emailAddress: string;
   }) {
     this.client = new Mailosaur(config.apiKey);
-
     this.serverId = config.serverId;
-
     this.emailAddress = config.emailAddress;
   }
 

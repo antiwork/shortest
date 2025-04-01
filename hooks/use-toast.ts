@@ -2,6 +2,7 @@
 
 // Inspired by react-hot-toast library
 import * as React from "react";
+
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 1;
@@ -62,7 +63,6 @@ const addToRemoveQueue = (toastId: string) => {
 
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId);
-
     dispatch({
       type: "REMOVE_TOAST",
       toastId: toastId,
@@ -133,7 +133,6 @@ let memoryState: State = { toasts: [] };
 
 const dispatch = (action: Action) => {
   memoryState = reducer(memoryState, action);
-
   listeners.forEach((listener) => {
     listener(memoryState);
   });

@@ -22,7 +22,6 @@ export const getGitHubStarCount = async () => {
     });
 
     cachedStarCount = data.stargazers_count;
-
     cacheTime = Date.now();
 
     return cachedStarCount.toLocaleString();

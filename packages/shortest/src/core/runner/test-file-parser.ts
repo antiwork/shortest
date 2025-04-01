@@ -139,7 +139,6 @@ export const parseShortestTestFile = (filePath: string): TestLocation[] => {
           parentType === "MemberExpression"
         ) {
           currentPath = currentPath.parentPath;
-
           endLine = Math.max(endLine, currentPath.node.loc?.end?.line || 0);
         } else {
           endLine = Math.max(

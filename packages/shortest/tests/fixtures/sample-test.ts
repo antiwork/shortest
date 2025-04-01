@@ -33,7 +33,6 @@ shortest("Test Google's advanced search features", {
   })
   .after(async ({ page }) => {
     await page.goto("https://google.com/preferences");
-
     await page.getByRole("button", { name: "Reset" }).click();
   });
 

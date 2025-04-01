@@ -40,16 +40,13 @@ export const addToGitignore = async (
       const newContent = addValue(content, value);
       if (newContent !== content) {
         modified = true;
-
         content = newContent;
       }
     }
 
     if (modified) {
       await writeFile(gitignorePath, content);
-
       result.wasCreated = isNewFile;
-
       result.wasUpdated = !isNewFile;
     }
   } catch (error) {

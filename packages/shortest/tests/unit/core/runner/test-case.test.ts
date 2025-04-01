@@ -58,35 +58,22 @@ describe("test-case", () => {
       });
 
       expect(testCase.name).toBe("Test with all fields");
-
       expect(testCase.filePath).toBe("/path/to/test.ts");
-
       expect(testCase.payload).toEqual({ key: "value" });
-
       expect(typeof testCase.fn).toBe("function");
-
       expect(testCase.directExecution).toBe(true);
-
       expect(testCase.expectations).toHaveLength(1);
-
       expect(testCase.expectations[0].description).toBe("Test expectation");
-
       expect(testCase.expectations[0].payload).toEqual({ expected: true });
-
       expect(typeof testCase.expectations[0].fn).toBe("function");
-
       expect(testCase.expectations[0].directExecution).toBe(true);
-
       expect(typeof testCase.beforeFn).toBe("function");
-
       expect(typeof testCase.afterFn).toBe("function");
     });
 
     test("throws ShortestError for invalid test case data", () => {
       expect(() => createTestCase({})).toThrow(ShortestError);
-
       expect(() => createTestCase({ name: "Test" })).toThrow(ShortestError);
-
       expect(() => createTestCase({ filePath: "/path" })).toThrow(
         ShortestError,
       );
@@ -95,18 +82,15 @@ describe("test-case", () => {
     test("throws ShortestError with detailed validation errors in the error message", () => {
       try {
         createTestCase({});
-
         fail("Expected error was not thrown");
       } catch (error) {
         if (error instanceof ShortestError) {
           // Strip ANSI color codes from the error message
           const errorMessage = error.message.replace(/\u001b\[\d+m/g, "");
           expect(errorMessage).toContain("Invalid TestCase format");
-
           expect(errorMessage).toContain(
             'name: Required (received: "undefined")',
           );
-
           expect(errorMessage).toContain(
             'filePath: Required (received: "undefined")',
           );
@@ -117,14 +101,12 @@ describe("test-case", () => {
 
       try {
         createTestCase({ name: "Test name" });
-
         fail("Expected error was not thrown");
       } catch (error) {
         if (error instanceof ShortestError) {
           // Strip ANSI color codes from the error message
           const errorMessage = error.message.replace(/\u001b\[\d+m/g, "");
           expect(errorMessage).toContain("Invalid TestCase format");
-
           expect(errorMessage).toContain(
             'filePath: Required (received: "undefined")',
           );

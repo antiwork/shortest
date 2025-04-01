@@ -26,17 +26,11 @@ describe("tools/index", () => {
       );
 
       expect(tools).toHaveProperty("computer");
-
       expect(tools).toHaveProperty("bash");
-
       expect(tools).toHaveProperty("check_email");
-
       expect(tools).toHaveProperty("github_login");
-
       expect(tools).toHaveProperty("navigate");
-
       expect(tools).toHaveProperty("run_callback");
-
       expect(tools).toHaveProperty("sleep");
 
       const expectedToolCount = 7; // 2 provider tools + 5 custom tools
@@ -121,21 +115,13 @@ describe("tools/index", () => {
       const toolsMap = (registry as any).tools as Map<string, any>;
 
       expect(toolsMap.has("anthropic_computer_20241022")).toBe(true);
-
       expect(toolsMap.has("anthropic_computer_20250124")).toBe(true);
-
       expect(toolsMap.has("anthropic_bash_20241022")).toBe(true);
-
       expect(toolsMap.has("anthropic_bash_20250124")).toBe(true);
-
       expect(toolsMap.has("check_email")).toBe(true);
-
       expect(toolsMap.has("github_login")).toBe(true);
-
       expect(toolsMap.has("navigate")).toBe(true);
-
       expect(toolsMap.has("run_callback")).toBe(true);
-
       expect(toolsMap.has("sleep")).toBe(true);
 
       expect(toolsMap.size).toBe(9);

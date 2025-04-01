@@ -62,7 +62,6 @@ const handleDeprecatedConfigOptions = (
       log.warn(
         "'config.anthropicKey' option is deprecated. Use 'config.ai' structure instead.",
       );
-
       userConfig.ai = {
         provider: "anthropic",
         apiKey: deprecatedAnthropicKey,
@@ -77,7 +76,6 @@ const handleDeprecatedConfigOptions = (
         log.warn(
           "'config.anthropicKey' option is deprecated. Please move it to 'config.ai.apiKey'.",
         );
-
         userConfig.ai.apiKey = deprecatedAnthropicKey;
       }
     }

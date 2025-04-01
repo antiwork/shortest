@@ -3,7 +3,6 @@ import { test } from "@/index";
 
 export const main = async () => {
   console.log(pc.cyan("\n🧪 Testing Assertion Implementation"));
-
   console.log(pc.cyan("================================"));
 
   let failedTests = 0;
@@ -18,11 +17,9 @@ export const main = async () => {
       });
 
       console.log(pc.red("❌ Failed: Assertion should have thrown error"));
-
       failedTests++;
     } catch (error) {
       console.log(pc.green("✅ Passed: Caught failing assertion"), error);
-
       passedTests++;
     }
 
@@ -35,21 +32,16 @@ export const main = async () => {
       });
 
       console.log(pc.red("❌ Failed: Async assertion should have thrown"));
-
       failedTests++;
     } catch (error) {
       console.log(pc.green("✅ Passed: Caught async failing assertion"), error);
-
       passedTests++;
     }
 
     // Summary
     console.log(pc.cyan("\n📊 Test Summary"));
-
     console.log(pc.cyan("============="));
-
     console.log(pc.green(`Passed: ${passedTests}`));
-
     console.log(pc.red(`Failed: ${failedTests}`));
   } catch (error) {
     console.error(pc.red("\n❌ Test script failed:"), error);

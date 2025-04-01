@@ -24,37 +24,29 @@ export class TestReporter {
 
   constructor() {
     this.reporterLog = getReporterLog();
-
     this.log = getLogger();
   }
 
   onRunStart(filesCount: number) {
     this.filesCount = filesCount;
-
     this.reporterLog.info(`Found ${filesCount} test file(s)`);
   }
 
   onFileStart(filePath: string, testsCount: number) {
     this.log.setGroup(filePath);
-
     this.reporterLog.info(
       pc.cyan("❯"),
       pc.blue(pc.bold(filePath)),
       pc.dim(`(${testsCount})`),
     );
-
     this.reporterLog.setGroup(filePath);
-
     this.testsCount += testsCount;
   }
 
   onTestStart(test: TestCase) {
     this.log.trace("onTestStart called");
-
     this.log.setGroup(test.name);
-
     this.reporterLog.info(this.getStatusIcon("running"), test.name);
-
     this.reporterLog.setGroup(test.name);
   }
 
@@ -71,14 +63,11 @@ export class TestReporter {
     let testAICost = 0;
     if (testRun.tokenUsage) {
       this.totalPromptTokens += testRun.tokenUsage.promptTokens;
-
       this.totalCompletionTokens += testRun.tokenUsage.completionTokens;
-
       testAICost = this.calculateCost(
         testRun.tokenUsage.promptTokens,
         testRun.tokenUsage.completionTokens,
       );
-
       this.aiCost += testAICost;
     }
     const symbol = testRun.status === "passed" ? "✓" : "✗";
@@ -102,18 +91,15 @@ export class TestReporter {
     }
 
     this.reporterLog.resetGroup();
-
     this.log.resetGroup();
   }
 
   onFileEnd(fileResult: FileResult) {
     if (fileResult.status === "failed") {
       this.log.error("Error processing file", { ...fileResult });
-
       this.error("Error processing file", fileResult.reason);
     }
     this.reporterLog.resetGroup();
-
     this.log.resetGroup();
   }
 
@@ -177,7 +163,6 @@ export class TestReporter {
     );
 
     this.reporterLog.setGroup("Summary");
-
     this.reporterLog.info(pc.dim("⎯".repeat(50)), "\n");
 
     const LABEL_WIDTH = 15;
@@ -193,21 +178,17 @@ export class TestReporter {
       pc.bold(" Duration".padEnd(LABEL_WIDTH)),
       pc.dim(`${duration}s`),
     );
-
     this.reporterLog.info(
       pc.bold(" Started at".padEnd(LABEL_WIDTH)),
       pc.dim(new Date(this.startTime).toLocaleTimeString()),
     );
-
     this.reporterLog.info(
       pc.bold(" Tokens".padEnd(LABEL_WIDTH)),
       pc.dim(
         `${totalTokens.toLocaleString()} tokens ` + `(≈ $${aiCost.toFixed(2)})`,
       ),
     );
-
     this.reporterLog.info("\n", pc.dim("⎯".repeat(50)));
-
     this.reporterLog.resetGroup();
   }
 }

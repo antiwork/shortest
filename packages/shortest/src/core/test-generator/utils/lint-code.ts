@@ -39,7 +39,6 @@ export const lintCode = async (
 
     if (results[0]?.output) {
       lintedCode = results[0].output;
-
       log.trace("ESLint applied fixes to the code");
     } else {
       log.trace("ESLint found no issues to fix");

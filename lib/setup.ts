@@ -16,7 +16,6 @@ const question = (query: string): Promise<string> => {
   return new Promise((resolve) =>
     rl.question(query, (ans) => {
       rl.close();
-
       resolve(ans);
     }),
   );
@@ -28,19 +27,16 @@ const checkStripeCLI = async () => {
   );
   try {
     await execAsync("stripe --version");
-
     console.log("Stripe CLI is installed.");
 
     // Check if Stripe CLI is authenticated
     try {
       await execAsync("stripe config --list");
-
       console.log("Stripe CLI is authenticated.");
     } catch (error) {
       console.log(
         `Stripe CLI is not authenticated or the authentication has expired. ${error}`,
       );
-
       console.log("Please run: stripe login");
       const answer = await question(
         "Have you completed the authentication? (y/n): ",
@@ -49,38 +45,29 @@ const checkStripeCLI = async () => {
         console.log(
           "Please authenticate with Stripe CLI and run this script again.",
         );
-
         process.exit(1);
       }
 
       // Verify authentication after user confirms login
       try {
         await execAsync("stripe config --list");
-
         console.log("Stripe CLI authentication confirmed.");
       } catch (error) {
         console.error(`Failed to verify Stripe CLI authentication. ${error}`);
-
         process.exit(1);
       }
     }
   } catch (error) {
     console.error(`Stripe CLI is not installed. ${error}`);
-
     console.log("To install Stripe CLI, follow these steps:");
-
     console.log("1. Visit: https://docs.stripe.com/stripe-cli");
-
     console.log(
       "2. Download and install the Stripe CLI for your operating system. Remember to add it to your PATH.",
     );
-
     console.log("3. After installation, run: stripe login");
-
     console.log(
       "After installation and authentication, please run this setup script again.",
     );
-
     process.exit(1);
   }
 };
@@ -132,21 +119,16 @@ const setupLocalPostgres = async () => {
 
     // Check if Docker daemon is running
     await execAsync("docker info");
-
     console.log("Docker daemon is running.");
   } catch (error) {
     console.error("Error checking Docker:", error);
-
     console.error("Docker is not installed or not running properly.");
-
     console.log(
       "To install Docker, visit: https://docs.docker.com/get-docker/",
     );
-
     console.log(
       "Make sure Docker is installed and the Docker daemon is running.",
     );
-
     process.exit(1);
   }
 
@@ -185,13 +167,11 @@ volumes:
     path.join(process.cwd(), "docker-compose.yml"),
     dockerComposeContent,
   );
-
   console.log("docker-compose.yml file created.");
 
   console.log("Starting Docker container with `docker compose up -d`...");
   try {
     await execAsync("docker compose up -d");
-
     console.log("Docker container started successfully.");
 
     // Extract PostgreSQL environment variables from the Docker container
@@ -226,14 +206,12 @@ volumes:
     console.error(
       `Failed to start Docker container or extract environment variables. ${error}`,
     );
-
     process.exit(1);
   }
 };
 
 const promptForStripeSecretKey = async (): Promise<string> => {
   console.log("Step 3: Getting Stripe Secret Key");
-
   console.log(
     "You can find your Stripe Secret Key at: https://dashboard.stripe.com/test/apikeys Refer to the README.md for more details.",
   );
@@ -268,7 +246,6 @@ const promptForClerkKeys = async (): Promise<{
   secretKey: string;
 }> => {
   console.log("Step 5: Getting Clerk Keys");
-
   console.log(
     "You can find your Clerk keys at: https://dashboard.clerk.com/ Refer to the README.md for more details.",
   );
@@ -279,7 +256,6 @@ const promptForClerkKeys = async (): Promise<{
 
 const promptForAnthropicApiKey = async (): Promise<string> => {
   console.log("Step 6: Getting Anthropic API Key");
-
   console.log(
     "You can find your Anthropic API Key at: https://www.anthropic.com/ Refer to the README.md for more details.",
   );
@@ -288,22 +264,18 @@ const promptForAnthropicApiKey = async (): Promise<string> => {
 
 const promptForGitHubOAuth = async (): Promise<void> => {
   console.log("Step 7: Setting up GitHub OAuth");
-
   console.log("Create a GitHub OAuth App as described in the README.md file.");
-
   console.log('Check "Github OAuth" section for more details.');
 
   const confirmed = await question("Have you completed these steps? (y/n): ");
   if (confirmed.toLowerCase() !== "y") {
     console.log("Please complete the GitHub OAuth setup before continuing.");
-
     process.exit(1);
   }
 };
 
 const promptForGitHubTOTP = async (): Promise<string | undefined> => {
   console.log("\nStep 8: GitHub 2FA TOTP Setup (Optional)");
-
   console.log(
     "If you want to test GitHub 2FA login, you'll need to add a TOTP secret.",
   );
@@ -327,7 +299,6 @@ const writeEnvFile = async (envVars: Record<string, string>) => {
     .join("\n");
 
   await fs.writeFile(path.join(process.cwd(), ".env.local"), envContent);
-
   console.log(".env.local file created with the necessary variables.");
 };
 

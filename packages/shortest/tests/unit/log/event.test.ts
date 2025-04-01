@@ -4,7 +4,6 @@ import { LogEvent } from "@/log/event";
 describe("LogEvent", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-
     vi.setSystemTime(new Date("2024-01-01T00:00:00.000Z"));
   });
 
@@ -16,11 +15,8 @@ describe("LogEvent", () => {
     const event = new LogEvent("info", "test message");
 
     expect(event.level).toBe("info");
-
     expect(event.message).toBe("test message");
-
     expect(event.timestamp).toEqual(new Date("2024-01-01T00:00:00.000Z"));
-
     expect(event.metadata).toEqual({});
   });
 
@@ -33,9 +29,7 @@ describe("LogEvent", () => {
     const event = new LogEvent("debug", "test with metadata", metadata);
 
     expect(event.level).toBe("debug");
-
     expect(event.message).toBe("test with metadata");
-
     expect(event.metadata).toEqual(metadata);
   });
 
@@ -61,7 +55,6 @@ describe("LogEvent", () => {
     const event2 = new LogEvent("info", "second");
 
     expect(event1.timestamp).toEqual(new Date("2024-01-01T00:00:00.000Z"));
-
     expect(event2.timestamp).toEqual(new Date("2024-01-01T00:00:01.000Z"));
   });
 

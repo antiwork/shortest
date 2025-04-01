@@ -9,14 +9,12 @@ import { getConfig, initializeConfig } from "@/index";
 
 export const main = async () => {
   console.log(pc.cyan("\n🧪 Testing AI Integration"));
-
   console.log(pc.cyan("======================="));
 
   const browserManager = new BrowserManager(getConfig());
 
   try {
     await initializeConfig({});
-
     console.log("🚀 Launching browser...");
     const context = await browserManager.launch();
     const page = context.pages()[0];
@@ -96,11 +94,9 @@ export const main = async () => {
     console.error(pc.red("❌ Test failed:"), error);
   } finally {
     console.log("\n🧹 Cleaning up...");
-
     await browserManager.close();
   }
 };
 
 console.log("🤖 AI Integration Test");
-
 console.log("=====================");

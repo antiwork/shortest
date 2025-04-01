@@ -21,9 +21,7 @@ describe("command-builder", () => {
 
     beforeEach(() => {
       vi.clearAllMocks();
-
       vi.mocked(getLogger).mockReturnValue(mockLogger as any);
-
       vi.mocked(getErrorDetails).mockReturnValue({ message: "Error details" });
     });
 
@@ -38,12 +36,10 @@ describe("command-builder", () => {
       await executeCommand(testCommandName, testOptions, testFunction);
 
       expect(getLogger).toHaveBeenCalledWith({ level: "debug" });
-
       expect(mockLogger.trace).toHaveBeenCalledWith(
         "Executing test-command command",
         { options: testOptions },
       );
-
       expect(testFunction).toHaveBeenCalledWith(testOptions);
     });
 
@@ -75,7 +71,6 @@ describe("command-builder", () => {
         "Command failed-command failed",
         { message: "Error details" },
       );
-
       expect(getErrorDetails).toHaveBeenCalledWith(testError);
     });
   });

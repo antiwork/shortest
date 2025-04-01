@@ -42,18 +42,14 @@ describe("Log", () => {
     it("skips logs below configured level", () => {
       const log = new Log({ level: "info" });
       log.debug("test message");
-
       expect(LogOutput.render).not.toHaveBeenCalled();
     });
 
     it("outputs logs at or above configured level", () => {
       const log = new Log({ level: "info" });
       log.error("error message");
-
       log.warn("warn message");
-
       log.info("info message");
-
       expect(LogOutput.render).toHaveBeenCalledTimes(3);
     });
   });
@@ -73,7 +69,6 @@ describe("Log", () => {
       ["error", "error message"],
     ])("logs %s level messages", (level, message) => {
       (log as any)[level](message);
-
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.objectContaining({
           level,
@@ -87,7 +82,6 @@ describe("Log", () => {
 
     it("handles multiple arguments", () => {
       log.info("Hello", "World", 123);
-
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.objectContaining({
           message: "Hello World 123",
@@ -101,7 +95,6 @@ describe("Log", () => {
     it("handles metadata object", () => {
       const metadata = { userId: 123 };
       log.info("User logged in", metadata);
-
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.objectContaining({
           message: "User logged in",
@@ -120,7 +113,6 @@ describe("Log", () => {
       log.warn("important warning");
 
       expect(LogOutput.render).not.toHaveBeenCalled();
-
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining(" WARN "),
         expect.stringContaining("important warning"),
@@ -129,7 +121,6 @@ describe("Log", () => {
 
     it("handles multiple arguments with metadata", () => {
       log.info("User", "action", "completed", { userId: 123, action: "login" });
-
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.objectContaining({
           message: "User action completed",
@@ -143,7 +134,6 @@ describe("Log", () => {
 
     it("handles undefined and null arguments", () => {
       log.info(undefined, null, "message");
-
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.objectContaining({
           message: "undefined null message",
@@ -157,7 +147,6 @@ describe("Log", () => {
     it("handles object-like arguments that aren't metadata", () => {
       const date = new Date();
       log.info("Time is", date);
-
       expect(LogOutput.render).toHaveBeenCalledWith(
         expect.objectContaining({
           message: `Time is ${date}`,
@@ -178,7 +167,6 @@ describe("Log", () => {
 
     it("creates and uses groups", () => {
       log.setGroup("Database");
-
       log.info("test message");
 
       expect(LogOutput.render).toHaveBeenCalledWith(
@@ -193,9 +181,7 @@ describe("Log", () => {
 
     it("supports nested groups", () => {
       log.setGroup("Database");
-
       log.setGroup("Query");
-
       log.info("test message");
 
       expect(LogOutput.render).toHaveBeenCalledWith(
@@ -213,11 +199,8 @@ describe("Log", () => {
 
     it("resets to parent group", () => {
       log.setGroup("Parent");
-
       log.setGroup("Child");
-
       log.resetGroup();
-
       log.info("test message");
 
       expect(LogOutput.render).toHaveBeenCalledWith(
@@ -233,11 +216,8 @@ describe("Log", () => {
 
     it("resets all groups", () => {
       log.setGroup("Parent");
-
       log.setGroup("Child");
-
       log.resetAllGroups();
-
       log.info("test message");
 
       expect(LogOutput.render).toHaveBeenCalledWith(

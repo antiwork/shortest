@@ -30,12 +30,10 @@ export default function AntiworkFooter() {
     let bgColor, textColor;
     do {
       bgColor = generateRandomColor();
-
       textColor = generateRandomColor();
     } while (getContrastRatio(bgColor, textColor) < 4.5);
 
     setFooterBgColor(bgColor);
-
     setFooterTextColor(textColor);
   }, []);
 

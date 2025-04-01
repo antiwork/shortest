@@ -25,13 +25,11 @@ describe("github-code", () => {
   describe("githubCodeCommand", () => {
     beforeEach(() => {
       vi.clearAllMocks();
-
       consoleLogSpy.mockClear();
     });
 
     test("command has correct name and description", () => {
       expect(githubCodeCommand.name()).toBe("github-code");
-
       expect(githubCodeCommand.description()).toBe(
         "Generate GitHub 2FA code for authentication",
       );
@@ -42,12 +40,10 @@ describe("github-code", () => {
 
       const secretOption = options.find((opt) => opt.long === "--secret");
       expect(secretOption).toBeDefined();
-
       expect(secretOption?.description).toContain("GitHub OTP secret key");
 
       const logLevelOption = options.find((opt) => opt.long === "--log-level");
       expect(logLevelOption).toBeDefined();
-
       expect(logLevelOption?.description).toBe("Set logging level");
     });
 
@@ -69,7 +65,6 @@ describe("github-code", () => {
       );
 
       expect(githubCodeCommand).toBeDefined();
-
       expect(typeof githubCodeCommand.action).toBe("function");
 
       const secret = "test-secret";
@@ -77,9 +72,7 @@ describe("github-code", () => {
       github.generateTOTPCode();
 
       console.log("\n GitHub 2FA Code ");
-
       console.log("Code: 123456");
-
       console.log("Expires in: 30s");
 
       expect(GitHubTool).toHaveBeenCalledWith(secret);
@@ -89,11 +82,9 @@ describe("github-code", () => {
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining("GitHub 2FA Code"),
       );
-
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining("Code: 123456"),
       );
-
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining("Expires in: 30s"),
       );

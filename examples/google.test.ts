@@ -13,7 +13,6 @@ shortest.afterAll(async ({ page }) => {
 
 shortest.beforeEach(async ({ page }) => {
   await page.goto("https://google.com");
-
   await page.waitForSelector("[aria-label='Search']");
 });
 
@@ -22,9 +21,7 @@ shortest(
   "Perform a Google search for 'shortest test framework'",
   async ({ page }) => {
     await page.getByLabel("Search").click();
-
     await page.keyboard.type("shortest test framework");
-
     await page.keyboard.press("Enter");
   },
 );
@@ -62,6 +59,5 @@ shortest("Test Google's advanced search features", {
   })
   .after(async ({ page }) => {
     await page.goto("https://google.com/preferences");
-
     await page.getByRole("button", { name: "Reset" }).click();
   });

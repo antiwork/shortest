@@ -41,7 +41,6 @@ export class Log {
   constructor(config: Partial<LogConfig> = {}) {
     try {
       this.config = LogConfigSchema.parse(config);
-
       this.outputStream = process.stdout;
     } catch (error) {
       if (error instanceof z.ZodError) {

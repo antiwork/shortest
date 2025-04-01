@@ -31,11 +31,8 @@ export class LogGroup {
 
   constructor(log: Log, name: string, parent?: LogGroup) {
     this.log = log;
-
     this.name = name;
-
     this.parent = parent;
-
     this.event = new LogEvent("trace", name);
   }
 
@@ -93,7 +90,6 @@ export class LogGroup {
     let current: LogGroup | undefined = this;
     while (current) {
       identifiers.unshift(current.name);
-
       current = current.parent;
     }
     return identifiers;

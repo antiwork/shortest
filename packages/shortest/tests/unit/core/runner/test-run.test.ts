@@ -13,38 +13,29 @@ describe("test-run", () => {
   test("initializes with pending status", () => {
     const testRun = TestRun.create(mockTestCase);
     expect(testRun.status).toBe("pending");
-
     expect(testRun.reason).toBeUndefined();
   });
 
   test("transitions from pending to running", () => {
     const testRun = TestRun.create(mockTestCase);
     testRun.markRunning();
-
     expect(testRun.status).toBe("running");
-
     expect(testRun.reason).toBeUndefined();
   });
 
   test("transitions from running to passed", () => {
     const testRun = TestRun.create(mockTestCase);
     testRun.markRunning();
-
     testRun.markPassed({ reason: "test passed" });
-
     expect(testRun.status).toBe("passed");
-
     expect(testRun.reason).toBe("test passed");
   });
 
   test("transitions from running to failed", () => {
     const testRun = TestRun.create(mockTestCase);
     testRun.markRunning();
-
     testRun.markFailed({ reason: "test failed" });
-
     expect(testRun.status).toBe("failed");
-
     expect(testRun.reason).toBe("test failed");
   });
 
@@ -56,9 +47,7 @@ describe("test-run", () => {
       totalTokens: 30,
     };
     testRun.markRunning();
-
     testRun.markPassed({ reason: "test passed", tokenUsage: usage });
-
     expect(testRun.tokenUsage).toEqual(usage);
   });
 
@@ -70,16 +59,13 @@ describe("test-run", () => {
       totalTokens: 30,
     };
     testRun.markRunning();
-
     testRun.markPassed({ reason: "test passed", tokenUsage: usage });
-
     expect(testRun.tokenUsage).toEqual(usage);
   });
 
   test("throws when marking running from non-pending state", () => {
     const testRun = TestRun.create(mockTestCase);
     testRun.markRunning();
-
     expect(() => testRun.markRunning()).toThrow(
       "Can only start from pending state",
     );
@@ -124,19 +110,15 @@ describe("test-run", () => {
     };
 
     testRun.addStep(step1);
-
     testRun.addStep(step2);
 
     const steps = testRun.getSteps();
     expect(steps).toHaveLength(2);
-
     expect(steps[0]).toEqual(step1);
-
     expect(steps[1]).toEqual(step2);
 
     // Verify that getSteps returns a copy to prevent direct mutation
     steps.pop();
-
     expect(testRun.getSteps()).toHaveLength(2);
   });
 
@@ -184,21 +166,13 @@ describe("test-run", () => {
     const testRun = TestRun.fromCache(mockTestCase, mockCacheEntry);
 
     expect(testRun.testCase).toBe(mockTestCase);
-
     expect(testRun.status).toBe("passed");
-
     expect(testRun.reason).toBe("from cache");
-
     expect(testRun.tokenUsage).toEqual(mockCacheEntry.metadata.tokenUsage);
-
     expect(testRun.runId).toBe(mockRunId);
-
     expect(testRun.timestamp).toBe(mockTimestamp);
-
     expect(testRun.version).toBe(TestRunRepository.VERSION);
-
     expect(testRun.executedFromCache).toBe(false);
-
     expect(testRun.getSteps()).toEqual(mockCacheEntry.data.steps);
   });
 
@@ -234,9 +208,7 @@ describe("test-run", () => {
   test("markPassedFromCache sets status to passed", () => {
     const testRun = TestRun.create(mockTestCase);
     testRun.markRunning();
-
     testRun.markPassedFromCache({ reason: "passed from cache" });
-
     expect(testRun.status).toBe("passed");
   });
 
@@ -245,18 +217,14 @@ describe("test-run", () => {
     testRun.markRunning();
     const reason = "custom cache reason";
     testRun.markPassedFromCache({ reason });
-
     expect(testRun.reason).toBe(reason);
   });
 
   test("markPassedFromCache sets executedFromCache flag to true", () => {
     const testRun = TestRun.create(mockTestCase);
     testRun.markRunning();
-
     expect(testRun.executedFromCache).toBe(false);
-
     testRun.markPassedFromCache({ reason: "passed from cache" });
-
     expect(testRun.executedFromCache).toBe(true);
   });
 
@@ -268,9 +236,7 @@ describe("test-run", () => {
 
     const failedRun = TestRun.create(mockTestCase);
     failedRun.markRunning();
-
     failedRun.markFailed({ reason: "failed first" });
-
     expect(() =>
       failedRun.markPassedFromCache({ reason: "from failed" }),
     ).toThrow("Can only pass from running state");

@@ -6,7 +6,6 @@ export class ShortestError extends Error {
 
   constructor(message: string) {
     super(message);
-
     this.name = this.constructor.name;
   }
 }
@@ -25,7 +24,6 @@ export class ConfigError extends ShortestError {
 
   constructor(type: ConfigErrorType, message: string) {
     super(message);
-
     this.type = ConfigErrorTypeSchema.parse(type);
   }
 }
@@ -45,7 +43,6 @@ export class AIError extends ShortestError {
 
   constructor(type: AIErrorType, message: string) {
     super(message);
-
     this.type = AIErrorTypeSchema.parse(type);
   }
 }
@@ -58,14 +55,12 @@ export class CacheError extends ShortestError {
 
   constructor(type: CacheErrorType, message: string) {
     super(message);
-
     this.type = CacheErrorTypeSchema.parse(type);
   }
 }
 export class ToolError extends ShortestError {
   constructor(message: string) {
     super(message);
-
     this.name = "ToolError";
   }
 }
@@ -87,11 +82,8 @@ export class TestError extends ShortestError {
     options?: { actual?: any; expected?: any },
   ) {
     super(message);
-
     this.type = TestErrorTypeSchema.parse(type);
-
     this.actual = options?.actual;
-
     this.expected = options?.expected;
   }
 }

@@ -40,8 +40,6 @@ const executeGithubCodeCommand = async (secret: string) => {
   const { code, timeRemaining } = github.generateTOTPCode();
 
   console.log("\n" + pc.bgCyan(pc.black(" GitHub 2FA Code ")));
-
   console.log(pc.cyan("Code: ") + pc.bold(code));
-
   console.log(pc.cyan("Expires in: ") + pc.bold(`${timeRemaining}s`));
 };

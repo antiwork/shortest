@@ -28,14 +28,11 @@ export class TestGenerator {
 
   constructor(rootDir: string, frameworkInfo: FrameworkInfo) {
     this.rootDir = rootDir;
-
     this.frameworkInfo = frameworkInfo;
-
     this.cacheFrameworkDir = path.join(
       DOT_SHORTEST_DIR_PATH,
       this.frameworkInfo.id,
     );
-
     this.outputPath = path.join(SHORTEST_DIR_PATH, this.TEST_FILE_NAME);
   }
 
@@ -76,9 +73,7 @@ export class TestGenerator {
 
     try {
       await fs.mkdir(SHORTEST_DIR_PATH, { recursive: true });
-
       await fs.writeFile(this.outputPath, lintedCode);
-
       this.log.info("Test file generated successfully", {
         path: this.outputPath,
       });

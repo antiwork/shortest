@@ -24,18 +24,14 @@ describe("LogOutput", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-
     vi.setSystemTime(new Date("2024-01-01T19:00:00"));
-
     // Mock write methods for stdout and stderr
     vi.spyOn(process.stdout, "write").mockImplementation(() => true);
-
     vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   });
 
   afterEach(() => {
     vi.useRealTimers();
-
     vi.restoreAllMocks();
   });
 

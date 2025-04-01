@@ -41,7 +41,6 @@ export const formatCode = async (
           log.trace("Found prettier.config.mjs, loading config");
           const configModule = await import(`file://${prettierConfigMjsPath}`);
           prettierConfig = configModule.default;
-
           log.trace("Loaded prettier.config.mjs", { prettierConfig });
         }
       } catch (configError) {
@@ -63,7 +62,6 @@ export const formatCode = async (
             log.trace("Loading from .prettierrc");
             const configContent = await fs.readFile(prettierrcPath, "utf8");
             prettierConfig = JSON.parse(configContent);
-
             log.trace("Loaded .prettierrc directly", { prettierConfig });
           }
         } catch (prettierrcError) {

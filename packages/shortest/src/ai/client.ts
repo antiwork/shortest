@@ -93,21 +93,13 @@ export class AIClient {
     testRun: TestRun;
   }) {
     this.log = getLogger();
-
     this.log.trace("Initializing AIClient");
-
     this.client = createProvider(getConfig().ai);
-
     this.configAi = getConfig().ai;
-
     this.browserTool = browserTool;
-
     this.testRun = testRun;
-
     this.usage = TokenUsageSchema.parse({});
-
     this.toolRegistry = createToolRegistry();
-
     this.log.trace(
       "Available tools",
       Object.fromEntries(
@@ -176,9 +168,7 @@ export class AIClient {
           throw asShortestError(error);
         }
         retries++;
-
         this.log.trace("Retry attempt", { retries, maxRetries: MAX_RETRIES });
-
         await sleep(5000 * retries);
       }
     }
@@ -198,9 +188,7 @@ export class AIClient {
   private async runConversation(prompt: string): Promise<AIClientResponse> {
     const initialMessageOptions = { role: "user" as const, content: prompt };
     this.conversationHistory.push(initialMessageOptions);
-
     this.log.trace("💬", "New conversation message", initialMessageOptions);
-
     this.log.trace("💬", "Conversation history initialized", {
       totalMessageCount: this.conversationHistory.length,
     });
@@ -208,12 +196,10 @@ export class AIClient {
     while (true) {
       try {
         this.apiRequestCount++;
-
         this.log.setGroup(`${this.apiRequestCount}`);
         let resp;
         try {
           await sleep(1000);
-
           this.log.trace("Calling generateText", {
             conversationMessageCount: this.conversationHistory.length,
           });
@@ -281,16 +267,13 @@ export class AIClient {
         });
 
         this.updateUsage(resp.usage);
-
         resp.response.messages.forEach((message) => {
           this.log.trace("💬", "New conversation message", {
             role: message.role,
             content: message.content,
           });
-
           this.conversationHistory.push(message);
         });
-
         this.log.trace("💬", "Conversation history updated", {
           newMessageCount: resp.response.messages.length,
           totalMessageCount: this.conversationHistory.length,
@@ -388,9 +371,7 @@ export class AIClient {
    */
   private updateUsage(usage: TokenUsage) {
     this.usage.completionTokens += usage.completionTokens;
-
     this.usage.promptTokens += usage.promptTokens;
-
     this.usage.totalTokens += usage.totalTokens;
   }
 }

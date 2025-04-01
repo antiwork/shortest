@@ -17,11 +17,8 @@ export class EnvFile {
 
   constructor(path: string, fileName: string) {
     this.path = path;
-
     this.fileName = fileName;
-
     this.filePath = join(path, fileName);
-
     this._isNewFile = !existsSync(this.filePath);
   }
 
@@ -30,7 +27,6 @@ export class EnvFile {
 
     try {
       this._content = await readFile(this.filePath, "utf8").catch(() => "");
-
       this._eol = this._content.includes("\r\n") ? "\r\n" : os.EOL;
 
       this._existingEntries = new Map(
@@ -81,9 +77,7 @@ export class EnvFile {
     }
 
     this._content += `${needsEol && !comment ? this._eol : ""}${key}=${value}${this._eol}`;
-
     this._keysAdded.push(key);
-
     this._existingEntries.set(key, true);
 
     await writeFile(this.filePath, this._content);

@@ -15,7 +15,6 @@ import { getLogger } from "@/log/index";
 import { ShortestError } from "@/utils/errors";
 
 process.removeAllListeners("warning");
-
 process.on("warning", (warning) => {
   if (
     warning.name === "DeprecationWarning" &&
@@ -27,39 +26,30 @@ process.on("warning", (warning) => {
 });
 
 shortestCommand.addCommand(initCommand);
-
 initCommand.copyInheritedSettings(shortestCommand);
 
 shortestCommand.addCommand(githubCodeCommand);
-
 githubCodeCommand.copyInheritedSettings(shortestCommand);
 
 shortestCommand.addCommand(cacheCommands);
-
 cacheCommands.copyInheritedSettings(shortestCommand);
-
 clearCommand.copyInheritedSettings(cacheCommands);
 
 shortestCommand.addCommand(detectFrameworkCommand);
-
 detectFrameworkCommand.copyInheritedSettings(shortestCommand);
 
 shortestCommand.addCommand(analyzeCommand);
-
 analyzeCommand.copyInheritedSettings(shortestCommand);
 
 shortestCommand.addCommand(planCommand);
-
 planCommand.copyInheritedSettings(shortestCommand);
 
 shortestCommand.addCommand(generateCommand);
-
 generateCommand.copyInheritedSettings(shortestCommand);
 
 const main = async () => {
   try {
     await shortestCommand.parseAsync();
-
     process.exit(0);
   } catch (error) {
     const log = getLogger();
@@ -67,7 +57,6 @@ const main = async () => {
     if (!(error instanceof ShortestError)) throw error;
 
     console.error(pc.red(error.name), error.message);
-
     process.exit(1);
   }
 };
@@ -78,6 +67,5 @@ main().catch(async (error) => {
   if (!(error instanceof ShortestError)) throw error;
 
   console.error(pc.red(error.name), error.message);
-
   process.exit(1);
 });

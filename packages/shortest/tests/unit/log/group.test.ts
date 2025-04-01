@@ -14,7 +14,6 @@ describe("LogGroup", () => {
   it("creates a group with name and log instance", () => {
     const group = new LogGroup(mockLog as unknown as Log, "TestGroup");
     expect(group.name).toBe("TestGroup");
-
     expect(group.parent).toBeUndefined();
   });
 
@@ -47,7 +46,6 @@ describe("LogGroup", () => {
       group.info("test message", {
         meta: "data",
       });
-
       expect(mockLog.log).toHaveBeenCalledWith("info", "test message", {
         meta: "data",
       });
@@ -57,7 +55,6 @@ describe("LogGroup", () => {
       group.warn("test warning", {
         meta: "data",
       });
-
       expect(mockLog.log).toHaveBeenCalledWith("warn", "test warning", {
         meta: "data",
       });
@@ -67,7 +64,6 @@ describe("LogGroup", () => {
       group.error("test error", {
         meta: "data",
       });
-
       expect(mockLog.log).toHaveBeenCalledWith("error", "test error", {
         meta: "data",
       });
@@ -77,7 +73,6 @@ describe("LogGroup", () => {
       group.debug("test debug", {
         meta: "data",
       });
-
       expect(mockLog.log).toHaveBeenCalledWith("debug", "test debug", {
         meta: "data",
       });
@@ -87,7 +82,6 @@ describe("LogGroup", () => {
       group.trace("test trace", {
         meta: "data",
       });
-
       expect(mockLog.log).toHaveBeenCalledWith("trace", "test trace", {
         meta: "data",
       });
@@ -97,7 +91,6 @@ describe("LogGroup", () => {
       const result = group.info("info").debug("debug").warn("warn");
 
       expect(result).toBe(group);
-
       expect(mockLog.log).toHaveBeenCalledTimes(3);
     });
   });

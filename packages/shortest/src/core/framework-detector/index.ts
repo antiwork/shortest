@@ -63,7 +63,6 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
 
   if (nextJsDirPath) {
     frameworks = await listFrameworks({ projectDir: nextJsDirPath });
-
     frameworks.map((framework) => {
       frameworkInfos.push({
         id: framework.id,
@@ -96,7 +95,6 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
       JSON.stringify(projectInfo, null, 2),
       "utf-8",
     );
-
     log.info(`Saved project information to ${PROJECT_JSON_PATH}`);
 
     return projectInfo;

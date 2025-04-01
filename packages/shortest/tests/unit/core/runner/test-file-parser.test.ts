@@ -27,19 +27,19 @@ describe("test-file-parser", () => {
       expect(testLocations[1]).toEqual({
         testName: `Test Google's advanced search features`,
         startLine: 16,
-        endLine: 38,
+        endLine: 37,
       });
 
       expect(testLocations[2]).toEqual({
         testName: `Test the API POST endpoint ${EXPRESSION_PLACEHOLDER}/assert-bearer with body { "flagged": "false" } without providing a bearer token.`,
-        startLine: 43,
-        endLine: 45,
+        startLine: 42,
+        endLine: 44,
       });
 
       expect(testLocations[3]).toEqual({
         testName: `Test the API POST endpoint ${EXPRESSION_PLACEHOLDER}/assert-bearer with body { "flagged": "true" } and the bearer token ${EXPRESSION_PLACEHOLDER}. Expect the response to show "flagged": true`,
-        startLine: 47,
-        endLine: 50,
+        startLine: 46,
+        endLine: 49,
       });
     });
 

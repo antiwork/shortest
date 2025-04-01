@@ -14,7 +14,6 @@ export const main = async () => {
 
   try {
     await initializeConfig({});
-
     console.log(pc.cyan("\n🚀 First browser launch..."));
     let context = await browserManager.launch();
     let page = context.pages()[0];
@@ -55,12 +54,10 @@ export const main = async () => {
     console.log(pc.cyan("\n🧹 Clearing initial session..."));
     const result = await browserTool.execute({ action: "clear_session" });
     console.log(pc.yellow("\nBrowser Tool Result:"), result);
-
     console.log(pc.yellow("\nMetadata:"), result.metadata);
 
     // Get fresh page reference after clear_session
     context = browserManager.getContext()!;
-
     page = context.pages()[0];
 
     // Update browserTool with new page
@@ -94,25 +91,21 @@ export const main = async () => {
     await page.waitForSelector('button:has-text("Sign in")', {
       state: "visible",
     });
-
     await page.click('button:has-text("Sign in")');
 
     // Wait for GitHub button to be ready
     await page.waitForSelector(".cl-socialButtonsBlockButton__github", {
       state: "visible",
     });
-
     await page.click(".cl-socialButtonsBlockButton__github");
 
     console.log(pc.cyan("\n🔐 Starting GitHub login flow..."));
-
     await githubTool.GithubLogin(browserTool, {
       username: process.env.GITHUB_USERNAME || "",
       password: process.env.GITHUB_PASSWORD || "",
     });
 
     console.log(pc.cyan("\n🔒 Closing first browser..."));
-
     await browserManager.close();
 
     // Launch fresh browser
@@ -150,15 +143,10 @@ export const main = async () => {
     });
 
     console.log(pc.cyan("\n🔍 Checking login state..."));
-
     await newPage.goto("http://localhost:3000");
-
     await newPage.waitForLoadState("networkidle");
-
     console.log(pc.cyan("\n🧹 Clearing initial session..."));
-
     await browserTool.execute({ action: "clear_session" });
-
     await newPage.waitForTimeout(2000);
 
     console.log(pc.green("\n✅ Clean Session Test Complete"));
@@ -170,5 +158,4 @@ export const main = async () => {
 };
 
 console.log(pc.cyan("🧪 Session Cleanup Test"));
-
 console.log(pc.cyan("===================="));

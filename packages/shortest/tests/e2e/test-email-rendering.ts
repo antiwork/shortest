@@ -24,7 +24,6 @@ export const main = async () => {
   try {
     // 1. Send a test email
     console.log("Sending test email...");
-
     await mailosaur.messages.create(config.mailosaur.serverId, {
       to: "test@example.com",
       subject: "Test Email Rendering",
