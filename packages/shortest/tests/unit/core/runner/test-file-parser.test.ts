@@ -41,8 +41,8 @@ describe("test-file-parser", () => {
 
       expect(testLocations[3]).toEqual({
         testName: `Test the API POST endpoint ${EXPRESSION_PLACEHOLDER}/assert-bearer with body { "flagged": "true" } and the bearer token ${EXPRESSION_PLACEHOLDER}. Expect the response to show "flagged": true`,
-        startLine: 46,
-        endLine: 49,
+        startLine: 47,
+        endLine: 50,
       });
     });
 
