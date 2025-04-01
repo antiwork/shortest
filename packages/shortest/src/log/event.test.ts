@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { LogEvent } from "@/log/event";
+import { LogEvent } from "./event";
 
 describe("LogEvent", () => {
   beforeEach(() => {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { LogGroup } from "@/log/group";
-import { Log } from "@/log/log";
+import { LogGroup } from "./group";
+import { Log } from "./log";
 
 describe("LogGroup", () => {
   let mockLog: { log: ReturnType<typeof vi.fn> };
