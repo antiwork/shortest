@@ -89,6 +89,7 @@ export default [
         },
       ],
       "prefer-promise-reject-errors": "error",
+      "prefer-numeric-literals": "error",
       "zod/require-zod-schema-types": "error",
     },
     settings: {
