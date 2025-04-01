@@ -40,6 +40,7 @@ export default [
       },
     },
     rules: {
+      "no-var": "error",
       "react/react-in-jsx-scope": "off",
       "@typescript-eslint/member-ordering": ["error", {
         default: {
