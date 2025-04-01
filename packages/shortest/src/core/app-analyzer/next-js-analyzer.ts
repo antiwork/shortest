@@ -355,7 +355,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.log.trace("File parsing complete");
   }
 
-  private async processLayoutFiles(): Promise<void> {
+  private processLayoutFiles(): void {
     const layoutFileInfos = this.fileInfos.filter((file) =>
       /^layout\.(jsx?|tsx)$/.test(file.name),
     );
@@ -511,7 +511,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
   }
 
   // TODO: Untested, AI-generated, check if this logic actually works
-  private async processAppRouterFile(file: FileInfo): Promise<void> {
+  private processAppRouterFile(file: FileInfo): void {
     if (!file.content || !file.ast) return;
 
     const fileDetail: FileAnalysisResult = {
@@ -604,7 +604,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.results.push(fileDetail);
   }
 
-  private async processPagesRouterFile(file: FileInfo): Promise<void> {
+  private processPagesRouterFile(file: FileInfo): void {
     if (!file.content || !file.ast) return;
 
     const fileDetail: FileAnalysisResult = {

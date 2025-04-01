@@ -63,7 +63,7 @@ export class TestRunner {
     this.log = getLogger();
   }
 
-  async initialize() {
+  initialize() {
     this.browserManager = new BrowserManager(this.config);
   }
 
@@ -462,11 +462,11 @@ export class TestRunner {
     }
   }
 
-  private async filterTestsByLineNumber(
+  private filterTestsByLineNumber(
     tests: TestCase[],
     file: string,
     lineNumber: number,
-  ): Promise<TestCase[]> {
+  ): TestCase[] {
     const testLocations = parseShortestTestFile(file);
     const escapeRegex = (str: string) =>
       str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -506,9 +506,7 @@ export class TestRunner {
     return filteredTests;
   }
 
-  private async createFileTestContext(
-    context: BrowserContext,
-  ): Promise<TestFileContext> {
+  private createFileTestContext(context: BrowserContext): TestFileContext {
     if (!this.testFileContext) {
       // Create a properly typed Playwright object
       const playwrightObj = {
@@ -542,7 +540,7 @@ export class TestRunner {
     return this.testFileContext;
   }
 
-  private async createTestContext(testRun: TestRun): Promise<TestContext> {
+  private createTestContext(testRun: TestRun): TestContext {
     if (this.testContext) return this.testContext;
 
     return { ...assertDefined(this.testFileContext), testRun };

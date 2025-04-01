@@ -40,13 +40,13 @@ export const main = async () => {
     const mockTest = createTestCase({
       name: "Test with callback",
       filePath: "test-ai.ts",
-      fn: async () => {
+      fn: () => {
         console.log("Callback executed: Main test");
       },
       expectations: [
         {
           description: "action performed",
-          fn: async () => {
+          fn: () => {
             console.log("Callback executed: Expectation");
           },
         },

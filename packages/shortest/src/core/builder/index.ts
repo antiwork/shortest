@@ -27,7 +27,7 @@ export class TestBuilder {
     return lines.filter(Boolean).join("\n");
   }
 
-  static async parseModule(_compiledModule: any): Promise<TestCase[]> {
+  static parseModule(_compiledModule: any): TestCase[] {
     // Get tests from global registry
     const registry = (global as any).__shortest__.registry;
     const tests = Array.from(registry.tests.values()).flat();

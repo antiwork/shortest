@@ -20,8 +20,10 @@ planCommand
     ).default(false),
   )
   .action(async function () {
-    await executeCommand(this.name(), this.optsWithGlobals(), async () =>
-      executePlanCommand(this.opts()),
+    await executeCommand(
+      this.name(),
+      this.optsWithGlobals(),
+      async () => await executePlanCommand(this.opts()),
     );
   })
   .showHelpAfterError("(add --help for additional information)");
