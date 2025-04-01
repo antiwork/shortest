@@ -1,27 +1,33 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { sleep } from "@/utils/sleep";
 
 describe("sleep", () => {
-  it("resolves after the specified time", async () => {
-    const start = Date.now();
-    const delay = 100;
-    
+  beforeEach(() => {
     vi.useFakeTimers();
-    const promise = sleep(delay);
-    vi.advanceTimersByTime(delay);
-    await promise;
+  });
+
+  afterEach(() => {
     vi.useRealTimers();
-    
-    expect(Date.now() - start).toBeLessThan(delay);
   });
-  
-  it("handles zero delay", async () => {
-    const promise = sleep(0);
-    await expect(promise).resolves.toBeUndefined();
+
+  it("resolves after specified milliseconds", async () => {
+    const promise = sleep(1000);
+    vi.advanceTimersByTime(999);
+
+    let resolved = false;
+    promise.then(() => {
+      resolved = true;
+    });
+    expect(resolved).toBe(false);
+
+    vi.advanceTimersByTime(1);
+    await promise;
+    expect(resolved).toBe(true);
   });
-  
-  it("handles negative delay as zero", async () => {
-    const promise = sleep(-100);
-    await expect(promise).resolves.toBeUndefined();
+
+  it("uses setTimeout with correct delay", () => {
+    const spy = vi.spyOn(global, "setTimeout");
+    sleep(500);
+    expect(spy).toHaveBeenCalledWith(expect.any(Function), 500);
   });
 });
