@@ -1,5 +1,4 @@
-import { describe, test, expect, beforeEach } from "vitest";
-import { vi } from "vitest";
+import { describe, test, expect, beforeEach, vi } from "vitest";
 import { getLogger } from "@/log/index";
 import { ShortestConfig } from "@/types";
 import { parseConfig } from "@/utils/config";

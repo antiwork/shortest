@@ -10,13 +10,13 @@ body:
     id: version
     attributes:
       label: Version
-      description: Check if you're using the [latest version](https://github.com/anti-work/shortest/releases)
+      description: Check if you're using the [latest version](https://github.com/antiwork/shortest/releases)
       placeholder: 0.4.2
   - type: input
     id: repo
     attributes:
       label: Your repository URL
-      description: Link to your repository URL that was created using the [shortest-example](https://github.com/anti-work/shortest-example) template
+      description: Link to your repository URL that was created using the [shortest-example](https://github.com/antiwork/shortest-example) template
       placeholder: https://github.com/YOUR_USERNAME/shortest-example
     validations:
       required: true
@@ -68,7 +68,7 @@ body:
     attributes:
       label: Validations
       options:
-        - label: I've checked for [existing issues](https://github.com/anti-work/shortest/issues)
+        - label: I've checked for [existing issues](https://github.com/antiwork/shortest/issues)
           required: true
-        - label: This is a concrete bug (for Q&A use [discussions](https://github.com/anti-work/shortest/discussions))
+        - label: This is a concrete bug (for Q&A use [discussions](https://github.com/antiwork/shortest/discussions))
           required: true

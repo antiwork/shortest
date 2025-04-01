@@ -1,8 +1,11 @@
 import Mailosaur from "mailosaur";
 import pc from "picocolors";
-import { chromium } from "playwright";
+import * as playwright from "playwright";
+import { chromium, request } from "playwright";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
+import { createTestCase } from "@/core/runner/test-case";
+import { TestRun } from "@/core/runner/test-run";
 import { getConfig, initializeConfig } from "@/index";
 
 export const main = async () => {
@@ -39,9 +42,36 @@ export const main = async () => {
     const page = await context.newPage();
 
     const browserManager = new BrowserManager(config);
+    const testCase = createTestCase({
+      name: "Email Rendering Test",
+      filePath: "tests/e2e/test-email-rendering.ts",
+    });
+    const testRun = TestRun.create(testCase);
+    testRun.markRunning();
+
     const browserTool = new BrowserTool(page, browserManager, {
       width: 1280,
       height: 720,
+      testContext: {
+        page,
+        browser: browserManager.getBrowser()!,
+        playwright: {
+          ...playwright,
+          request: {
+            ...request,
+            newContext: async (options?: {
+              extraHTTPHeaders?: Record<string, string>;
+            }) => {
+              const requestContext = await request.newContext({
+                baseURL: config.baseUrl,
+                ...options,
+              });
+              return requestContext;
+            },
+          },
+        },
+        testRun,
+      },
     });
 
     // 3. Test render_email tool

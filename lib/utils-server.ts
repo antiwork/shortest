@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 
-export const baseUrl = () => {
-  const headersList = headers();
+export const baseUrl = async () => {
+  const headersList = await headers();
   const host = headersList.get("host");
   const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
   return `${protocol}://${host}`;

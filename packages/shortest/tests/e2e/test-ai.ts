@@ -4,6 +4,7 @@ import { request } from "playwright";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
 import { createTestCase } from "@/core/runner/test-case";
+import { TestRun } from "@/core/runner/test-run";
 import { getConfig, initializeConfig } from "@/index";
 
 export const main = async () => {
@@ -52,6 +53,9 @@ export const main = async () => {
       ],
     });
 
+    const testRun = TestRun.create(mockTest);
+    testRun.markRunning();
+
     const browserTool = new BrowserTool(page, browserManager, {
       width: 1920,
       height: 1080,
@@ -59,7 +63,7 @@ export const main = async () => {
         page,
         browser: browserManager.getBrowser()!,
         playwright: playwrightObj,
-        currentTest: mockTest,
+        testRun,
         currentStepIndex: 0,
       },
     });
@@ -76,7 +80,7 @@ export const main = async () => {
       page,
       browser: browserManager.getBrowser()!,
       playwright: playwrightObj,
-      currentTest: mockTest,
+      testRun,
       currentStepIndex: 1,
     });
 

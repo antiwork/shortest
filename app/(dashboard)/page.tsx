@@ -2,6 +2,7 @@ import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { Code } from "bright";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import AntiworkFooter from "@/components/ui/antiwork-footer";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
@@ -56,7 +57,7 @@ shortest('Login to the app using email and password', {
             <div className="mt-8 lg:mt-0 flex justify-center lg:justify-end">
               <SignedOut>
                 <a
-                  href="https://github.com/anti-work/shortest"
+                  href="https://github.com/antiwork/shortest"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -78,6 +79,7 @@ shortest('Login to the app using email and password', {
           </div>
         </div>
       </section>
+      <AntiworkFooter />
     </main>
   );
 }

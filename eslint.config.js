@@ -40,7 +40,28 @@ export default [
       },
     },
     rules: {
+      "no-var": "error",
       "react/react-in-jsx-scope": "off",
+      "@typescript-eslint/member-ordering": ["error", {
+        default: {
+          memberTypes: [
+            "static-field",
+            "static-method",
+
+            "public-instance-field",
+            "protected-instance-field",
+            "private-instance-field",
+
+            "constructor",
+            "get",
+            "set",
+
+            "public-method",
+            "protected-method",
+            "private-method",
+          ],
+        },
+      }],
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_" },
@@ -56,13 +77,25 @@ export default [
       "logical-assignment-operators": "error",
       "prefer-arrow-callback": "error",
       "prefer-spread": "error",
+      "prefer-object-spread": "error",
       "import/order": ["error", { alphabetize: { order: "asc" } }],
+      "import/no-duplicates": "error",
+      "padding-line-between-statements": [
+          "error",
+          { blankLine: "always", prev: "import", next: "*" },
+          { blankLine: "never", prev: "import", next: "import" },
+        ],
       "prettier/prettier": [
         "error",
         {
           trailingComma: "all",
         },
       ],
+      "prefer-promise-reject-errors": "error",
+      "prefer-numeric-literals": "error",
+      "no-useless-call": "error",
+      "no-useless-computed-key": "error",
+      "object-shorthand": "error",
       "zod/require-zod-schema-types": "error",
     },
     settings: {

@@ -1,5 +1,8 @@
+// eslint-disable-next-line import/no-duplicates
 import type { Page, Browser, APIRequest, APIRequestContext } from "playwright";
+// eslint-disable-next-line import/no-duplicates
 import type * as playwright from "playwright";
+import { TestRun } from "@/core/runner/test-run";
 
 export interface AssertionError extends Error {
   matcherResult?: {
@@ -11,7 +14,7 @@ export interface AssertionError extends Error {
 }
 
 // eslint-disable-next-line zod/require-zod-schema-types
-export type TestContext = {
+export type TestFileContext = {
   page: Page;
   browser: Browser;
   playwright: typeof playwright & {
@@ -21,28 +24,16 @@ export type TestContext = {
       }) => Promise<APIRequestContext>;
     };
   };
-  currentTest?: TestFunction;
+};
+
+// eslint-disable-next-line zod/require-zod-schema-types
+export type TestContext = TestFileContext & {
+  testRun: TestRun;
   currentStepIndex?: number;
 };
 
 // eslint-disable-next-line zod/require-zod-schema-types
 export type TestHookFunction = (context: TestContext) => Promise<void>;
-
-export interface TestFunction {
-  name: string | "Untitled";
-  filePath: string;
-  payload?: any;
-  fn?: (context: TestContext) => Promise<void>;
-  expectations?: {
-    description?: string;
-    payload?: any;
-    fn?: (context: TestContext) => Promise<void>;
-    directExecution?: boolean;
-  }[];
-  beforeFn?: (context: TestContext) => void | Promise<void>;
-  afterFn?: (context: TestContext) => void | Promise<void>;
-  directExecution?: boolean;
-}
 
 // eslint-disable-next-line zod/require-zod-schema-types
 export type TestChain = {
@@ -84,17 +75,6 @@ export type TestAPI = {
 
   afterEach(fn: (context: TestContext) => Promise<void>): void;
   afterEach(name: string, fn: (context: TestContext) => Promise<void>): void;
-};
-
-// eslint-disable-next-line zod/require-zod-schema-types
-export type TestRegistry = {
-  tests: Map<string, TestFunction[]>;
-  currentFileTests: TestFunction[];
-  beforeAllFns: TestHookFunction[];
-  afterAllFns: TestHookFunction[];
-  beforeEachFns: TestHookFunction[];
-  afterEachFns: TestHookFunction[];
-  directTestCount: number;
 };
 
 export type { Page } from "playwright";

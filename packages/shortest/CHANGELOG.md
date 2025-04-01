@@ -1,7 +1,7 @@
 # Changelog
 
 > [!NOTE]
-> Releases for version v0.2.1 and newer are maintained on the [GitHub Releases page](https://github.com/anti-work/shortest/releases).
+> Releases for version v0.2.1 and newer are maintained on the [GitHub Releases page](https://github.com/antiwork/shortest/releases).
 > Older versions are kept here for historical purposes.
 
 ## [0.1.1] - 2024-12-24
