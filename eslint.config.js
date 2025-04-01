@@ -71,7 +71,7 @@ export default [
       "no-lonely-if": "error",
       "no-lone-blocks": "error",
       "no-empty": ["error", { allowEmptyCatch: true }],
-    "no-else-return": "error",
+      "no-else-return": "error",
       "no-alert": "error",
       "logical-assignment-operators": "error",
       "prefer-arrow-callback": "error",
@@ -90,6 +90,9 @@ export default [
       ],
       "prefer-promise-reject-errors": "error",
       "prefer-numeric-literals": "error",
+      "no-useless-call": "error",
+      "no-useless-computed-key": "error",
+      "object-shorthand": "error",
       "zod/require-zod-schema-types": "error",
     },
     settings: {

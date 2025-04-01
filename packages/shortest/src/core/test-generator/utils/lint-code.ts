@@ -12,7 +12,7 @@ export const lintCode = async (
   log.trace("Linting code using ESLint");
   let lintedCode = code;
   try {
-    log.trace("Loading ESLint", { rootDir: rootDir });
+    log.trace("Loading ESLint", { rootDir });
     const eslintPath = require.resolve("eslint", {
       paths: [rootDir],
     });
