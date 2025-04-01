@@ -89,6 +89,8 @@ export default [
         },
       ],
       "prefer-promise-reject-errors": "error",
+      "no-useless-call": "error",
+      "no-useless-computed-key": "error",
       "zod/require-zod-schema-types": "error",
     },
     settings: {
