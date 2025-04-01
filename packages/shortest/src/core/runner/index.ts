@@ -126,7 +126,7 @@ export class TestRunner {
       height: 1080,
       testContext: {
         ...testContext,
-        testRun: testRun,
+        testRun,
         currentStepIndex: 0,
       },
     });

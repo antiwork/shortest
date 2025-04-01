@@ -11,7 +11,7 @@ export const formatCode = async (
   rootDir: string,
 ): Promise<string> => {
   const log = getLogger();
-  log.trace("Formatting code using Prettier", { rootDir: rootDir });
+  log.trace("Formatting code using Prettier", { rootDir });
   let formattedCode = code;
   try {
     const prettierPath = require.resolve("prettier", {

@@ -412,7 +412,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
         name: layoutName,
         relativeFilePath: layoutFileInfo.relativeFilePath,
         relativeDirPath: layoutFileInfo.relativeDirPath,
-        content: content,
+        content,
         components: this.extractComponentsFromAST(ast),
       };
       this.layouts[layoutName] = layoutInfo;
@@ -543,7 +543,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       this.routes.push(routePath);
 
       const pageInfo: PageInfo = {
-        routePath: routePath,
+        routePath,
         relativeFilePath: file.relativeFilePath,
         components: fileDetail.details.components || [],
         hasParams: this.hasRouteParams(routePath),
@@ -590,7 +590,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       this.apiRoutes.push(routePath);
 
       const apiInfo: ApiInfo = {
-        routePath: routePath,
+        routePath,
         relativeFilePath: file.relativeFilePath,
         methods: this.extractApiMethodsFromAST(file.ast),
         inputValidation: this.hasInputValidationInAST(file.ast),
@@ -648,7 +648,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       this.apiRoutes.push(routePath);
 
       const apiInfo: ApiInfo = {
-        routePath: routePath,
+        routePath,
         relativeFilePath: file.relativeFilePath,
         methods: this.extractApiMethodsFromAST(file.ast),
         inputValidation: this.hasInputValidationInAST(file.ast),
@@ -663,7 +663,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       this.routes.push(routePath);
 
       const pageInfo: PageInfo = {
-        routePath: routePath,
+        routePath,
         relativeFilePath: file.relativeFilePath,
         components: fileDetail.details.components || [],
         hasParams: this.hasRouteParams(routePath),
