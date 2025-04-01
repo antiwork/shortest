@@ -1,8 +1,13 @@
 import { Command, Option } from "commander";
+
 import { executeCommand } from "@/cli/utils/command-builder";
+
 import { detectSupportedFramework } from "@/core/app-analyzer";
+
 import { TestGenerator } from "@/core/test-generator";
+
 import { getLogger } from "@/log";
+
 import { LOG_LEVELS } from "@/log/config";
 
 export const generateCommand = new Command("generate").description(

@@ -1,5 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
+
 import os from "os";
+
 import { join } from "path";
 
 // eslint-disable-next-line zod/require-zod-schema-types
@@ -40,13 +42,16 @@ export const addToGitignore = async (
       const newContent = addValue(content, value);
       if (newContent !== content) {
         modified = true;
+
         content = newContent;
       }
     }
 
     if (modified) {
       await writeFile(gitignorePath, content);
+
       result.wasCreated = isNewFile;
+
       result.wasUpdated = !isNewFile;
     }
   } catch (error) {

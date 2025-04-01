@@ -1,5 +1,7 @@
 import { z } from "zod";
+
 import { getLogger } from "@/log/index";
+
 import {
   configSchema,
   ShortestConfig,
@@ -7,6 +9,7 @@ import {
   CLIOptions,
   cliOptionsSchema,
 } from "@/types";
+
 import { formatZodError, ConfigError } from "@/utils/errors";
 
 /**
@@ -62,6 +65,7 @@ const handleDeprecatedConfigOptions = (
       log.warn(
         "'config.anthropicKey' option is deprecated. Use 'config.ai' structure instead.",
       );
+
       userConfig.ai = {
         provider: "anthropic",
         apiKey: deprecatedAnthropicKey,
@@ -76,6 +80,7 @@ const handleDeprecatedConfigOptions = (
         log.warn(
           "'config.anthropicKey' option is deprecated. Please move it to 'config.ai.apiKey'.",
         );
+
         userConfig.ai.apiKey = deprecatedAnthropicKey;
       }
     }

@@ -1,7 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+
 import { LOG_LEVELS } from "@/log/config";
+
 import { LogEvent } from "@/log/event";
+
 import { LogGroup } from "@/log/group";
+
 import { LogOutput } from "@/log/output";
 
 // Mock only what we need to verify - the colors and console output
@@ -24,14 +28,18 @@ describe("LogOutput", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+
     vi.setSystemTime(new Date("2024-01-01T19:00:00"));
+
     // Mock write methods for stdout and stderr
     vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
     vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+
     vi.restoreAllMocks();
   });
 

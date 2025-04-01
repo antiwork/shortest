@@ -1,20 +1,29 @@
 import pc from "picocolors";
+
 import * as playwright from "playwright";
+
 import { request } from "playwright";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { BrowserManager } from "@/browser/manager";
+
 import { createTestCase } from "@/core/runner/test-case";
+
 import { TestRun } from "@/core/runner/test-run";
+
 import { getConfig, initializeConfig } from "@/index";
 
 export const main = async () => {
   console.log(pc.cyan("\n🧪 Testing AI Integration"));
+
   console.log(pc.cyan("======================="));
 
   const browserManager = new BrowserManager(getConfig());
 
   try {
     await initializeConfig({});
+
     console.log("🚀 Launching browser...");
     const context = await browserManager.launch();
     const page = context.pages()[0];
@@ -94,9 +103,11 @@ export const main = async () => {
     console.error(pc.red("❌ Test failed:"), error);
   } finally {
     console.log("\n🧹 Cleaning up...");
+
     await browserManager.close();
   }
 };
 
 console.log("🤖 AI Integration Test");
+
 console.log("=====================");

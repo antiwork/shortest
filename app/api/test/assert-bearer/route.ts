@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+
 import { ALLOWED_TEST_BEARER } from "@/lib/constants";
+
 import { getBearerToken } from "@/lib/utils-server";
 
 /**

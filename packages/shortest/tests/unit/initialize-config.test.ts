@@ -1,5 +1,7 @@
 import fs from "fs/promises";
+
 import path from "path";
+
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 describe("initializeConfig", () => {
@@ -7,7 +9,9 @@ describe("initializeConfig", () => {
 
   beforeEach(async () => {
     vi.resetModules();
+
     delete process.env.ANTHROPIC_API_KEY;
+
     await fs.mkdir(tempDir, { recursive: true });
   });
 

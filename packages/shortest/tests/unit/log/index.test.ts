@@ -1,5 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
+
 import { getLogger } from "@/log";
+
 import { LogConfig } from "@/log/config";
 
 describe("logger singleton", () => {
@@ -27,6 +29,7 @@ describe("logger singleton", () => {
     const secondLogger = getLogger({ level: "info" as const });
 
     expect(firstLogger.config.level).toBe("debug");
+
     expect(firstLogger).toBe(secondLogger);
   });
 });

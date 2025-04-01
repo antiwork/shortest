@@ -1,10 +1,15 @@
 "use client";
 
 import { AlertCircle, GitPullRequest, Loader2 } from "lucide-react";
+
 import { useEffect, useMemo, useState } from "react";
+
 import { PullRequestItem } from "./pull-request";
+
 import { PullRequestFilter } from "./pull-request-filter";
+
 import type { PullRequest } from "./types";
+
 import { getAssignedPullRequests } from "@/lib/github";
 
 export default function DashboardPage() {
@@ -58,6 +63,7 @@ export default function DashboardPage() {
         const data = await getAssignedPullRequests();
         if ("error" in data) {
           setError(data.error as string);
+
           setPullRequests([]);
         } else {
           setPullRequests(
@@ -73,15 +79,19 @@ export default function DashboardPage() {
               },
             })),
           );
+
           setError(null);
         }
         setLoading(false);
       } catch (error) {
         console.error("Error fetching pull requests:", error);
+
         setLoading(false);
+
         setError(
           "Failed to fetch pull requests. Please reconnect your GitHub account.",
         );
+
         setPullRequests([]);
       }
     };

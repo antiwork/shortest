@@ -1,7 +1,11 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
+
 import { executeCommand } from "./command-builder";
+
 import { LogLevel } from "@/log/config";
+
 import { getLogger } from "@/log/index";
+
 import { getErrorDetails } from "@/utils/errors";
 
 vi.mock("@/log/index", () => ({
@@ -21,7 +25,9 @@ describe("command-builder", () => {
 
     beforeEach(() => {
       vi.clearAllMocks();
+
       vi.mocked(getLogger).mockReturnValue(mockLogger as any);
+
       vi.mocked(getErrorDetails).mockReturnValue({ message: "Error details" });
     });
 
@@ -36,10 +42,12 @@ describe("command-builder", () => {
       await executeCommand(testCommandName, testOptions, testFunction);
 
       expect(getLogger).toHaveBeenCalledWith({ level: "debug" });
+
       expect(mockLogger.trace).toHaveBeenCalledWith(
         "Executing test-command command",
         { options: testOptions },
       );
+
       expect(testFunction).toHaveBeenCalledWith(testOptions);
     });
 
@@ -71,6 +79,7 @@ describe("command-builder", () => {
         "Command failed-command failed",
         { message: "Error details" },
       );
+
       expect(getErrorDetails).toHaveBeenCalledWith(testError);
     });
   });

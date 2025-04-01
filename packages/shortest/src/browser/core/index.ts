@@ -1,5 +1,7 @@
 import { BrowserToolOptions, ActionInput, ToolResult } from "@/types/browser";
+
 import { BetaToolType } from "@/types/browser";
+
 import { ToolError } from "@/utils/errors";
 
 export abstract class BaseBrowserTool {
@@ -12,8 +14,11 @@ export abstract class BaseBrowserTool {
 
   constructor(options: BrowserToolOptions) {
     this.width = options.width;
+
     this.height = options.height;
+
     this.displayNum = options.displayNum || 1;
+
     this.screenshotDelay = options.screenshotDelay || 2000;
   }
 

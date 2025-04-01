@@ -1,12 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { createAnthropicBash20241022 } from "@/ai/tools/anthropic/bash_20241022";
+
 import { createAnthropicComputer20241022 } from "@/ai/tools/anthropic/computer_20241022";
+
 import { createCheckEmailTool } from "@/ai/tools/custom/check_email";
+
 import { createGithubLoginTool } from "@/ai/tools/custom/github_login";
+
 import { createNavigateTool } from "@/ai/tools/custom/navigate";
+
 import { createRunCallbackTool } from "@/ai/tools/custom/run_callback";
+
 import { createSleepTool } from "@/ai/tools/custom/sleep";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { createToolRegistry } from "@/tools/index";
 
 describe("tools/index", () => {
@@ -26,11 +35,17 @@ describe("tools/index", () => {
       );
 
       expect(tools).toHaveProperty("computer");
+
       expect(tools).toHaveProperty("bash");
+
       expect(tools).toHaveProperty("check_email");
+
       expect(tools).toHaveProperty("github_login");
+
       expect(tools).toHaveProperty("navigate");
+
       expect(tools).toHaveProperty("run_callback");
+
       expect(tools).toHaveProperty("sleep");
 
       const expectedToolCount = 7; // 2 provider tools + 5 custom tools
@@ -115,13 +130,21 @@ describe("tools/index", () => {
       const toolsMap = (registry as any).tools as Map<string, any>;
 
       expect(toolsMap.has("anthropic_computer_20241022")).toBe(true);
+
       expect(toolsMap.has("anthropic_computer_20250124")).toBe(true);
+
       expect(toolsMap.has("anthropic_bash_20241022")).toBe(true);
+
       expect(toolsMap.has("anthropic_bash_20250124")).toBe(true);
+
       expect(toolsMap.has("check_email")).toBe(true);
+
       expect(toolsMap.has("github_login")).toBe(true);
+
       expect(toolsMap.has("navigate")).toBe(true);
+
       expect(toolsMap.has("run_callback")).toBe(true);
+
       expect(toolsMap.has("sleep")).toBe(true);
 
       expect(toolsMap.size).toBe(9);

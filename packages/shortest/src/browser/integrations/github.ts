@@ -1,7 +1,11 @@
 import dotenv from "dotenv";
+
 import { authenticator } from "otplib";
+
 import { ENV_LOCAL_FILENAME } from "@/constants";
+
 import { BrowserToolInterface } from "@/types/browser";
+
 import { ConfigError, ShortestError } from "@/utils/errors";
 
 export class GitHubTool {
@@ -56,6 +60,7 @@ export class GitHubTool {
         this.selectors.usernameInput,
         credentials.username,
       );
+
       await browserTool.fill(
         this.selectors.passwordInput,
         credentials.password,
@@ -69,12 +74,14 @@ export class GitHubTool {
           this.selectors.useAuthenticatorButton,
           { timeout: 5000 },
         );
+
         await browserTool.click(this.selectors.useAuthenticatorButton);
       } catch {
         // If button not found, try the link
         await browserTool.waitForSelector(this.selectors.useAuthenticatorLink, {
           timeout: 5000,
         });
+
         await browserTool.click(this.selectors.useAuthenticatorLink);
       }
 
@@ -94,6 +101,7 @@ export class GitHubTool {
 
       // Press Enter and wait for navigation
       await browserTool.press(this.selectors.otpInput, "Enter");
+
       await navigationPromise;
 
       const isLoggedIn =

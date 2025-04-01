@@ -1,9 +1,15 @@
 import * as fs from "fs/promises";
+
 import * as path from "path";
+
 import { beforeEach, describe, expect, test, vi } from "vitest";
+
 import { createTestCase } from "@/core/runner/test-case";
+
 import { TestRun } from "@/core/runner/test-run";
+
 import { TestRunRepository } from "@/core/runner/test-run-repository";
+
 import type { CacheEntry } from "@/types/cache";
 
 vi.mock("fs/promises", () => ({
@@ -46,6 +52,7 @@ describe("TestRunRepository", () => {
     });
 
     repository = new TestRunRepository(mockTestCase, TEST_CACHE_DIR);
+
     vi.spyOn(fs, "mkdir").mockResolvedValue(undefined);
 
     sampleCacheEntry = {
@@ -71,7 +78,9 @@ describe("TestRunRepository", () => {
   describe("Initialization", () => {
     test("initializes with correct parameters", () => {
       expect(repository["testCase"]).toBe(mockTestCase);
+
       expect(repository["globalCacheDir"]).toBe(TEST_CACHE_DIR);
+
       expect(repository["lockFileName"]).toBe(`${TEST_IDENTIFIER}.lock`);
     });
 
@@ -115,9 +124,13 @@ describe("TestRunRepository", () => {
       const runs = await repository.getRuns();
 
       expect(runs).toHaveLength(2);
+
       expect(runs[0].runId).toBe(`run1_${TEST_IDENTIFIER}`);
+
       expect(runs[0].status).toBe("passed");
+
       expect(runs[1].runId).toBe(`run2_${TEST_IDENTIFIER}`);
+
       expect(runs[1].status).toBe("failed");
     });
 
@@ -134,6 +147,7 @@ describe("TestRunRepository", () => {
       const runs = await repository.getRuns();
 
       expect(runs).toHaveLength(1);
+
       expect(runs[0].runId).toBe(`run1_${TEST_IDENTIFIER}`);
     });
 
@@ -150,7 +164,9 @@ describe("TestRunRepository", () => {
       const secondLoad = await repository.getRuns();
 
       expect(fs.readdir).toHaveBeenCalledTimes(1);
+
       expect(fs.readFile).toHaveBeenCalledTimes(1);
+
       expect(firstLoad).toBe(secondLoad);
     });
   });
@@ -173,47 +189,67 @@ describe("TestRunRepository", () => {
 
       // Configure run 1: Invalid - wrong version
       runs[0].markRunning();
+
       runs[0].markPassed({ reason: "Invalid - wrong version" });
+
       Object.defineProperty(runs[0], "timestamp", { value: 5000 });
+
       Object.defineProperty(runs[0], "version", {
         value: TestRunRepository.VERSION - 1,
       });
+
       Object.defineProperty(runs[0], "executedFromCache", { value: false });
 
       // Configure run 2: Invalid - failed
       runs[1].markRunning();
+
       runs[1].markFailed({ reason: "Invalid - failed status" });
+
       Object.defineProperty(runs[1], "timestamp", { value: 4000 });
+
       Object.defineProperty(runs[1], "version", {
         value: TestRunRepository.VERSION,
       });
+
       Object.defineProperty(runs[1], "executedFromCache", { value: false });
 
       // Configure run 3: Invalid - from cache
       runs[2].markRunning();
+
       runs[2].markPassed({ reason: "Invalid - executed from cache" });
+
       Object.defineProperty(runs[2], "timestamp", { value: 3000 });
+
       Object.defineProperty(runs[2], "version", {
         value: TestRunRepository.VERSION,
       });
+
       Object.defineProperty(runs[2], "executedFromCache", { value: true });
 
       // Configure run 4: Valid - first valid
       runs[3].markRunning();
+
       runs[3].markPassed({ reason: "Valid run - first" });
+
       Object.defineProperty(runs[3], "timestamp", { value: 2000 });
+
       Object.defineProperty(runs[3], "version", {
         value: TestRunRepository.VERSION,
       });
+
       Object.defineProperty(runs[3], "executedFromCache", { value: false });
 
       // Configure run 5: Valid - second valid (this should be returned as it's last in array)
       runs[4].markRunning();
+
       runs[4].markPassed({ reason: "Valid run - last" });
+
       Object.defineProperty(runs[4], "timestamp", { value: 1000 });
+
       Object.defineProperty(runs[4], "version", {
         value: TestRunRepository.VERSION,
       });
+
       Object.defineProperty(runs[4], "executedFromCache", { value: false });
 
       vi.spyOn(repository, "getRuns").mockResolvedValue(runs);
@@ -225,7 +261,9 @@ describe("TestRunRepository", () => {
 
       // Make sure it doesn't return any of the invalid runs
       expect(latestRun).not.toBe(runs[0]); // Wrong version
+
       expect(latestRun).not.toBe(runs[1]); // Failed status
+
       expect(latestRun).not.toBe(runs[2]); // Executed from cache
     });
 
@@ -242,30 +280,39 @@ describe("TestRunRepository", () => {
 
       // Configure run 1: Failed status
       invalidRuns[0].markRunning();
+
       invalidRuns[0].markFailed({ reason: "Failed run" });
+
       Object.defineProperty(invalidRuns[0], "version", {
         value: TestRunRepository.VERSION,
       });
+
       Object.defineProperty(invalidRuns[0], "executedFromCache", {
         value: false,
       });
 
       // Configure run 2: Executed from cache
       invalidRuns[1].markRunning();
+
       invalidRuns[1].markPassed({ reason: "Cached run" });
+
       Object.defineProperty(invalidRuns[1], "version", {
         value: TestRunRepository.VERSION,
       });
+
       Object.defineProperty(invalidRuns[1], "executedFromCache", {
         value: true,
       });
 
       // Configure run 3: Wrong version
       invalidRuns[2].markRunning();
+
       invalidRuns[2].markPassed({ reason: "Wrong version run" });
+
       Object.defineProperty(invalidRuns[2], "version", {
         value: TestRunRepository.VERSION - 1,
       });
+
       Object.defineProperty(invalidRuns[2], "executedFromCache", {
         value: false,
       });
@@ -280,6 +327,7 @@ describe("TestRunRepository", () => {
 
     test("saveRun writes a test run to the cache file", async () => {
       vi.spyOn(repository as any, "acquireLock").mockResolvedValue(true);
+
       vi.spyOn(repository, "releaseLock").mockResolvedValue();
 
       const expectedFilePath = path.join(TEST_CACHE_DIR, "test-run-id.json");
@@ -289,11 +337,13 @@ describe("TestRunRepository", () => {
 
       const testRun = TestRun.create(mockTestCase);
       testRun.markRunning();
+
       testRun.markPassed({ reason: "Test passed" });
 
       await repository.saveRun(testRun);
 
       expect(fs.writeFile).toHaveBeenCalledTimes(1);
+
       expect(fs.writeFile).toHaveBeenCalledWith(
         expectedFilePath,
         expect.any(String),
@@ -321,6 +371,7 @@ describe("TestRunRepository", () => {
 
       const testRun = TestRun.create(mockTestCase);
       testRun.markRunning();
+
       testRun.markPassed({ reason: "Test passed" });
 
       await repository.saveRun(testRun);
@@ -331,6 +382,7 @@ describe("TestRunRepository", () => {
     test("deleteRun removes a test run's files", async () => {
       const testRun = TestRun.create(mockTestCase);
       testRun.markRunning();
+
       testRun.markPassed({ reason: "Test passed" });
 
       const cacheFilePath = path.join(TEST_CACHE_DIR, "test-run-id.json");
@@ -339,6 +391,7 @@ describe("TestRunRepository", () => {
       vi.spyOn(repository as any, "getTestRunFilePath").mockReturnValue(
         cacheFilePath,
       );
+
       vi.spyOn(repository as any, "getTestRunDirPath").mockReturnValue(
         cacheDirPath,
       );
@@ -346,6 +399,7 @@ describe("TestRunRepository", () => {
       await repository.deleteRun(testRun);
 
       expect(fs.unlink).toHaveBeenCalledWith(cacheFilePath);
+
       expect(fs.rm).toHaveBeenCalledWith(cacheDirPath, {
         recursive: true,
         force: true,
@@ -355,9 +409,11 @@ describe("TestRunRepository", () => {
     test("handles errors when deleting non-existent files", async () => {
       const testRun = TestRun.create(mockTestCase);
       testRun.markRunning();
+
       testRun.markPassed({ reason: "Test passed" });
 
       vi.mocked(fs.unlink).mockRejectedValue(new Error("File not found"));
+
       vi.mocked(fs.rm).mockRejectedValue(new Error("Directory not found"));
 
       await expect(repository.deleteRun(testRun)).resolves.not.toThrow();
@@ -381,6 +437,7 @@ describe("TestRunRepository", () => {
         outdatedRun,
         currentRun,
       ]);
+
       vi.spyOn(repository, "getLatestPassedRun").mockResolvedValue(currentRun);
 
       await repository.applyRetentionPolicy();
@@ -406,11 +463,13 @@ describe("TestRunRepository", () => {
       } as TestRun;
 
       vi.spyOn(repository, "getRuns").mockResolvedValue([passedRun, failedRun]);
+
       vi.spyOn(repository, "getLatestPassedRun").mockResolvedValue(passedRun);
 
       await repository.applyRetentionPolicy();
 
       expect(deleteRunMock).toHaveBeenCalledWith(failedRun);
+
       expect(deleteRunMock).not.toHaveBeenCalledWith(passedRun);
     });
 
@@ -434,11 +493,13 @@ describe("TestRunRepository", () => {
       } as TestRun;
 
       vi.spyOn(repository, "getRuns").mockResolvedValue([olderRun, newerRun]);
+
       vi.spyOn(repository, "getLatestPassedRun").mockResolvedValue(null);
 
       await repository.applyRetentionPolicy();
 
       expect(deleteRunMock).toHaveBeenCalledWith(olderRun);
+
       expect(deleteRunMock).not.toHaveBeenCalledWith(newerRun);
     });
 
@@ -473,6 +534,7 @@ describe("TestRunRepository", () => {
         regularRun,
         olderRun,
       ]);
+
       vi.spyOn(repository, "getLatestPassedRun").mockResolvedValue(null);
 
       await repository.applyRetentionPolicy();
@@ -481,7 +543,9 @@ describe("TestRunRepository", () => {
       // regularRun should be kept as the most recent non-cache run
       // olderRun should be deleted
       expect(deleteRunMock).toHaveBeenCalledWith(olderRun);
+
       expect(deleteRunMock).not.toHaveBeenCalledWith(regularRun);
+
       expect(deleteRunMock).not.toHaveBeenCalledWith(fromCacheRun);
     });
   });

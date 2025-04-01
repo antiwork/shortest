@@ -1,10 +1,17 @@
 import * as fs from "fs/promises";
+
 import path from "path";
+
 import { CACHE_DIR_PATH } from "@/cache";
+
 import { TestCase } from "@/core/runner/test-case";
+
 import { TestRun } from "@/core/runner/test-run";
+
 import { getLogger, Log } from "@/log";
+
 import { CacheEntry } from "@/types/cache";
+
 import { getErrorDetails } from "@/utils/errors";
 
 /**
@@ -27,10 +34,14 @@ const registerSharedProcessHandlers = (log: Log) => {
   };
 
   process.on("exit", cleanUpAndExit);
+
   process.on("SIGINT", cleanUpAndExit);
+
   process.on("SIGTERM", cleanUpAndExit);
+
   process.on("uncaughtException", async (error) => {
     log.error("Uncaught exception", getErrorDetails(error));
+
     await cleanUpAndExit();
   });
 
@@ -102,17 +113,22 @@ export class TestRunRepository {
    */
   constructor(testCase: TestCase, cacheDir = CACHE_DIR_PATH) {
     this.log = getLogger();
+
     this.log.trace("Initializing TestRunRepository", {
       identifier: testCase.identifier,
     });
+
     this.testCase = testCase;
+
     this.globalCacheDir = cacheDir;
+
     this.lockFileName = `${this.testCase.identifier}.lock`;
 
     // Register shared handlers and track this instance
     TestRunRepository.activeRepositories =
       registerSharedProcessHandlers(this.log) ||
       TestRunRepository.activeRepositories;
+
     TestRunRepository.activeRepositories.add(this);
   }
 
@@ -229,6 +245,7 @@ export class TestRunRepository {
       );
     } finally {
       this.resetTestRuns();
+
       await this.releaseLock();
     }
   }
@@ -248,6 +265,7 @@ export class TestRunRepository {
     // so it might not exist if the test run is not persisted
     try {
       await fs.unlink(this.getTestRunFilePath(testRun));
+
       this.resetTestRuns();
     } catch (error) {
       this.log.trace("Cache file not found", {
@@ -281,6 +299,7 @@ export class TestRunRepository {
    */
   async applyRetentionPolicy(): Promise<void> {
     this.log.setGroup("🗑️");
+
     this.log.trace("Applying test run repository retention policy", {
       identifier: this.testCase.identifier,
     });
@@ -297,7 +316,9 @@ export class TestRunRepository {
           version: run.version,
           currentVersion: TestRunRepository.VERSION,
         });
+
         await this.deleteRun(run);
+
         deletedCount++;
       }
     }
@@ -314,7 +335,9 @@ export class TestRunRepository {
             runId: run.runId,
             status: run.status,
           });
+
           await this.deleteRun(run);
+
           deletedCount++;
         }
       }
@@ -351,7 +374,9 @@ export class TestRunRepository {
               status: run.status,
               maxRuns: MAX_RUNS_PER_TEST,
             });
+
             await this.deleteRun(run);
+
             deletedCount++;
           }
         }
@@ -371,6 +396,7 @@ export class TestRunRepository {
       }
     }
     this.resetTestRuns();
+
     this.log.resetGroup();
   }
 
@@ -383,7 +409,9 @@ export class TestRunRepository {
     if (this.lockAcquired) {
       try {
         await fs.unlink(this.lockFilePath);
+
         this.lockAcquired = false;
+
         TestRunRepository.activeRepositories.delete(this);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
@@ -405,6 +433,7 @@ export class TestRunRepository {
   public async ensureTestRunDirPath(testRun: TestRun): Promise<string> {
     const runDirPath = path.join(this.globalCacheDir, testRun.runId);
     await fs.mkdir(runDirPath, { recursive: true });
+
     this.resetTestRuns();
     return runDirPath;
   }
@@ -428,6 +457,7 @@ export class TestRunRepository {
         await fs.writeFile(this.lockFilePath, JSON.stringify(lockData), {
           flag: "wx",
         });
+
         this.lockAcquired = true;
         return true;
       } catch (error) {

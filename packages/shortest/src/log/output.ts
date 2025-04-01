@@ -1,8 +1,13 @@
 import { Writable } from "node:stream";
+
 import pc from "picocolors";
+
 import { LogFormat, LOG_LEVELS } from "@/log/config";
+
 import { LogEvent } from "@/log/event";
+
 import { LogGroup } from "@/log/group";
+
 import { ConfigError } from "@/utils/errors";
 
 /**
@@ -110,6 +115,7 @@ export class LogOutput {
 
     let outputParts = [];
     outputParts.push(colorFn(`${level}`.padEnd(LogOutput.MAX_LEVEL_LENGTH)));
+
     outputParts.push(
       timestamp.toLocaleTimeString("en-US", {
         hour12: false,
@@ -118,7 +124,9 @@ export class LogOutput {
         second: "2-digit",
       }),
     );
+
     outputParts.push(...groupIdentifiers.map((name) => pc.dim(name)));
+
     outputParts.push(message);
     if (parsedMetadata) {
       // Format metadata as "key=value" pairs, handling strings, null values, and nested objects

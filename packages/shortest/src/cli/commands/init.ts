@@ -1,37 +1,62 @@
 import { spawn } from "node:child_process";
+
 import { readFile } from "node:fs/promises";
+
 import { Writable } from "node:stream";
+
 import { join } from "path";
+
 import type { Readable } from "stream";
+
 import { select, input, confirm, password } from "@inquirer/prompts";
+
 import { ListrInquirerPromptAdapter } from "@listr2/prompt-adapter-inquirer";
+
 import { Command, Option } from "commander";
+
 import {
   Listr,
   SimpleRenderer,
   ListrTaskWrapper as TaskWrapper,
   DefaultRenderer,
 } from "listr2";
+
 import { detect, resolveCommand } from "package-manager-detector";
+
 import pc from "picocolors";
+
 import { generateConfigFile } from "./init/generate-config-file";
+
 import { DOT_SHORTEST_DIR_NAME } from "@/cache";
+
 import { executeCommand } from "@/cli/utils/command-builder";
+
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
+
 import {
   AppAnalyzer,
   detectSupportedFramework,
   FrameworkInfo,
 } from "@/core/app-analyzer";
+
 import { detectFramework } from "@/core/framework-detector";
+
 import { TestGenerator } from "@/core/test-generator";
+
 import { TestPlanner } from "@/core/test-planner";
+
 import { getLogger } from "@/log";
+
 import { LOG_LEVELS } from "@/log/config";
+
 import { testPatternSchema } from "@/types/config";
+
 import { addToGitignore } from "@/utils/add-to-gitignore";
+
 import { assertDefined } from "@/utils/assert";
+
 import { EnvFile } from "@/utils/env-file";
+
 import { ShortestError } from "@/utils/errors";
 
 export const initCommand = new Command("init")
@@ -293,6 +318,7 @@ export const executeInitCommand = async () => {
                       testPattern,
                     },
                   );
+
                   task.title = `${CONFIG_FILENAME} created.`;
                 },
               },
@@ -336,6 +362,7 @@ export const executeInitCommand = async () => {
                     try {
                       ctx.supportedFrameworkInfo =
                         await detectSupportedFramework();
+
                       task.title = `${ctx.supportedFrameworkInfo.name} framework detected`;
                     } catch (error) {
                       if (!(error instanceof ShortestError)) throw error;
@@ -358,6 +385,7 @@ export const executeInitCommand = async () => {
                     const analyzer = new AppAnalyzer(supportedFrameworkInfo);
                     await analyzer.execute({ force: true });
                   });
+
                   task.title = "Analysis complete";
                 },
                 rendererOptions: {
@@ -374,6 +402,7 @@ export const executeInitCommand = async () => {
                     );
                     const planner = new TestPlanner(supportedFrameworkInfo);
                     await planner.execute({ force: true });
+
                     task.title = `Test planning complete`;
                   });
                 },
@@ -394,6 +423,7 @@ export const executeInitCommand = async () => {
                       supportedFrameworkInfo,
                     );
                     await generator.execute({ force: true });
+
                     task.title = "Test file generated";
                   });
                 },
@@ -424,10 +454,13 @@ export const executeInitCommand = async () => {
     await tasks.run();
     if (tasks.ctx.generateSampleTestFile) {
       console.log(pc.green("\nSetup complete!"));
+
       console.log("Run tests with: npx/pnpm shortest");
     } else {
       console.log(pc.green("\nInitialization complete! Next steps:"));
+
       console.log("1. Create your first test file: example.test.ts");
+
       console.log("2. Run tests with: npx/pnpm shortest example.test.ts");
     }
   } catch (error) {
@@ -487,6 +520,7 @@ export const taskWithCustomLogOutput = <T>(
   const streamAdapter = new Writable({
     write(chunk, _encoding, callback) {
       task.stdout().write(chunk.toString());
+
       callback();
     },
   });
@@ -497,13 +531,17 @@ export const taskWithCustomLogOutput = <T>(
     const result = callback();
     return Promise.resolve(result).then((value) => {
       log.resetOutputStream();
+
       log.config.format = originalFormat;
+
       log.config.level = originalLevel;
       return value;
     });
   } catch (error) {
     log.resetOutputStream();
+
     log.config.format = originalFormat;
+
     log.config.level = originalLevel;
     throw error;
   }

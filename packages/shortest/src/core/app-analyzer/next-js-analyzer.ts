@@ -1,23 +1,35 @@
 import fs from "fs/promises";
+
 import { createRequire } from "module";
+
 import path from "path";
+
 import * as parser from "@babel/parser";
+
 import * as t from "@babel/types";
+
 import {
   FileAnalysisResult,
   BaseAnalyzer,
   AppAnalysis,
   LayoutInfo,
 } from "./types";
+
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
+
 import { FrameworkInfo } from "@/core/app-analyzer";
+
 import {
   getPaths,
   getTreeStructure,
 } from "@/core/app-analyzer/utils/get-tree-structure";
+
 import { getLogger } from "@/log";
+
 import { assertDefined } from "@/utils/assert";
+
 import { getErrorDetails, ShortestError } from "@/utils/errors";
+
 import { getGitInfo } from "@/utils/get-git-info";
 
 const require = createRequire(import.meta.url);
@@ -68,6 +80,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
   constructor(frameworkInfo: FrameworkInfo) {
     this.frameworkInfo = frameworkInfo;
+
     this.cacheFrameworkDir = path.join(
       DOT_SHORTEST_DIR_PATH,
       this.frameworkInfo.id,
@@ -78,22 +91,33 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.log.trace("Executing NextJs analyzer");
 
     this.layouts = {};
+
     this.routes = [];
+
     this.apiRoutes = [];
+
     this.pages = [];
+
     this.paths = [];
+
     this.apis = [];
+
     this.isAppRouter = false;
+
     this.isPagesRouter = false;
 
     await this.setPaths();
+
     await this.setTreeStructure();
+
     this.log.debug(`Processing ${this.fileInfos.length} files`);
 
     this.detectRouterType();
 
     await this.parseFiles();
+
     await this.processLayoutFiles();
+
     await this.processRouteFiles();
 
     this.log.debug(
@@ -107,6 +131,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
   private async setPaths(): Promise<void> {
     this.log.trace("Retrieving folder paths for NextJs analyzer");
+
     this.paths = await getPaths(this.frameworkInfo.dirPath);
 
     await fs.mkdir(this.cacheFrameworkDir, { recursive: true });
@@ -134,6 +159,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
   private async setTreeStructure(): Promise<void> {
     this.log.setGroup("🌳");
+
     this.log.trace("Building tree structure for NextJs analyzer");
     try {
       const treeNode = await getTreeStructure(this.frameworkInfo.dirPath);
@@ -156,6 +182,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       };
 
       await fs.writeFile(treeJsonPath, JSON.stringify(treeOutput, null, 2));
+
       this.log.trace("Tree structure saved", { path: treeJsonPath });
     } catch (error) {
       this.log.error("Failed to build tree structure", getErrorDetails(error));
@@ -283,6 +310,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       };
 
       await fs.writeFile(analysisJsonPath, JSON.stringify(output, null, 2));
+
       this.log.trace(`Analysis saved to ${analysisJsonPath}`);
     } catch (error) {
       this.log.error("Failed to save analysis to file", getErrorDetails(error));
@@ -306,6 +334,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
           if (!file.content) {
             try {
               this.log.trace("Reading file", { path: file.relativeFilePath });
+
               file.content = await fs.readFile(
                 path.join(this.frameworkInfo.dirPath, file.relativeFilePath),
                 "utf-8",
@@ -423,6 +452,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     this.isAppRouter = this.fileInfos.some(
       (file) => file.relativeDirPath === "app",
     );
+
     this.isPagesRouter = this.fileInfos.some(
       (file) => file.relativeDirPath === "pages",
     );
@@ -466,6 +496,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
     if (appRouterFiles.length > 0 || this.isAppRouter) {
       this.isAppRouter = true;
+
       this.log.debug(`Found ${appRouterFiles.length} App Router files`);
 
       for (const file of appRouterFiles) {
@@ -485,6 +516,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
 
     if (pagesFiles.length > 0 || this.isPagesRouter) {
       this.isPagesRouter = true;
+
       this.log.debug(`Found ${pagesFiles.length} Pages Router files`);
 
       for (const file of pagesFiles) {
@@ -530,11 +562,15 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     };
 
     fileDetail.details.imports = this.extractImportsFromAST(file.ast);
+
     fileDetail.details.exports = this.extractExportsFromAST(file.ast);
+
     fileDetail.details.hooks = this.extractHooksFromAST(file.ast);
+
     fileDetail.details.eventHandlers = this.extractEventHandlersFromAST(
       file.ast,
     );
+
     fileDetail.details.components = this.extractComponentsFromAST(file.ast);
 
     if (file.name === "page.js" || file.name === "page.tsx") {
@@ -553,6 +589,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       };
 
       this.pages.push(pageInfo);
+
       fileDetail.details.pageInfo = pageInfo;
     } else if (file.name === "layout.js" || file.name === "layout.tsx") {
       fileDetail.details.isLayout = true;
@@ -598,6 +635,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       };
 
       this.apis.push(apiInfo);
+
       fileDetail.details.apiInfo = apiInfo;
     }
 
@@ -622,11 +660,15 @@ export class NextJsAnalyzer implements BaseAnalyzer {
     };
 
     fileDetail.details.imports = this.extractImportsFromAST(file.ast);
+
     fileDetail.details.exports = this.extractExportsFromAST(file.ast);
+
     fileDetail.details.hooks = this.extractHooksFromAST(file.ast);
+
     fileDetail.details.eventHandlers = this.extractEventHandlersFromAST(
       file.ast,
     );
+
     fileDetail.details.components = this.extractComponentsFromAST(file.ast);
 
     // Check for _app.js/_app.tsx which could be considered a layout
@@ -656,6 +698,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       };
 
       this.apis.push(apiInfo);
+
       fileDetail.details.apiInfo = apiInfo;
     } else {
       fileDetail.details.isRoute = true;
@@ -673,6 +716,7 @@ export class NextJsAnalyzer implements BaseAnalyzer {
       };
 
       this.pages.push(pageInfo);
+
       fileDetail.details.pageInfo = pageInfo;
     }
 

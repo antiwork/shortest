@@ -17,6 +17,7 @@ export class TestBuilder {
 
     if (test.expectations && test.expectations.length > 0) {
       lines.push("Expected Results:");
+
       test.expectations.forEach((exp) => {
         lines.push(
           `- ${exp.description}${exp.fn ? " [HAS_CALLBACK]" : " [NO_CALLBACK]"}`,

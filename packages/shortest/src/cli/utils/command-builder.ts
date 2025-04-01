@@ -1,5 +1,7 @@
 import { LogLevel } from "@/log/config";
+
 import { getLogger } from "@/log/index";
+
 import { getErrorDetails } from "@/utils/errors";
 
 interface GlobalOptions {
@@ -17,6 +19,7 @@ export const executeCommand = async (
 
   try {
     log.trace(`Executing ${name} command`, { options });
+
     await fn(options);
   } catch (error) {
     log.error(`Command ${name} failed`, getErrorDetails(error));

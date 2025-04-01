@@ -1,7 +1,11 @@
 import { describe, test, expect, beforeEach } from "vitest";
+
 import { vi } from "vitest";
+
 import { getLogger } from "@/log/index";
+
 import { ShortestConfig } from "@/types";
+
 import { parseConfig } from "@/utils/config";
 
 describe("Config parsing", () => {
@@ -26,15 +30,21 @@ describe("Config parsing", () => {
         "ai",
         "caching",
       ]);
+
       expect(config.headless).toBe(true);
+
       expect(config.baseUrl).toBe("https://example.com");
+
       expect(config.browser).toEqual({});
+
       expect(config.testPattern).toBe("**/*.test.ts");
+
       expect(config.ai).toEqual({
         apiKey: "foo",
         model: "claude-3-5-sonnet-20241022",
         provider: "anthropic",
       });
+
       expect(config.caching).toEqual({
         enabled: true,
       });
@@ -240,6 +250,7 @@ describe("Config parsing", () => {
           expect(mockWarn).toHaveBeenCalledWith(
             "'config.anthropicKey' option is deprecated. Use 'config.ai' structure instead.",
           );
+
           expect(config.ai).toEqual({
             provider: "anthropic",
             apiKey: "deprecated-api-key",
@@ -254,6 +265,7 @@ describe("Config parsing", () => {
             ...baseConfig,
           };
           delete userConfig.ai;
+
           expect(() => parseConfig(userConfig)).toThrowError(
             /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai(?:\u001b\[\d+m)?: Required \(received: "undefined"\)/,
           );

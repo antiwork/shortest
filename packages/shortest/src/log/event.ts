@@ -101,8 +101,11 @@ export class LogEvent {
     metadata?: Record<string, any>,
   ) {
     this.timestamp = new Date();
+
     this.level = level;
+
     this.message = message;
+
     this.metadata = metadata ?? {};
   }
 

@@ -1,10 +1,17 @@
 import pc from "picocolors";
+
 import * as playwright from "playwright";
+
 import { request } from "playwright";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { BrowserManager } from "@/browser/manager";
+
 import { createTestCase } from "@/core/runner/test-case";
+
 import { TestRun } from "@/core/runner/test-run";
+
 import { getConfig } from "@/index";
 
 export const main = async () => {
@@ -76,7 +83,9 @@ export const main = async () => {
       coordinates: [x, y],
     });
     console.log(pc.yellow("\nMouse Move Result:"), moveResult);
+
     console.log(pc.yellow("Metadata:"), moveResult.metadata);
+
     await new Promise((r) => setTimeout(r, 1000));
 
     // Take screenshot to verify position
@@ -87,6 +96,7 @@ export const main = async () => {
       action: "screenshot",
     });
     console.log(pc.yellow("\nScreenshot Result:"), screenshotResult);
+
     console.log(pc.yellow("Metadata:"), screenshotResult.metadata);
 
     // Click the button
@@ -95,7 +105,9 @@ export const main = async () => {
       action: "left_click",
     });
     console.log(pc.yellow("\nClick Result:"), clickResult);
+
     console.log(pc.yellow("Metadata:"), clickResult.metadata);
+
     await new Promise((r) => setTimeout(r, 1000));
 
     // Take final screenshot
@@ -104,12 +116,14 @@ export const main = async () => {
       action: "screenshot",
     });
     console.log(pc.yellow("\nFinal Screenshot Result:"), finalResult);
+
     console.log(pc.yellow("Metadata:"), finalResult.metadata);
 
     // Mark the test as passed
     testRun.markPassed({
       reason: "All coordinate tests completed successfully",
     });
+
     console.log(pc.green("\n✅ All coordinate tests completed"));
   } catch (error) {
     console.error(pc.red("❌ Test failed:"), error);
@@ -122,9 +136,11 @@ export const main = async () => {
     throw error;
   } finally {
     console.log(pc.cyan("\n🧹 Cleaning up..."));
+
     await browserManager.close();
   }
 };
 
 console.log(pc.cyan("🧪 Mouse Coordinate Test"));
+
 console.log(pc.cyan("======================="));

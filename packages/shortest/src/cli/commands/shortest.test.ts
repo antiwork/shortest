@@ -1,13 +1,19 @@
 import { Command } from "commander";
+
 import { describe, test, expect, vi, beforeEach } from "vitest";
+
 import { shortestCommand } from "./shortest";
+
 import {
   cleanUpCache,
   purgeLegacyCache,
   purgeLegacyScreenshots,
 } from "@/cache";
+
 import { executeCommand } from "@/cli/utils/command-builder";
+
 import { TestRunner } from "@/core/runner";
+
 import { initializeConfig } from "@/index";
 
 vi.mock("@/cli/utils/command-builder", () => ({
@@ -52,7 +58,9 @@ describe("shortest command", () => {
 
   test("shortestCommand is a Command instance", () => {
     expect(shortestCommand).toBeInstanceOf(Command);
+
     expect(shortestCommand.name()).toBe("shortest");
+
     expect(shortestCommand.description()).toContain(
       "AI-powered end-to-end testing framework",
     );
@@ -62,12 +70,15 @@ describe("shortest command", () => {
     expect(
       shortestCommand.options.find((opt) => opt.long === "--log-level"),
     ).toBeDefined();
+
     expect(
       shortestCommand.options.find((opt) => opt.long === "--headless"),
     ).toBeDefined();
+
     expect(
       shortestCommand.options.find((opt) => opt.long === "--target"),
     ).toBeDefined();
+
     expect(
       shortestCommand.options.find((opt) => opt.long === "--no-cache"),
     ).toBeDefined();
@@ -118,10 +129,13 @@ describe("shortest command", () => {
     });
 
     expect(purgeLegacyCache).toHaveBeenCalled();
+
     expect(purgeLegacyScreenshots).toHaveBeenCalled();
 
     expect(TestRunner).toHaveBeenCalled();
+
     expect(mockInitialize).toHaveBeenCalled();
+
     expect(mockExecute).toHaveBeenCalledWith("test-pattern", 123);
 
     expect(cleanUpCache).toHaveBeenCalled();

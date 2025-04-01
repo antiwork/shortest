@@ -1,9 +1,15 @@
 import fs from "node:fs";
+
 import path from "node:path";
+
 import { describe, test, before } from "node:test";
+
 import { fileURLToPath } from "node:url";
+
 import { glob } from "glob";
+
 import pc from "picocolors";
+
 import { initializeConfig } from "@/index";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,11 +59,15 @@ describe("End-to-end tests", async () => {
   before(async () => {
     try {
       console.log(pc.cyan("\n🚀 Initializing test environment..."));
+
       console.log(pc.cyan(`Looking for config in: ${projectRoot}`));
+
       await initializeConfig({ configDir: projectRoot });
+
       isSetupComplete = true;
     } catch (error) {
       console.error(pc.red("\n❌ Failed to initialize config:"), error);
+
       process.exit(1); // Exit early on setup failure
     }
   });

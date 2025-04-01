@@ -1,11 +1,19 @@
 import Mailosaur from "mailosaur";
+
 import pc from "picocolors";
+
 import * as playwright from "playwright";
+
 import { chromium, request } from "playwright";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { BrowserManager } from "@/browser/manager";
+
 import { createTestCase } from "@/core/runner/test-case";
+
 import { TestRun } from "@/core/runner/test-run";
+
 import { getConfig, initializeConfig } from "@/index";
 
 export const main = async () => {
@@ -24,6 +32,7 @@ export const main = async () => {
   try {
     // 1. Send a test email
     console.log("Sending test email...");
+
     await mailosaur.messages.create(config.mailosaur.serverId, {
       to: "test@example.com",
       subject: "Test Email Rendering",

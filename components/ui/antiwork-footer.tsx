@@ -1,7 +1,9 @@
 "use client";
 
 import { Shuffle } from "lucide-react";
+
 import { useCallback, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 
 export default function AntiworkFooter() {
@@ -30,10 +32,12 @@ export default function AntiworkFooter() {
     let bgColor, textColor;
     do {
       bgColor = generateRandomColor();
+
       textColor = generateRandomColor();
     } while (getContrastRatio(bgColor, textColor) < 4.5);
 
     setFooterBgColor(bgColor);
+
     setFooterTextColor(textColor);
   }, []);
 

@@ -1,6 +1,9 @@
 import path from "path";
+
 import { globby } from "globby";
+
 import { z } from "zod";
+
 import { getLogger } from "@/log";
 
 const FileNodeSchema = z.object({
@@ -84,6 +87,7 @@ export const getTreeStructure = async (
     };
 
     parentNode.children.push(dirNode);
+
     dirMap.set(dirPath, dirNode);
 
     return dirNode;

@@ -1,13 +1,23 @@
 import { existsSync } from "fs";
+
 import fs from "fs/promises";
+
 import path from "path";
+
 import { listFrameworks } from "@netlify/framework-info";
+
 import { Framework } from "@netlify/framework-info/lib/types";
+
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
+
 import { FrameworkInfo } from "@/core/app-analyzer";
+
 import { getPaths } from "@/core/app-analyzer/utils/get-tree-structure";
+
 import { getLogger } from "@/log";
+
 import { getErrorDetails, ShortestError } from "@/utils/errors";
+
 import { getGitInfo, GitInfo } from "@/utils/get-git-info";
 
 export interface ProjectInfo {
@@ -63,6 +73,7 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
 
   if (nextJsDirPath) {
     frameworks = await listFrameworks({ projectDir: nextJsDirPath });
+
     frameworks.map((framework) => {
       frameworkInfos.push({
         id: framework.id,
@@ -95,6 +106,7 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
       JSON.stringify(projectInfo, null, 2),
       "utf-8",
     );
+
     log.info(`Saved project information to ${PROJECT_JSON_PATH}`);
 
     return projectInfo;

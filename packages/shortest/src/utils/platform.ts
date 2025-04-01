@@ -1,5 +1,7 @@
 import { detect, resolveCommand } from "package-manager-detector";
+
 import { ShortestError } from "@/utils/errors";
+
 export const getInstallationCommand = async () => {
   const packageManager = await detect();
 

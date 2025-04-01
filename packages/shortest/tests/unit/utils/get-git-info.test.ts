@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
 import { getGitInfo } from "@/utils/get-git-info";
 
 const mockBranch = vi.fn();
@@ -30,11 +31,13 @@ describe("getGitInfo", () => {
 
   it("returns branch and commit information when git operations succeed", async () => {
     mockBranch.mockResolvedValue({ current: "main" });
+
     mockRevparse.mockResolvedValue("abc1234");
 
     const result = await getGitInfo();
 
     expect(mockBranch).toHaveBeenCalled();
+
     expect(mockRevparse).toHaveBeenCalledWith(["HEAD"]);
 
     expect(result).toEqual({

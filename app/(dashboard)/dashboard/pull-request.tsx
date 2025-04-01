@@ -1,6 +1,7 @@
 "use client";
 
 import { experimental_useObject as useObject } from "ai/react";
+
 import {
   GitPullRequestDraft,
   GitPullRequest,
@@ -13,18 +14,31 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+
 import dynamic from "next/dynamic";
+
 import Link from "next/link";
+
 import { useState, useCallback, useEffect } from "react";
+
 import useSWR from "swr";
+
 import { LogView } from "./log-view";
+
 import { PullRequest, TestFile, LogGroup } from "./types";
+
 import { TestFileSchema } from "@/app/api/generate-tests/schema";
+
 import { Button } from "@/components/ui/button";
+
 import { Checkbox } from "@/components/ui/checkbox";
+
 import { Input } from "@/components/ui/input";
+
 import { useLogGroups } from "@/hooks/use-log-groups";
+
 import { useToast } from "@/hooks/use-toast";
+
 import {
   commitChangesToPullRequest,
   getPullRequestInfo,
@@ -33,6 +47,7 @@ import {
   fetchBuildStatus,
   getWorkflowLogs,
 } from "@/lib/github";
+
 import { cn } from "@/lib/utils";
 
 const ReactDiffViewer = dynamic(() => import("react-diff-viewer"), {
@@ -186,22 +201,31 @@ export const PullRequestItem = ({
       const { filteredTestFiles, newSelectedFiles, newExpandedFiles } =
         handleTestFilesUpdate(oldTestFiles, result.object?.tests);
       setTestFiles(filteredTestFiles);
+
       setSelectedFiles(newSelectedFiles);
+
       setExpandedFiles(newExpandedFiles);
+
       setAnalyzing(false);
+
       setLoading(false);
     },
     onError: (error) => {
       console.error("Error generating test files:", error);
+
       setError("Failed to generate test files.");
+
       setAnalyzing(false);
+
       setLoading(false);
     },
   });
 
   const handleTests = async (pr: PullRequest, mode: "write" | "update") => {
     setAnalyzing(true);
+
     setLoading(true);
+
     setError(null);
 
     try {
@@ -229,6 +253,7 @@ export const PullRequestItem = ({
       }
 
       setOldTestFiles(testFilesToUpdate);
+
       submit({
         mode,
         pr_id: pr.id,
@@ -238,8 +263,11 @@ export const PullRequestItem = ({
       });
     } catch (error) {
       console.error("Error handling tests:", error);
+
       setError("Failed to handle tests.");
+
       setAnalyzing(false);
+
       setLoading(false);
     }
   };
@@ -266,6 +294,7 @@ export const PullRequestItem = ({
       filteredTestFiles.forEach((file) => {
         const fileName = file?.name ?? `file_${Math.random()}`;
         newExpandedFiles[fileName] = true;
+
         newSelectedFiles[fileName] = true;
       });
       return { filteredTestFiles, newSelectedFiles, newExpandedFiles };
@@ -279,9 +308,11 @@ export const PullRequestItem = ({
 
   const commitChanges = async () => {
     setLoading(true);
+
     setError(null);
 
     setOptimisticRunning(true);
+
     mutate({ ...pullRequest, buildStatus: "running" }, false);
 
     try {
@@ -313,13 +344,17 @@ export const PullRequestItem = ({
       });
 
       setTestFiles([]);
+
       setSelectedFiles({});
+
       setExpandedFiles({});
 
       mutate();
     } catch (error) {
       console.error("Error committing changes:", error);
+
       setError("Failed to commit changes. Please try again.");
+
       toast({
         title: "Error",
         description: "Failed to commit changes. Please try again.",
@@ -327,6 +362,7 @@ export const PullRequestItem = ({
       });
 
       setOptimisticRunning(false);
+
       mutate();
     } finally {
       setLoading(false);
@@ -335,8 +371,11 @@ export const PullRequestItem = ({
 
   const handleCancelChanges = () => {
     setTestFiles([]);
+
     setSelectedFiles({});
+
     setExpandedFiles({});
+
     setError(null);
   };
 
@@ -345,6 +384,7 @@ export const PullRequestItem = ({
       ...prev,
       [fileName]: !prev[fileName],
     }));
+
     setExpandedFiles((prev) => ({
       ...prev,
       [fileName]: !prev[fileName],

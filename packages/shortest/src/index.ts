@@ -1,11 +1,19 @@
 import { join } from "path";
+
 import dotenv from "dotenv";
+
 import { expect as jestExpect } from "expect";
+
 import { APIRequest } from "@/browser/core/api-request";
+
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
+
 import { TestCompiler } from "@/core/compiler";
+
 import { createTestCase, TestCase } from "@/core/runner/test-case";
+
 import { getLogger } from "@/log";
+
 import {
   TestAPI,
   TestContext,
@@ -13,8 +21,11 @@ import {
   ShortestStrictConfig,
   CLIOptions,
 } from "@/types";
+
 import { parseConfig } from "@/utils/config";
+
 import { ConfigError, ShortestError } from "@/utils/errors";
+
 // to include the global expect in the generated d.ts file
 import "./globals";
 
@@ -46,6 +57,7 @@ if (!global.__shortest__) {
   global.expect = global.__shortest__.expect;
 
   dotenv.config({ path: join(process.cwd(), ".env") });
+
   dotenv.config({ path: join(process.cwd(), ENV_LOCAL_FILENAME) });
 }
 
@@ -63,6 +75,7 @@ export const initializeConfig = async ({
   log.trace("Initializing config");
 
   dotenv.config({ path: join(configDir, ".env") });
+
   dotenv.config({ path: join(configDir, ENV_LOCAL_FILENAME) });
 
   const configFiles = [
@@ -104,6 +117,7 @@ export const initializeConfig = async ({
     );
   }
   globalConfig = configs[0].config;
+
   log.debug("Config initialized", { globalConfig });
 
   return globalConfig;
@@ -138,6 +152,7 @@ const createTestChain = (
 
       const existingTests = registry.tests.get(name) || [];
       registry.tests.set(name, [...existingTests, testCase]);
+
       registry.currentFileTests.push(testCase);
       return testCase;
     });
@@ -191,6 +206,7 @@ const createTestChain = (
 
   let existingTests = registry.tests.get(name) || [];
   registry.tests.set(name, [...existingTests, testCase]);
+
   registry.currentFileTests.push(testCase);
 
   const chain: TestChain = {
@@ -210,6 +226,7 @@ const createTestChain = (
 
       // Existing expect implementation...
       testCase.expectations ||= [];
+
       testCase.expectations.push({
         description: descriptionOrFn,
         payload: typeof payloadOrFn === "function" ? undefined : payloadOrFn,

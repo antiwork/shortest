@@ -1,8 +1,13 @@
 import { Tool } from "ai";
+
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
 import { z } from "zod";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { ToolRegistry } from "@/tools/tool-registry";
+
 import { ShortestError } from "@/utils/errors";
 
 describe("ToolRegistry", () => {
@@ -128,7 +133,9 @@ describe("ToolRegistry", () => {
       };
 
       registry.registerTool("custom_tool", customToolEntry);
+
       registry.registerTool("anthropic_computer_20241022", providerToolEntry);
+
       registry.registerTool("anthropic_bash_20241022", bashToolEntry);
 
       const tools = registry.getTools(
@@ -138,8 +145,11 @@ describe("ToolRegistry", () => {
       );
 
       expect(tools).toHaveProperty("customTool");
+
       expect(tools).toHaveProperty("computer");
+
       expect(tools).toHaveProperty("bash");
+
       expect(Object.keys(tools).length).toBe(3);
     });
 
@@ -159,6 +169,7 @@ describe("ToolRegistry", () => {
       );
 
       expect(tools).toHaveProperty("customTool");
+
       expect(Object.keys(tools).length).toBe(1);
     });
 
@@ -171,6 +182,7 @@ describe("ToolRegistry", () => {
       };
 
       registry.registerTool("anthropic_computer_20241022", computerToolLatest);
+
       registry.registerTool("anthropic_computer_20250124", computerToolLatest);
 
       const tools35Latest = registry.getTools(
@@ -195,8 +207,11 @@ describe("ToolRegistry", () => {
       );
 
       expect(tools35Latest).toHaveProperty("computer");
+
       expect(tools35Fixed).toHaveProperty("computer");
+
       expect(tools37Latest).toHaveProperty("computer");
+
       expect(tools37Fixed).toHaveProperty("computer");
     });
   });

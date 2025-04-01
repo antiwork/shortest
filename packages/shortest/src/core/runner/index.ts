@@ -1,35 +1,54 @@
 import { pathToFileURL } from "url";
+
 import { glob } from "glob";
+
 import { APIRequest, BrowserContext } from "playwright";
+
 import * as playwright from "playwright";
+
 import { request, APIRequestContext } from "playwright";
+
 import { z } from "zod";
+
 import { AIClient, AIClientResponse } from "@/ai/client";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { BrowserManager } from "@/browser/manager";
+
 import { TestCompiler } from "@/core/compiler";
+
 import { TestCase } from "@/core/runner/test-case";
+
 import {
   EXPRESSION_PLACEHOLDER,
   parseShortestTestFile,
 } from "@/core/runner/test-file-parser";
+
 import { TestReporter } from "@/core/runner/test-reporter";
+
 import { TestRun } from "@/core/runner/test-run";
+
 import { TestRunRepository } from "@/core/runner/test-run-repository";
+
 import { getLogger, Log } from "@/log";
+
 import {
   TestContext,
   InternalActionEnum,
   ShortestStrictConfig,
   TestFileContext,
 } from "@/types";
+
 import { assertDefined } from "@/utils/assert";
+
 import {
   CacheError,
   getErrorDetails,
   ShortestError,
   asShortestError,
 } from "@/utils/errors";
+
 const testStatusSchema = z.enum(["pending", "running", "passed", "failed"]);
 export type TestStatus = z.infer<typeof testStatusSchema>;
 
@@ -52,9 +71,13 @@ export class TestRunner {
 
   constructor(cwd: string, config: ShortestStrictConfig) {
     this.config = config;
+
     this.cwd = cwd;
+
     this.compiler = new TestCompiler();
+
     this.reporter = new TestReporter();
+
     this.log = getLogger();
   }
 
@@ -76,6 +99,7 @@ export class TestRunner {
         "Test Discovery",
         `No test files found matching the test pattern ${testPattern}`,
       );
+
       this.log.error("No test files found matching", {
         pattern: testPattern,
       });
@@ -108,6 +132,7 @@ export class TestRunner {
       try {
         const testContext = await this.createTestContext(testRun);
         await testCase.fn?.(testContext);
+
         testRun.markPassed({ reason: "Direct execution successful" });
         return testRun;
       } catch (error) {
@@ -261,6 +286,7 @@ export class TestRunner {
   ): Promise<TestRun> {
     try {
       this.log.setGroup("💾");
+
       this.log.trace("Attempting to execute test from cache", {
         identifier: testRun.testCase.identifier,
       });
@@ -325,6 +351,7 @@ export class TestRunner {
       }
 
       this.log.debug("Successfully executed all cached steps");
+
       testRun.markPassedFromCache({
         reason: "All actions successfully replayed from cache",
       });
@@ -338,13 +365,16 @@ export class TestRunner {
     const registry = (global as any).__shortest__.registry;
     try {
       this.log.trace("Executing test file", { filePath, lineNumber });
+
       registry.tests.clear();
+
       registry.currentFileTests = [];
       const filePathWithoutCwd = filePath.replace(this.cwd + "/", "");
       registry.currentFilePath = filePathWithoutCwd;
       const compiledPath = await this.compiler.compileFile(filePath);
 
       this.log.trace("Importing compiled file", { compiledPath });
+
       await import(pathToFileURL(compiledPath).href);
       let testsToRun = registry.currentFileTests;
 
@@ -367,6 +397,7 @@ export class TestRunner {
       let context;
       try {
         this.log.trace("Launching browser");
+
         context = await this.browserManager.launch();
       } catch (error) {
         this.log.error("Browser launching failed", getErrorDetails(error));
@@ -395,6 +426,7 @@ export class TestRunner {
           const testRun = TestRun.create(testCase);
           try {
             testRun.markRunning();
+
             await this.executeTest(testRun, context);
           } catch (error) {
             this.log.error(
@@ -430,10 +462,15 @@ export class TestRunner {
         }
       } finally {
         await this.browserManager.close();
+
         this.testContext = null; // Reset the context
+
         registry.beforeAllFns = [];
+
         registry.afterAllFns = [];
+
         registry.beforeEachFns = [];
+
         registry.afterEachFns = [];
         const fileResult: FileResult = {
           filePath,
@@ -453,6 +490,7 @@ export class TestRunner {
       this.reporter.onFileEnd(fileResult);
     } finally {
       registry.currentFilePath = "";
+
       this.testContext = null;
     }
   }
@@ -481,6 +519,7 @@ export class TestRunner {
           );
 
           pattern = escapeRegex(pattern);
+
           pattern = pattern.replace(new RegExp(TEMP_TOKEN, "g"), ".*");
           const regex = new RegExp(`^${pattern}$`);
 

@@ -1,4 +1,5 @@
 import { shortest, APIRequest } from "@antiwork/shortest";
+
 import { ALLOWED_TEST_BEARER, TESTING_API_BASE_URI } from "@/lib/constants";
 
 const req = new APIRequest({

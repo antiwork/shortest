@@ -1,7 +1,11 @@
 import { Command } from "commander";
+
 import { describe, test, expect, vi, beforeEach } from "vitest";
+
 import { cacheCommands } from "./cache";
+
 import { cleanUpCache } from "@/cache";
+
 import { executeCommand } from "@/cli/utils/command-builder";
 
 vi.mock("@/cache", () => ({
@@ -19,7 +23,9 @@ describe("cache commands", () => {
 
   test("cacheCommands is a Command instance", () => {
     expect(cacheCommands).toBeInstanceOf(Command);
+
     expect(cacheCommands.name()).toBe("cache");
+
     expect(cacheCommands.description()).toBe("Cache management commands");
   });
 
@@ -28,6 +34,7 @@ describe("cache commands", () => {
       (cmd) => cmd.name() === "clear",
     );
     expect(clearCommand).toBeDefined();
+
     expect(clearCommand?.description()).toBe("Clear test cache");
   });
 
@@ -37,9 +44,11 @@ describe("cache commands", () => {
     );
 
     expect(clearCommand?.opts().force_purge).toBeUndefined();
+
     expect(
       clearCommand?.options.find((opt) => opt.long === "--force-purge"),
     ).toBeDefined();
+
     expect(
       clearCommand?.options.find((opt) => opt.long === "--log-level"),
     ).toBeDefined();

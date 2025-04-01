@@ -63,6 +63,7 @@ const addToRemoveQueue = (toastId: string) => {
 
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId);
+
     dispatch({
       type: "REMOVE_TOAST",
       toastId: toastId,
@@ -133,6 +134,7 @@ let memoryState: State = { toasts: [] };
 
 const dispatch = (action: Action) => {
   memoryState = reducer(memoryState, action);
+
   listeners.forEach((listener) => {
     listener(memoryState);
   });

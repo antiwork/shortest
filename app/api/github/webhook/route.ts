@@ -1,5 +1,7 @@
 import { revalidateTag } from "next/cache";
+
 import { NextResponse } from "next/server";
+
 import { type NextRequest } from "next/server";
 
 export const POST = async (request: NextRequest) => {
@@ -59,6 +61,7 @@ const handlePushEvent = async (payload: any) => {
 const handlePullRequestEvent = async (payload: any) => {
   const { action, pull_request, repository } = payload;
   console.log(`Pull request ${action} in ${repository.full_name}`);
+
   revalidateTag(`pullRequest-${pull_request.id}`);
 };
 

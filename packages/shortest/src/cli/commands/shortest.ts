@@ -1,17 +1,31 @@
 import { Command, Option } from "commander";
+
 import pc from "picocolors";
+
 import { cleanUpCache } from "@/cache";
+
 import { purgeLegacyScreenshots } from "@/cache";
+
 import { purgeLegacyCache } from "@/cache";
+
 import { executeCommand } from "@/cli/utils/command-builder";
+
 import { ENV_LOCAL_FILENAME } from "@/constants";
+
 import { TestRunner } from "@/core/runner";
+
 import { getConfig } from "@/index";
+
 import { initializeConfig } from "@/index";
+
 import { getLogger } from "@/log";
+
 import { LOG_LEVELS } from "@/log/config";
+
 import { CLIOptions, cliOptionsSchema } from "@/types/config";
+
 import { getErrorDetails } from "@/utils/errors";
+
 import { ShortestError } from "@/utils/errors";
 
 export const SHORTEST_NAME = "shortest";
@@ -70,6 +84,7 @@ const executeTestRunnerCommand = async (testPattern: string, options: any) => {
   const log = getLogger();
 
   log.trace("Starting Shortest CLI", { args: process.argv });
+
   log.trace("Log config", { ...log.config });
 
   let lineNumber: number | undefined;
@@ -77,6 +92,7 @@ const executeTestRunnerCommand = async (testPattern: string, options: any) => {
   if (testPattern?.includes(":")) {
     const [file, line] = testPattern.split(":");
     testPattern = file;
+
     lineNumber = parseInt(line, 10);
   }
 
@@ -88,10 +104,12 @@ const executeTestRunnerCommand = async (testPattern: string, options: any) => {
   };
 
   log.trace("Initializing config with CLI options", { cliOptions });
+
   await initializeConfig({ cliOptions });
   const config = getConfig();
 
   await purgeLegacyCache();
+
   await purgeLegacyScreenshots();
 
   try {
@@ -105,6 +123,7 @@ const executeTestRunnerCommand = async (testPattern: string, options: any) => {
     if (!(error instanceof ShortestError)) throw error;
 
     log.error(error.message, getErrorDetails(error));
+
     process.exitCode = 1;
   } finally {
     await cleanUpCache();

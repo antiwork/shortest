@@ -1,11 +1,19 @@
 import { readFileSync } from "fs";
+
 import { createRequire } from "module";
+
 import * as parser from "@babel/parser";
+
 import type { NodePath } from "@babel/traverse";
+
 import type * as t from "@babel/types";
+
 import * as babelTypes from "@babel/types";
+
 import { z } from "zod";
+
 import { SHORTEST_NAME } from "@/cli/commands/shortest";
+
 import { getLogger } from "@/log";
 
 const require = createRequire(import.meta.url);
@@ -139,6 +147,7 @@ export const parseShortestTestFile = (filePath: string): TestLocation[] => {
           parentType === "MemberExpression"
         ) {
           currentPath = currentPath.parentPath;
+
           endLine = Math.max(endLine, currentPath.node.loc?.end?.line || 0);
         } else {
           endLine = Math.max(

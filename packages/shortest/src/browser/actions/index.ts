@@ -1,4 +1,5 @@
 import { Page } from "playwright";
+
 import { ToolError } from "@/utils/errors";
 
 export const keyboardShortcuts: Record<string, string | string[]> = {
@@ -48,11 +49,14 @@ export const mouseMove = async (
       const trail = document.getElementById("ai-cursor-trail");
       if (cursor && trail) {
         window.cursorPosition = { x, y };
+
         cursor.style.left = `${x}px`;
+
         cursor.style.top = `${y}px`;
 
         setTimeout(() => {
           trail.style.left = `${x}px`;
+
           trail.style.top = `${y}px`;
         }, 50);
       }
@@ -93,7 +97,9 @@ export const dragMouse = async (
   const scaledY = Math.round(y * scaleRatio.y);
 
   await page.mouse.down();
+
   await page.mouse.move(scaledX, scaledY);
+
   await page.mouse.up();
 };
 
@@ -111,6 +117,7 @@ export const showClickAnimation = async (
         switch (clickType) {
           case "double":
             cursor.style.transform = "translate(-50%, -50%) scale(0.7)";
+
             cursor.style.backgroundColor = "rgba(255, 0, 0, 0.5)";
             break;
           case "right":
@@ -122,9 +129,13 @@ export const showClickAnimation = async (
 
         setTimeout(() => {
           cursor.classList.remove("clicking");
+
           cursor.style.transform = "translate(-50%, -50%) scale(1)";
+
           cursor.style.backgroundColor = "rgba(255, 0, 0, 0.2)";
+
           cursor.style.borderColor = "red";
+
           resolve(undefined);
         }, 200);
       }),

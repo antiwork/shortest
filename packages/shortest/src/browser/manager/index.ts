@@ -1,10 +1,17 @@
 import { execSync } from "child_process";
+
 import { URL } from "url";
+
 import pc from "picocolors";
+
 import { Browser, BrowserContext, chromium } from "playwright";
+
 import { getLogger, Log } from "@/log/index";
+
 import { ShortestConfig } from "@/types/config";
+
 import { ShortestError } from "@/utils/errors";
+
 import { getInstallationCommand } from "@/utils/platform";
 
 export class BrowserManager {
@@ -15,6 +22,7 @@ export class BrowserManager {
 
   constructor(config: ShortestConfig) {
     this.config = config;
+
     this.log = getLogger();
   }
 
@@ -34,6 +42,7 @@ export class BrowserManager {
         const installationCommand = await getInstallationCommand();
 
         execSync(installationCommand, { stdio: "inherit" });
+
         this.log.info(pc.green("✓"), "Playwright browser installed");
 
         this.browser = await chromium.launch({
@@ -51,10 +60,12 @@ export class BrowserManager {
       ...this.config.browser?.contextOptions,
     };
     this.log.trace("Initializing browser context", { options: contextOptions });
+
     this.context = await this.browser.newContext(contextOptions);
 
     const page = await this.context.newPage();
     await page.goto(this.normalizeUrl(this.config.baseUrl));
+
     await page.waitForLoadState("networkidle");
 
     return this.context;
@@ -72,7 +83,9 @@ export class BrowserManager {
       this.context.pages().map((page) =>
         page.evaluate(() => {
           localStorage.clear();
+
           sessionStorage.clear();
+
           indexedDB.deleteDatabase("shortest");
         }),
       ),
@@ -94,6 +107,7 @@ export class BrowserManager {
     // Navigate first page to baseUrl
     const baseUrl = this.config.baseUrl;
     await pages[0].goto(baseUrl);
+
     await pages[0].waitForLoadState("networkidle");
 
     return this.context;
@@ -106,10 +120,12 @@ export class BrowserManager {
   async close(): Promise<void> {
     if (this.context) {
       await this.context.close();
+
       this.context = null;
     }
     if (this.browser) {
       await this.browser.close();
+
       this.browser = null;
     }
   }

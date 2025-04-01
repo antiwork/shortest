@@ -1,5 +1,7 @@
 import { createRequire } from "module";
+
 import { getLogger } from "@/log";
+
 import { getErrorDetails } from "@/utils/errors";
 
 const require = createRequire(import.meta.url);
@@ -39,6 +41,7 @@ export const lintCode = async (
 
     if (results[0]?.output) {
       lintedCode = results[0].output;
+
       log.trace("ESLint applied fixes to the code");
     } else {
       log.trace("ESLint found no issues to fix");

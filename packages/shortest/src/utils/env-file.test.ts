@@ -1,8 +1,13 @@
 import { existsSync } from "fs";
+
 import * as fs from "node:fs/promises";
+
 import os from "os";
+
 import path from "path";
+
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
 import { EnvFile } from "./env-file";
 
 vi.mock("fs", () => ({
@@ -29,6 +34,7 @@ describe("EnvFile", () => {
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
 
       expect(envFile.isNewFile()).toBe(true);
+
       expect(existsSync).toHaveBeenCalledWith(TEST_FILE_PATH);
     });
 
@@ -37,6 +43,7 @@ describe("EnvFile", () => {
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
 
       expect(envFile.isNewFile()).toBe(false);
+
       expect(existsSync).toHaveBeenCalledWith(TEST_FILE_PATH);
     });
   });
@@ -44,6 +51,7 @@ describe("EnvFile", () => {
   describe("initialize", () => {
     it("reads the file content and sets up existing entries", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue("KEY1=value1\nKEY2=value2");
 
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
@@ -54,11 +62,13 @@ describe("EnvFile", () => {
       // Add a key that should be skipped because it exists
       const result = await envFile.add({ key: "KEY1", value: "new-value" });
       expect(result).toBe(false);
+
       expect(envFile.keysSkipped()).toContain("KEY1");
     });
 
     it("handles comment lines in the env file", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue(
         "# Comment\nKEY1=value1\n# Another comment\nKEY2=value2",
       );
@@ -71,11 +81,13 @@ describe("EnvFile", () => {
       // Add a key that should be added because it doesn't exist
       const result = await envFile.add({ key: "KEY3", value: "value3" });
       expect(result).toBe(true);
+
       expect(envFile.keysAdded()).toContain("KEY3");
     });
 
     it("preserves CRLF line endings if present in file", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue("KEY1=value1\r\nKEY2=value2");
 
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
@@ -93,10 +105,12 @@ describe("EnvFile", () => {
 
     it("initializes only once even if called multiple times", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue("KEY1=value1\nKEY2=value2");
 
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
       await envFile.initialize();
+
       await envFile.initialize();
 
       expect(fs.readFile).toHaveBeenCalledTimes(1);
@@ -106,13 +120,16 @@ describe("EnvFile", () => {
   describe("add", () => {
     it("adds a new key-value pair and returns true", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue("");
 
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
       const result = await envFile.add({ key: "NEW_KEY", value: "new-value" });
 
       expect(result).toBe(true);
+
       expect(envFile.keysAdded()).toContain("NEW_KEY");
+
       expect(fs.writeFile).toHaveBeenCalledWith(
         TEST_FILE_PATH,
         "NEW_KEY=new-value" + os.EOL,
@@ -121,6 +138,7 @@ describe("EnvFile", () => {
 
     it("skips existing keys and returns false", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue("EXISTING_KEY=value");
 
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
@@ -130,12 +148,15 @@ describe("EnvFile", () => {
       });
 
       expect(result).toBe(false);
+
       expect(envFile.keysSkipped()).toContain("EXISTING_KEY");
+
       expect(envFile.keysAdded()).not.toContain("EXISTING_KEY");
     });
 
     it("adds a comment if provided", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue("");
 
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
@@ -153,6 +174,7 @@ describe("EnvFile", () => {
 
     it("adds EOL if content doesn't end with one", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue("EXISTING_KEY=value");
 
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
@@ -166,6 +188,7 @@ describe("EnvFile", () => {
 
     it("automatically initializes if not already initialized", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue("");
 
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
@@ -194,14 +217,18 @@ describe("EnvFile", () => {
   describe("keysAdded and keysSkipped", () => {
     it("returns lists of added and skipped keys", async () => {
       vi.mocked(existsSync).mockReturnValue(true);
+
       vi.mocked(fs.readFile).mockResolvedValue("EXISTING_KEY=value");
 
       const envFile = new EnvFile(TEST_PATH, TEST_FILENAME);
       await envFile.add({ key: "NEW_KEY1", value: "value1" });
+
       await envFile.add({ key: "NEW_KEY2", value: "value2" });
+
       await envFile.add({ key: "EXISTING_KEY", value: "new-value" });
 
       expect(envFile.keysAdded()).toEqual(["NEW_KEY1", "NEW_KEY2"]);
+
       expect(envFile.keysSkipped()).toEqual(["EXISTING_KEY"]);
     });
   });

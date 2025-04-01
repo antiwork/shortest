@@ -1,6 +1,9 @@
 import { Command } from "commander";
+
 import { describe, test, expect, vi, beforeEach } from "vitest";
+
 import { initCommand } from "./init";
+
 import { executeCommand } from "@/cli/utils/command-builder";
 
 vi.mock("@/cli/utils/command-builder", () => ({
@@ -14,7 +17,9 @@ describe("init command", () => {
 
   test("initCommand is a Command instance", () => {
     expect(initCommand).toBeInstanceOf(Command);
+
     expect(initCommand.name()).toBe("init");
+
     expect(initCommand.description()).toBe(
       "Initialize Shortest in current directory",
     );
