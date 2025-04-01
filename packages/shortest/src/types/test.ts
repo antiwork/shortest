@@ -1,4 +1,6 @@
+// eslint-disable-next-line import/no-duplicates
 import type { Page, Browser, APIRequest, APIRequestContext } from "playwright";
+// eslint-disable-next-line import/no-duplicates
 import type * as playwright from "playwright";
 import { TestRun } from "@/core/runner/test-run";
 
@@ -74,5 +76,3 @@ export type TestAPI = {
   afterEach(fn: (context: TestContext) => Promise<void>): void;
   afterEach(name: string, fn: (context: TestContext) => Promise<void>): void;
 };
-
-export type { Page } from "playwright";
