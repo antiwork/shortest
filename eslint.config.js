@@ -77,6 +77,7 @@ export default [
       "prefer-arrow-callback": "error",
       "prefer-object-spread": "error",
       "import/order": ["error", { alphabetize: { order: "asc" } }],
+      "import/no-duplicates": "error",
       "padding-line-between-statements": [
           "error",
           { blankLine: "always", prev: "import", next: "*" },
