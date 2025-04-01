@@ -1,3 +1,4 @@
+import { Writable } from "node:stream";
 import pc from "picocolors";
 import { z } from "zod";
 import { LOG_LEVELS, LogLevel, LogConfig, LogConfigSchema } from "@/log/config";
@@ -35,10 +36,12 @@ export class Log {
   readonly config: LogConfig;
   // private events: LogEvent[] = [];
   private currentGroup?: LogGroup;
+  private outputStream: Writable;
 
   constructor(config: Partial<LogConfig> = {}) {
     try {
       this.config = LogConfigSchema.parse(config);
+      this.outputStream = process.stdout;
     } catch (error) {
       if (error instanceof z.ZodError) {
         throw new ConfigError(
@@ -47,30 +50,6 @@ export class Log {
         );
       }
       throw error;
-    }
-  }
-
-  /**
-   * Checks if a log level should be output based on configured minimum level
-   */
-  private shouldLog(level: LogLevel): boolean {
-    return (
-      LOG_LEVELS.indexOf(level) >=
-      LOG_LEVELS.indexOf(this.config.level as LogLevel)
-    );
-  }
-
-  /**
-   * Processes and outputs a log event if it meets the minimum level requirement
-   */
-  private outputEvent(event: LogEvent): void {
-    if (this.shouldLog(event.level)) {
-      LogOutput.render(event, this.config.format, this.currentGroup);
-    } else if (event.level === "warn") {
-      console.warn(
-        pc.bgYellowBright(pc.black(" WARN ")),
-        pc.yellow(event.message),
-      );
     }
   }
 
@@ -149,5 +128,44 @@ export class Log {
 
   error(...args: any[]) {
     this.log("error", ...args);
+  }
+
+  setOutputStream(stream: Writable): this {
+    this.outputStream = stream;
+    return this;
+  }
+
+  resetOutputStream(): this {
+    this.outputStream = process.stdout;
+    return this;
+  }
+
+  /**
+   * Checks if a log level should be output based on configured minimum level
+   */
+  private shouldLog(level: LogLevel): boolean {
+    return (
+      LOG_LEVELS.indexOf(level) >=
+      LOG_LEVELS.indexOf(this.config.level as LogLevel)
+    );
+  }
+
+  /**
+   * Processes and outputs a log event if it meets the minimum level requirement
+   */
+  private outputEvent(event: LogEvent): void {
+    if (this.shouldLog(event.level)) {
+      LogOutput.render(
+        event,
+        this.config.format,
+        this.outputStream,
+        this.currentGroup,
+      );
+    } else if (event.level === "warn") {
+      console.warn(
+        pc.bgYellowBright(pc.black(" WARN ")),
+        pc.yellow(event.message),
+      );
+    }
   }
 }

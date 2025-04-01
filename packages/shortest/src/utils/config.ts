@@ -5,6 +5,7 @@ import {
   ShortestConfig,
   ShortestStrictConfig,
   CLIOptions,
+  cliOptionsSchema,
 } from "@/types";
 import { formatZodError, ConfigError } from "@/utils/errors";
 
@@ -99,10 +100,17 @@ const handleCliOptions = (
   if (cliOptions.headless) {
     userConfig.headless = true;
   }
-  if (cliOptions.baseUrl) {
+  if (
+    cliOptions.baseUrl &&
+    cliOptions.baseUrl !== cliOptionsSchema.shape.baseUrl._def.defaultValue()
+  ) {
     userConfig.baseUrl = cliOptions.baseUrl;
   }
-  if (cliOptions.testPattern) {
+  if (
+    cliOptions.testPattern &&
+    cliOptions.testPattern !==
+      cliOptionsSchema.shape.testPattern._def.defaultValue()
+  ) {
     userConfig.testPattern = cliOptions.testPattern;
   }
   if (cliOptions.noCache) {

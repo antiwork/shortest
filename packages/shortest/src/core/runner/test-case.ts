@@ -39,7 +39,6 @@ const TestCaseExpectationsSchema = z.object({
  * @property {boolean} [directExecution] - Whether to execute test directly (defaults to false)
  * @property {string} identifier - Unique identifier for the test case (auto-generated)
  *
- * @see {@link TestContext} for the context object passed to test functions
  */
 const TestCaseSchema = z
   .object({
@@ -56,9 +55,12 @@ const TestCaseSchema = z
   .strict()
   .transform((data) => {
     const hashInput = `${data.name}:${data.filePath}:${JSON.stringify(data.expectations)}`;
-    // Low collision risk for datasets under 65,000 tests
-    data.identifier = createHash(hashInput, { length: 8 });
-    return data;
+
+    return {
+      ...data,
+      // Low collision risk for datasets under 65,000 tests
+      identifier: createHash(hashInput, { length: 8 }),
+    };
   });
 export type TestCase = z.infer<typeof TestCaseSchema>;
 

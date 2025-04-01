@@ -1,3 +1,5 @@
+import { TokenUsage } from "./ai";
+import { TestStatus } from "@/core/runner";
 import { TestCase } from "@/core/runner/test-case";
 import { BrowserAction, ActionInput } from "@/types/browser";
 
@@ -18,7 +20,12 @@ export interface CacheStep {
 export interface CacheEntry {
   metadata: {
     timestamp: number;
-    version: string;
+    version: number;
+    status: TestStatus;
+    reason: string | undefined;
+    tokenUsage: TokenUsage;
+    runId: string;
+    executedFromCache: boolean;
   };
   test: Pick<TestCase, "name" | "filePath">;
   data: {

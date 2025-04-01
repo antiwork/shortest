@@ -6,12 +6,11 @@ import {
   LanguageModelV1,
   NoSuchToolError,
 } from "ai";
-
 import { SYSTEM_PROMPT } from "@/ai/prompts";
 import { createProvider } from "@/ai/provider";
 import { AIJSONResponse, extractJsonPayload } from "@/ai/utils/json";
 import { BrowserTool } from "@/browser/core/browser-tool";
-import { TestCache } from "@/cache/test-cache";
+import { TestRun } from "@/core/runner/test-run";
 import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import { createToolRegistry, ToolRegistry } from "@/tools/index";
@@ -59,7 +58,7 @@ export type AIClientResponse = {
  * ```typescript
  * const client = new AIClient({
  *   browserTool: new BrowserTool(),
- *   testCache: new TestCache()
+ *   testRun: TestRun.create()
  * });
  *
  * const response = await client.runAction(
@@ -69,7 +68,6 @@ export type AIClientResponse = {
  * ```
  *
  * @param {BrowserTool} browserTool - Browser automation tool
- * @param {TestCache} cache - Cache for storing test results
  *
  * @see {@link BrowserTool} for web automation
  * @see {@link TestCache} for caching implementation
@@ -80,7 +78,7 @@ export class AIClient {
   private client: LanguageModelV1;
   private browserTool: BrowserTool;
   private conversationHistory: Array<CoreMessage> = [];
-  private testCache: TestCache;
+  private testRun: TestRun;
   private log: Log;
   private usage: TokenUsage;
   private apiRequestCount: number = 0;
@@ -89,17 +87,17 @@ export class AIClient {
   private configAi: AIConfig;
   constructor({
     browserTool,
-    testCache,
+    testRun,
   }: {
     browserTool: BrowserTool;
-    testCache: TestCache;
+    testRun: TestRun;
   }) {
     this.log = getLogger();
     this.log.trace("Initializing AIClient");
     this.client = createProvider(getConfig().ai);
     this.configAi = getConfig().ai;
     this.browserTool = browserTool;
-    this.testCache = testCache;
+    this.testRun = testRun;
     this.usage = TokenUsageSchema.parse({});
     this.toolRegistry = createToolRegistry();
     this.log.trace(
@@ -111,6 +109,29 @@ export class AIClient {
         ]),
       ),
     );
+  }
+
+  /**
+   * Retrieves or initializes the set of available tools for AI interactions.
+   * Includes browser automation, bash execution, and specialized testing tools.
+   *
+   * @returns {Record<string, CoreTool>} Map of available tools
+   *
+   * @see {@link BrowserTool} for web automation tools
+   * @see {@link BashTool} for shell command execution
+   *
+   * @private
+   */
+  private get tools(): Record<string, Tool> {
+    if (this._tools) return this._tools;
+
+    this._tools = this.toolRegistry.getTools(
+      this.configAi.provider,
+      this.configAi.model,
+      this.browserTool,
+    );
+
+    return this._tools;
   }
 
   /**
@@ -213,7 +234,7 @@ export class AIClient {
                       y,
                     );
                 }
-                this.testCache.addToSteps({
+                this.testRun.addStep({
                   reasoning: result.text,
                   action: {
                     name: toolResult.args.action,
@@ -270,9 +291,6 @@ export class AIClient {
           const json = extractJsonPayload(resp.text);
           this.log.trace("Response", { ...json });
 
-          if (json.status === "passed") {
-            await this.testCache.set();
-          }
           return { response: json, metadata: { usage: this.usage } };
         } catch {
           throw new AIError(
@@ -284,29 +302,6 @@ export class AIClient {
         this.log.resetGroup();
       }
     }
-  }
-
-  /**
-   * Retrieves or initializes the set of available tools for AI interactions.
-   * Includes browser automation, bash execution, and specialized testing tools.
-   *
-   * @returns {Record<string, CoreTool>} Map of available tools
-   *
-   * @see {@link BrowserTool} for web automation tools
-   * @see {@link BashTool} for shell command execution
-   *
-   * @private
-   */
-  private get tools(): Record<string, Tool> {
-    if (this._tools) return this._tools;
-
-    this._tools = this.toolRegistry.getTools(
-      this.configAi.provider,
-      this.configAi.model,
-      this.browserTool,
-    );
-
-    return this._tools;
   }
 
   /**

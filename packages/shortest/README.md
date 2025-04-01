@@ -48,7 +48,7 @@ export default {
   },
 } satisfies ShortestConfig;
 ```
-Anthropic API key will default to `SHORTEST_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` environment variables. Can be overwritten via `ai.config.apiKey`.
+The Anthropic API key defaults to `SHORTEST_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` environment variables. Can be overwritten via `ai.config.apiKey`.
 
 Optionally, you can configure browser behavior using the `browser.contextOptions` property in your configuration file. This allows you to pass custom [Playwright browser context options](https://playwright.dev/docs/api/class-browser#browser-new-context).
 
@@ -232,9 +232,9 @@ You can run Shortest in your CI/CD pipeline by running tests in headless mode. M
 
 ## Resources
 
-- Visit [GitHub](https://github.com/anti-work/shortest) for detailed docs
+- Visit [GitHub](https://github.com/antiwork/shortest) for detailed docs
 - [Contributing guide](./CONTRIBUTING.md)
-- [Changelog](https://github.com/anti-work/shortest/releases)
+- [Changelog](https://github.com/antiwork/shortest/releases)
 
 ### Prerequisites
 

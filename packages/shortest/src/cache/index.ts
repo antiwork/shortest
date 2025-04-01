@@ -1,12 +1,11 @@
 import { existsSync } from "fs";
 import * as fs from "fs/promises";
 import path from "path";
-import { TestCache } from "@/cache/test-cache";
+import { TestRunRepository } from "@/core/runner/test-run-repository";
 import { getLogger } from "@/log";
 import { CacheEntry } from "@/types/cache";
+import { directoryExists } from "@/utils/directory-exists";
 import { getErrorDetails } from "@/utils/errors";
-
-export { TestCache };
 
 export const DOT_SHORTEST_DIR_NAME = ".shortest";
 export const DOT_SHORTEST_DIR_PATH = path.join(
@@ -14,8 +13,7 @@ export const DOT_SHORTEST_DIR_PATH = path.join(
   DOT_SHORTEST_DIR_NAME,
 );
 export const CACHE_DIR_PATH = path.join(DOT_SHORTEST_DIR_PATH, "cache");
-
-export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
  * Removes expired cache entries and optionally purges all cache
@@ -31,37 +29,65 @@ export const cleanUpCache = async ({
   dirPath?: string;
 } = {}) => {
   const log = getLogger();
-  log.debug("Cleaning up cache", { forcePurge });
+  log.setGroup("🧹");
+  log.trace("Cleaning up cache", { forcePurge });
 
   if (!existsSync(dirPath)) {
-    log.debug("Cache directory does not exist", { dirPath });
+    log.trace("Cache directory does not exist", { dirPath });
     return;
   }
 
-  const files = await fs.readdir(dirPath);
-  const now = Date.now();
+  if (forcePurge) {
+    await fs.rm(dirPath, { recursive: true, force: true });
+    log.debug("Cache directory purged", { dirPath });
+    return;
+  }
 
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
+  const cacheFiles = await fs.readdir(dirPath);
+  log.trace("Found cache files", {
+    count: cacheFiles.length,
+  });
 
-    const filePath = path.join(dirPath, file);
+  for (const cacheFile of cacheFiles) {
+    if (!cacheFile.endsWith(".json")) continue;
+
+    const cacheFilePath = path.join(dirPath, cacheFile);
+    const cacheDirPath = path.join(dirPath, path.parse(cacheFile).name);
+
     try {
-      const content = await fs.readFile(filePath, "utf-8");
+      const content = await fs.readFile(cacheFilePath, "utf-8");
       const entry = JSON.parse(content) as CacheEntry;
 
-      if (forcePurge || now - entry.metadata.timestamp > CACHE_MAX_AGE_MS) {
-        await fs.unlink(filePath);
-        log.trace("Cache file removed", { file: filePath });
+      // Check if cache is outdated or orphaned
+      const isOutdatedVersion =
+        entry.metadata.version < TestRunRepository.VERSION;
+      // TODO: Check lineNumber once that is available
+      const testFileExists = existsSync(
+        path.join(process.cwd(), entry.test.filePath),
+      );
+
+      if (isOutdatedVersion || !testFileExists) {
+        await fs.unlink(cacheFilePath);
+        await fs.rm(cacheDirPath, { recursive: true, force: true });
+        log.trace("Cache removed", {
+          file: cacheFile,
+          reason: isOutdatedVersion
+            ? "outdated version"
+            : "test file no longer exists",
+        });
       }
     } catch (error) {
       log.error("Failed to process cache file", {
-        file: filePath,
+        file: cacheFilePath,
         ...getErrorDetails(error),
       });
-      await fs.unlink(filePath);
-      log.error("Invalid cache file removed", { file: filePath });
+      await fs.unlink(cacheFilePath);
+      await fs.rm(cacheDirPath, { recursive: true, force: true });
+      log.error("Invalid cache file removed", { file: cacheFilePath });
     }
   }
+  log.trace("Cache clean-up complete");
+  log.resetGroup();
 };
 
 /**
@@ -94,5 +120,31 @@ export const purgeLegacyCache = async ({
         ...getErrorDetails(error),
       });
     }
+  }
+};
+
+/**
+ * Removes legacy screenshots directory from older versions
+ *
+ * @private
+ */
+export const purgeLegacyScreenshots = async () => {
+  const log = getLogger();
+  const legacyScreenshotsPath = path.join(DOT_SHORTEST_DIR_PATH, "screenshots");
+
+  if (!(await directoryExists(legacyScreenshotsPath))) {
+    return;
+  }
+
+  log.warn(`Purging legacy screenshots directory: ${legacyScreenshotsPath}`);
+
+  try {
+    await fs.rm(legacyScreenshotsPath, { recursive: true, force: true });
+    log.debug(`Legacy screenshots directory ${legacyScreenshotsPath} purged`);
+  } catch (error) {
+    log.error("Failed to purge legacy screenshots directory", {
+      path: legacyScreenshotsPath,
+      ...getErrorDetails(error),
+    });
   }
 };

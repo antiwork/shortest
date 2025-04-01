@@ -1,6 +1,6 @@
 {
   "name": "@antiwork/shortest",
-  "version": "0.4.6",
+  "version": "0.4.9",
   "description": "AI-powered natural language end-to-end testing framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -30,20 +30,35 @@
     "build:types": "tsup src/index.ts --dts-only --format esm --outDir dist",
     "build:js": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:esbuild --external:punycode --external:playwright --external:expect --external:dotenv --external:ai --external:@ai-sdk/* --external:@babel/* --external:tty",
     "build:cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs --external:esbuild --external:punycode --external:playwright --external:expect --external:dotenv --external:ai --external:@ai-sdk/* --external:@babel/* --external:tty",
-    "build:cli": "esbuild src/cli/bin.ts --bundle --platform=node --format=esm --outdir=dist/cli --metafile=dist/meta-cli.json --external:fsevents --external:chokidar --external:glob --external:esbuild --external:events --external:path --external:fs --external:util --external:stream --external:os --external:assert --external:url --external:playwright --external:expect --external:dotenv --external:otplib --external:picocolors --external:punycode --external:https --external:http --external:net --external:tls --external:crypto --external:mailosaur --external:ai --external:@ai-sdk/* --external:@babel/* --external:tty --external:debug",
+    "build:cli": "node scripts/build-cli.js",
     "dev": "pnpm build --watch",
+    "cli": "node dist/cli/bin.js",
     "test:unit": "npx vitest run",
     "test:unit:watch": "npx vitest --watch",
     "test:e2e": "node --import tsx --test tests/e2e/index.ts",
     "cache:clear": "pnpm build && shortest cache clear --force-purge"
   },
   "dependencies": {
+    "@babel/code-frame": "^7.26.2",
+    "@babel/parser": "^7.26.9",
+    "@babel/traverse": "^7.26.9",
+    "@babel/types": "^7.26.9",
+    "@inquirer/prompts": "^7.4.0",
+    "@listr2/prompt-adapter-inquirer": "^2.0.18",
+    "@netlify/framework-info": "^9.9.2",
+    "@types/babel__traverse": "^7.20.6",
     "chromium-bidi": "^0.5.24",
+    "commander": "^13.1.0",
     "glob": "^10.4.5",
+    "globby": "^14.1.0",
+    "listr2": "^8.2.5",
     "otplib": "^12.0.1",
-    "picocolors": "^1.1.1"
+    "picocolors": "^1.1.1",
+    "simple-git": "^3.27.0"
   },
   "devDependencies": {
+    "@babel/generator": "^7.27.0",
+    "@types/babel__generator": "^7.6.8",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.17.17",
     "package-manager-detector": "0.2.9",
@@ -61,22 +76,18 @@
     "@ai-sdk/anthropic": "^1.1.15",
     "@ai-sdk/provider": "^1.0.10",
     "ai": "^4.1.53",
-    "@babel/parser": "^7.26.9",
-    "@babel/traverse": "^7.26.9",
-    "@babel/types": "^7.26.9",
-    "@types/babel__traverse": "^7.20.6",
     "dotenv": "^16.4.5",
     "esbuild": "^0.20.1",
     "expect": "^29.7.0",
     "mailosaur": "^8.7.0",
     "playwright": "^1.50.1"
   },
-  "author": "Anti-Work",
+  "author": "Antiwork",
   "license": "MIT",
   "repository": {
     "directory": "packages/shortest",
     "type": "git",
-    "url": "https://github.com/anti-work/shortest"
+    "url": "https://github.com/antiwork/shortest"
   },
   "keywords": [
     "testing",
@@ -87,9 +98,9 @@
     "playwright"
   ],
   "bugs": {
-    "url": "https://github.com/anti-work/shortest/issues"
+    "url": "https://github.com/antiwork/shortest/issues"
   },
-  "homepage": "https://github.com/anti-work/shortest#readme",
+  "homepage": "https://github.com/antiwork/shortest#readme",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

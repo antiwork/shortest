@@ -90,7 +90,7 @@ export interface BrowserConfig {
 export interface BrowserToolConfig {
   width: number;
   height: number;
-  testContext?: TestContext;
+  testContext: TestContext;
 }
 
 // eslint-disable-next-line zod/require-zod-schema-types

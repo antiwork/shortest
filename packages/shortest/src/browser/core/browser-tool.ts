@@ -7,13 +7,7 @@ declare global {
   }
 }
 
-import {
-  writeFileSync,
-  mkdirSync,
-  readdirSync,
-  statSync,
-  unlinkSync,
-} from "fs";
+import * as fs from "fs/promises";
 import { join } from "path";
 import { Page } from "playwright";
 import * as actions from "@/browser/actions";
@@ -21,8 +15,7 @@ import { BaseBrowserTool } from "@/browser/core";
 import { GitHubTool } from "@/browser/integrations/github";
 import { MailosaurTool } from "@/browser/integrations/mailosaur";
 import { BrowserManager } from "@/browser/manager";
-import { DOT_SHORTEST_DIR_PATH } from "@/cache";
-import { TestCase } from "@/core/runner/test-case";
+import { TestRunRepository } from "@/core/runner/test-run-repository";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger, Log } from "@/log/index";
 import { TestContext, BrowserToolConfig, ShortestConfig } from "@/types";
@@ -35,16 +28,15 @@ import {
 import { getErrorDetails, ToolError, TestError } from "@/utils/errors";
 
 export class BrowserTool extends BaseBrowserTool {
-  private page: Page;
-  private browserManager: BrowserManager;
   protected readonly toolType: BetaToolType = "computer_20241022";
   protected readonly toolName: string = "computer";
-  private screenshotDir: string;
+  private page: Page;
+  private browserManager: BrowserManager;
   private cursorVisible: boolean = true;
   private lastMousePosition: [number, number] = [0, 0];
   private githubTool?: GitHubTool;
   private viewport: { width: number; height: number };
-  private testContext?: TestContext;
+  private testContext: TestContext;
   private readonly MAX_SCREENSHOTS = 10;
   private readonly MAX_AGE_HOURS = 5;
   private mailosaurTool?: MailosaurTool;
@@ -58,8 +50,6 @@ export class BrowserTool extends BaseBrowserTool {
     super(config);
     this.page = page;
     this.browserManager = browserManager;
-    this.screenshotDir = join(DOT_SHORTEST_DIR_PATH, "screenshots");
-    mkdirSync(this.screenshotDir, { recursive: true });
     this.viewport = { width: config.width, height: config.height };
     this.testContext = config.testContext;
     this.log = getLogger();
@@ -70,135 +60,6 @@ export class BrowserTool extends BaseBrowserTool {
     });
 
     this.initialize();
-    this.cleanupScreenshots();
-  }
-
-  private async initialize(): Promise<void> {
-    await initializeConfig({});
-    this.config = getConfig();
-
-    const initWithRetry = async () => {
-      for (let i = 0; i < 3; i++) {
-        try {
-          await this.initializeCursor();
-          break;
-        } catch (error) {
-          this.log.debug("Cursor initialization failed", {
-            attempt: i + 1,
-            maxAttempts: 3,
-            error,
-          });
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-      }
-    };
-
-    await initWithRetry();
-
-    this.page.on("load", async () => {
-      this.log.trace("Re-initialize on navigation");
-      await initWithRetry();
-    });
-  }
-
-  private async initializeCursor(): Promise<void> {
-    try {
-      // Simpler check for page readiness
-      await this.page
-        .waitForLoadState("domcontentloaded", { timeout: 1000 })
-        .catch(() => {});
-
-      // Add styles only if they don't exist
-      const hasStyles = await this.page
-        .evaluate(() => !!document.querySelector("style[data-shortest-cursor]"))
-        .catch(() => false);
-
-      if (!hasStyles) {
-        // Create style element directly in evaluate
-        await this.page.evaluate(() => {
-          const style = document.createElement("style");
-          style.setAttribute("data-shortest-cursor", "true");
-          style.textContent = `
-            #ai-cursor {
-              width: 20px;
-              height: 20px;
-              border: 2px solid red;
-              border-radius: 50%;
-              position: fixed;
-              pointer-events: none;
-              z-index: 999999;
-              transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-              transform: translate(-50%, -50%);
-              background-color: rgba(255, 0, 0, 0.2);
-            }
-            #ai-cursor.clicking {
-              transform: translate(-50%, -50%) scale(0.8);
-              background-color: rgba(255, 0, 0, 0.4);
-            }
-            #ai-cursor-trail {
-              width: 8px;
-              height: 8px;
-              border-radius: 50%;
-              position: fixed;
-              pointer-events: none;
-              z-index: 999998;
-              background-color: rgba(255, 0, 0, 0.1);
-              transition: all 0.1s linear;
-              transform: translate(-50%, -50%);
-            }
-          `;
-          document.head.appendChild(style);
-        });
-      }
-
-      // Initialize cursor elements with position persistence
-      await this.page.evaluate(() => {
-        if (!document.getElementById("ai-cursor")) {
-          const cursor = document.createElement("div");
-          cursor.id = "ai-cursor";
-          document.body.appendChild(cursor);
-
-          const trail = document.createElement("div");
-          trail.id = "ai-cursor-trail";
-          document.body.appendChild(trail);
-
-          // Restore or initialize position
-          window.cursorPosition ||= { x: 0, y: 0 };
-          window.lastPosition ||= { x: 0, y: 0 };
-
-          // Set initial position
-          cursor.style.left = window.cursorPosition.x + "px";
-          cursor.style.top = window.cursorPosition.y + "px";
-          trail.style.left = window.cursorPosition.x + "px";
-          trail.style.top = window.cursorPosition.y + "px";
-
-          // Update handler
-          const updateCursor = (x: number, y: number) => {
-            window.cursorPosition = { x, y };
-            cursor.style.left = `${x}px`;
-            cursor.style.top = `${y}px`;
-
-            requestAnimationFrame(() => {
-              trail.style.left = `${x}px`;
-              trail.style.top = `${y}px`;
-            });
-          };
-
-          document.addEventListener("mousemove", (e) => {
-            window.lastPosition = window.cursorPosition;
-            updateCursor(e.clientX, e.clientY);
-          });
-        }
-      });
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        !error.message.includes("context was destroyed") &&
-        !error.message.includes("Target closed")
-      ) {
-        this.log.error("Cursor initialization failed", getErrorDetails(error));
-      }
-    }
   }
 
   public async click(selector: string): Promise<void> {
@@ -415,26 +276,20 @@ export class BrowserTool extends BaseBrowserTool {
           };
 
         case InternalActionEnum.RUN_CALLBACK: {
-          if (!this.testContext?.currentTest) {
-            throw new ToolError(
-              "No test context available for callback execution",
-            );
-          }
-
           const testContext = this.testContext;
-          const currentTest = testContext.currentTest as TestCase;
+          const testCase = testContext.testRun.testCase;
 
           const currentStepIndex = testContext.currentStepIndex ?? 0;
 
           try {
-            if (currentStepIndex === 0 && currentTest.fn) {
-              await currentTest.fn(testContext);
+            if (currentStepIndex === 0 && testCase.fn) {
+              await testCase.fn(testContext);
               testContext.currentStepIndex = 1;
               return { output: "Test function executed successfully" };
             }
             // Handle expectations
             const expectationIndex = currentStepIndex - 1;
-            const expectation = currentTest.expectations?.[expectationIndex];
+            const expectation = testCase.expectations?.[expectationIndex];
 
             if (expectation?.fn) {
               await expectation.fn(this.testContext);
@@ -739,97 +594,6 @@ export class BrowserTool extends BaseBrowserTool {
         ];
   }
 
-  private async getMetadata(): Promise<any> {
-    const metadata: any = {
-      window_info: {},
-      cursor_info: { position: [0, 0], visible: true },
-    };
-
-    try {
-      // Try to get basic page info first
-      let url: string;
-      let title: string;
-
-      try {
-        url = await this.page.url();
-      } catch {
-        url = "navigating...";
-      }
-
-      try {
-        title = await this.page.title();
-      } catch {
-        title = "loading...";
-      }
-
-      metadata.window_info = {
-        url,
-        title,
-        size: this.page.viewportSize() || {
-          width: this.width,
-          height: this.height,
-        },
-      };
-
-      // Only try to get cursor position if page is stable
-      if (await this.isPageStable()) {
-        const position = await actions.getCursorPosition(this.page);
-        metadata.cursor_info = {
-          position,
-          visible: this.cursorVisible,
-        };
-      }
-
-      return metadata;
-    } catch (error) {
-      this.log.debug("Failed to get metadata:", { error });
-      // Return whatever metadata we collected
-      return metadata;
-    }
-  }
-
-  private async isPageStable(): Promise<boolean> {
-    try {
-      // Quick check if page is in a stable state
-      return await this.page
-        .evaluate(
-          () =>
-            document.readyState === "complete" &&
-            !document.querySelector(".loading") &&
-            !document.querySelector(".cl-loading"),
-        )
-        .catch(() => false);
-    } catch {
-      return false;
-    }
-  }
-
-  private async takeScreenshotWithMetadata(): Promise<ToolResult> {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filePath = join(this.screenshotDir, `screenshot-${timestamp}.png`);
-
-    const buffer = await this.page.screenshot({
-      type: "jpeg",
-      quality: 50,
-      scale: "device",
-      fullPage: false,
-    });
-
-    writeFileSync(filePath, buffer);
-    const filePathWithoutCwd = filePath.replace(process.cwd() + "/", "");
-
-    const browserMetadata = await this.getMetadata();
-    this.log.trace("Screenshot saved", {
-      filePath: filePathWithoutCwd,
-      ...browserMetadata["window_info"],
-    });
-    return {
-      output: "Screenshot taken",
-      base64_image: buffer.toString("base64"),
-      metadata: browserMetadata,
-    };
-  }
-
   toToolParameters() {
     return {
       type: this.toolType,
@@ -875,40 +639,6 @@ export class BrowserTool extends BaseBrowserTool {
 
   updateTestContext(newContext: TestContext) {
     this.testContext = newContext;
-  }
-
-  private cleanupScreenshots(): void {
-    try {
-      const files = readdirSync(this.screenshotDir)
-        .filter((file) => file.endsWith(".png") || file.endsWith(".jpg"))
-        .map((file) => ({
-          name: file,
-          path: join(this.screenshotDir, file),
-          time: statSync(join(this.screenshotDir, file)).mtime.getTime(),
-        }))
-        .sort((a, b) => b.time - a.time); // newest first
-
-      const now = Date.now();
-      const fiveHoursMs = this.MAX_AGE_HOURS * 60 * 60 * 1000;
-
-      files.forEach((file, index) => {
-        const isOld = now - file.time > fiveHoursMs;
-        const isBeyondLimit = index >= this.MAX_SCREENSHOTS;
-
-        if (isOld || isBeyondLimit) {
-          try {
-            unlinkSync(file.path);
-          } catch (error: unknown) {
-            this.log.error(
-              "Failed to delete screenshot",
-              getErrorDetails(error),
-            );
-          }
-        }
-      });
-    } catch (error) {
-      this.log.error("Failed to clean up screenshots", getErrorDetails(error));
-    }
   }
 
   async showCursor(): Promise<void> {
@@ -1019,5 +749,231 @@ export class BrowserTool extends BaseBrowserTool {
         ],
       },
     );
+  }
+
+  private async initialize(): Promise<void> {
+    await initializeConfig({});
+    this.config = getConfig();
+
+    const initWithRetry = async () => {
+      for (let i = 0; i < 3; i++) {
+        try {
+          await this.initializeCursor();
+          break;
+        } catch (error) {
+          this.log.debug("Cursor initialization failed", {
+            attempt: i + 1,
+            maxAttempts: 3,
+            error,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+    };
+
+    await initWithRetry();
+
+    this.page.on("load", async () => {
+      this.log.trace("Re-initialize on navigation");
+      await initWithRetry();
+    });
+  }
+
+  private async initializeCursor(): Promise<void> {
+    try {
+      // Simpler check for page readiness
+      await this.page
+        .waitForLoadState("domcontentloaded", { timeout: 1000 })
+        .catch(() => {});
+
+      // Add styles only if they don't exist
+      const hasStyles = await this.page
+        .evaluate(() => !!document.querySelector("style[data-shortest-cursor]"))
+        .catch(() => false);
+
+      if (!hasStyles) {
+        // Create style element directly in evaluate
+        await this.page.evaluate(() => {
+          const style = document.createElement("style");
+          style.setAttribute("data-shortest-cursor", "true");
+          style.textContent = `
+            #ai-cursor {
+              width: 20px;
+              height: 20px;
+              border: 2px solid red;
+              border-radius: 50%;
+              position: fixed;
+              pointer-events: none;
+              z-index: 999999;
+              transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+              transform: translate(-50%, -50%);
+              background-color: rgba(255, 0, 0, 0.2);
+            }
+            #ai-cursor.clicking {
+              transform: translate(-50%, -50%) scale(0.8);
+              background-color: rgba(255, 0, 0, 0.4);
+            }
+            #ai-cursor-trail {
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+              position: fixed;
+              pointer-events: none;
+              z-index: 999998;
+              background-color: rgba(255, 0, 0, 0.1);
+              transition: all 0.1s linear;
+              transform: translate(-50%, -50%);
+            }
+          `;
+          document.head.appendChild(style);
+        });
+      }
+
+      // Initialize cursor elements with position persistence
+      await this.page.evaluate(() => {
+        if (!document.getElementById("ai-cursor")) {
+          const cursor = document.createElement("div");
+          cursor.id = "ai-cursor";
+          document.body.appendChild(cursor);
+
+          const trail = document.createElement("div");
+          trail.id = "ai-cursor-trail";
+          document.body.appendChild(trail);
+
+          // Restore or initialize position
+          window.cursorPosition ||= { x: 0, y: 0 };
+          window.lastPosition ||= { x: 0, y: 0 };
+
+          // Set initial position
+          cursor.style.left = window.cursorPosition.x + "px";
+          cursor.style.top = window.cursorPosition.y + "px";
+          trail.style.left = window.cursorPosition.x + "px";
+          trail.style.top = window.cursorPosition.y + "px";
+
+          // Update handler
+          const updateCursor = (x: number, y: number) => {
+            window.cursorPosition = { x, y };
+            cursor.style.left = `${x}px`;
+            cursor.style.top = `${y}px`;
+
+            requestAnimationFrame(() => {
+              trail.style.left = `${x}px`;
+              trail.style.top = `${y}px`;
+            });
+          };
+
+          document.addEventListener("mousemove", (e) => {
+            window.lastPosition = window.cursorPosition;
+            updateCursor(e.clientX, e.clientY);
+          });
+        }
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        !error.message.includes("context was destroyed") &&
+        !error.message.includes("Target closed")
+      ) {
+        this.log.error("Cursor initialization failed", getErrorDetails(error));
+      }
+    }
+  }
+
+  private async getMetadata(): Promise<any> {
+    const metadata: any = {
+      window_info: {},
+      cursor_info: { position: [0, 0], visible: true },
+    };
+
+    try {
+      // Try to get basic page info first
+      let url: string;
+      let title: string;
+
+      try {
+        url = await this.page.url();
+      } catch {
+        url = "navigating...";
+      }
+
+      try {
+        title = await this.page.title();
+      } catch {
+        title = "loading...";
+      }
+
+      metadata.window_info = {
+        url,
+        title,
+        size: this.page.viewportSize() || {
+          width: this.width,
+          height: this.height,
+        },
+      };
+
+      // Only try to get cursor position if page is stable
+      if (await this.isPageStable()) {
+        const position = await actions.getCursorPosition(this.page);
+        metadata.cursor_info = {
+          position,
+          visible: this.cursorVisible,
+        };
+      }
+
+      return metadata;
+    } catch (error) {
+      this.log.debug("Failed to get metadata:", { error });
+      // Return whatever metadata we collected
+      return metadata;
+    }
+  }
+
+  private async isPageStable(): Promise<boolean> {
+    try {
+      // Quick check if page is in a stable state
+      return await this.page
+        .evaluate(
+          () =>
+            document.readyState === "complete" &&
+            !document.querySelector(".loading") &&
+            !document.querySelector(".cl-loading"),
+        )
+        .catch(() => false);
+    } catch {
+      return false;
+    }
+  }
+
+  private async takeScreenshotWithMetadata(): Promise<ToolResult> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+    const testRun = this.testContext.testRun;
+    const repository = TestRunRepository.getRepositoryForTestCase(
+      testRun.testCase,
+    );
+    const testRunDirPath = await repository.ensureTestRunDirPath(testRun);
+    const screenshotPath = join(testRunDirPath, `screenshot-${timestamp}.png`);
+
+    const buffer = await this.page.screenshot({
+      type: "jpeg",
+      quality: 50,
+      scale: "device",
+      fullPage: false,
+    });
+
+    await fs.writeFile(screenshotPath, buffer);
+    const filePathWithoutCwd = screenshotPath.replace(process.cwd() + "/", "");
+
+    const browserMetadata = await this.getMetadata();
+    this.log.trace("Screenshot saved", {
+      filePath: filePathWithoutCwd,
+      ...browserMetadata["window_info"],
+    });
+
+    return {
+      output: "Screenshot taken",
+      base64_image: buffer.toString("base64"),
+      metadata: browserMetadata,
+    };
   }
 }

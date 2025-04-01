@@ -1,3 +1,4 @@
+import { Writable } from "node:stream";
 import pc from "picocolors";
 import { LogFormat, LOG_LEVELS } from "@/log/config";
 import { LogEvent } from "@/log/event";
@@ -38,34 +39,32 @@ export class LogOutput {
   static render(
     event: LogEvent,
     format: LogFormat,
+    outputStream: Writable,
     group?: LogGroup,
   ): void | boolean {
     let output = "";
 
-    const CONSOLE_METHODS = {
-      trace: "log",
-      debug: "debug",
-      info: "info",
-      warn: "warn",
-      error: "error",
-      silent: "log",
-    } as const;
-
-    const consoleMethod = CONSOLE_METHODS[event.level] || "log";
-
     switch (format) {
       case "terminal":
         output = LogOutput.renderForTerminal(event, group);
-        return console[consoleMethod](output);
+        break;
       case "reporter":
         output = LogOutput.renderForReporter(event, group);
-        return process.stdout.write(`${output}\n`);
+        break;
       default:
         throw new ConfigError(
           "invalid-config",
           `Unsupported log format: ${format}`,
         );
     }
+
+    let stream = outputStream;
+    if (outputStream === process.stdout) {
+      if (event.level === "error" || event.level === "warn") {
+        stream = process.stderr;
+      }
+    }
+    stream.write(`${output}\n`);
   }
 
   private static renderForReporter(event: LogEvent, group?: LogGroup): string {

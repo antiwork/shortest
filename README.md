@@ -20,7 +20,7 @@ Your browser does not support the video tag.
 
 ## Using Shortest in your project
 
-If helpful, [here's a short video](https://github.com/anti-work/shortest/issues/143#issuecomment-2564488173)!
+If helpful, [here's a short video](https://github.com/antiwork/shortest/issues/143#issuecomment-2564488173)!
 
 ### Installation
 
@@ -60,7 +60,7 @@ export default {
   },
 } satisfies ShortestConfig;
 ```
-Anthropic API key will default to `SHORTEST_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` environment variables. Can be overwritten via `ai.config.apiKey`.
+The Anthropic API key defaults to `SHORTEST_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` environment variables. Can be overwritten via `ai.config.apiKey`.
 
 Optionally, you can configure browser behavior using the `browser.contextOptions` property in your configuration file. This allows you to pass custom [Playwright browser context options](https://playwright.dev/docs/api/class-browser#browser-new-context).
 
@@ -209,7 +209,7 @@ You can find example tests in the [`examples`](./examples) directory.
 
 You can run Shortest in your CI/CD pipeline by running tests in headless mode. Make sure to add your Anthropic API key to your CI/CD pipeline secrets.
 
-[See example here](https://github.com/anti-work/shortest/blob/main/.github/workflows/shortest.yml)
+[See example here](https://github.com/antiwork/shortest/blob/main/.github/workflows/shortest.yml)
 
 ### GitHub 2FA login setup
 
@@ -259,7 +259,7 @@ This guide will help you set up the Shortest web app for local development.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/anti-work/shortest.git
+git clone https://github.com/antiwork/shortest.git
 cd shortest
 ```
 
@@ -272,7 +272,7 @@ pnpm install
 
 ### Environment setup
 
-#### For Anti-Work team members
+#### For Antiwork team members
 
 Pull Vercel env vars:
 
@@ -297,7 +297,7 @@ pnpm db:seed # creates stripe products, currently unused
 
 ### Services configuration
 
-You'll need to set up the following services for local development. If you're not a Anti-Work Vercel team member, you'll need to either run the setup wizard `pnpm run setup` or manually configure each of these services and add the corresponding environment variables to your `.env.local` file:
+You'll need to set up the following services for local development. If you're not an Antiwork Vercel team member, you'll need to either run the setup wizard `pnpm run setup` or manually configure each of these services and add the corresponding environment variables to your `.env.local` file:
 
 <details>
 <summary>Clerk</summary>

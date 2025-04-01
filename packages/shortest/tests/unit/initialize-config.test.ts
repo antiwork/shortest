@@ -148,7 +148,7 @@ describe("initializeConfig", () => {
       const cliOptions = {
         headless: true,
         baseUrl: "https://other.example.com",
-        testPattern: "**/*.test.ts",
+        testPattern: "custom-pattern/**/*.test.ts",
         noCache: true,
       };
       const { initializeConfig } = await import("@/index");
@@ -157,7 +157,7 @@ describe("initializeConfig", () => {
         headless: true,
         baseUrl: "https://other.example.com",
         browser: {},
-        testPattern: "**/*.test.ts",
+        testPattern: "custom-pattern/**/*.test.ts",
         ai: {
           provider: "anthropic",
           apiKey: "test-key",
