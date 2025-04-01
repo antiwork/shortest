@@ -76,3 +76,5 @@ export type TestAPI = {
   afterEach(fn: (context: TestContext) => Promise<void>): void;
   afterEach(name: string, fn: (context: TestContext) => Promise<void>): void;
 };
+
+export type { Page } from "playwright";
