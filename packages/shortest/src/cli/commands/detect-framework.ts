@@ -17,8 +17,10 @@ detectFrameworkCommand
     ),
   )
   .action(async function () {
-    await executeCommand(this.name(), this.optsWithGlobals(), async () =>
-      executeDetectFrameworkCommand(this.opts()),
+    await executeCommand(
+      this.name(),
+      this.optsWithGlobals(),
+      async () => await executeDetectFrameworkCommand(this.opts()),
     );
   })
   .showHelpAfterError("(add --help for additional information)");

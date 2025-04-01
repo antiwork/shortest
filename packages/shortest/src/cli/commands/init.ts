@@ -130,7 +130,7 @@ export const executeInitCommand = async () => {
                     [
                       {
                         title: `Checking for ${ENV_LOCAL_FILENAME}`,
-                        task: async (ctx, task) => {
+                        task: (ctx, task) => {
                           ctx.envFile = new EnvFile(
                             process.cwd(),
                             ENV_LOCAL_FILENAME,
@@ -144,12 +144,14 @@ export const executeInitCommand = async () => {
                       },
                       {
                         title: `Adding Anthropic API key`,
-                        task: async (_, task): Promise<Listr> =>
-                          task.newListr(
+                        task: async (_, task): Promise<Listr> => {
+                          await Promise.resolve();
+                          return task.newListr(
                             (parent) => [
                               {
                                 title: "Checking for Anthropic API key",
                                 task: async (ctx, _) => {
+                                  await Promise.resolve();
                                   ctx.anthropicApiKeyExists =
                                     ctx.envFile.keyExists("ANTHROPIC_API_KEY");
                                 },
@@ -214,12 +216,14 @@ export const executeInitCommand = async () => {
                                 collapseSubtasks: true,
                               },
                             },
-                          ),
+                          );
+                        },
                       },
                       {
                         title: "Adding Shortest login credentials for testing",
-                        task: async (_, task): Promise<Listr> =>
-                          task.newListr([
+                        task: async (_, task): Promise<Listr> => {
+                          await Promise.resolve();
+                          return task.newListr([
                             {
                               title: "Enter the email for the test account",
                               task: async (ctx, task) =>
@@ -270,7 +274,8 @@ export const executeInitCommand = async () => {
                                 }
                               },
                             },
-                          ]),
+                          ]);
+                        },
                       },
                     ],
                     {
@@ -325,8 +330,9 @@ export const executeInitCommand = async () => {
       {
         title: "Generate sample test file",
         skip: (ctx): boolean => !ctx.generateSampleTestFile,
-        task: async (_, task): Promise<Listr> =>
-          task.newListr(
+        task: async (_, task): Promise<Listr> => {
+          await Promise.resolve();
+          return task.newListr(
             [
               {
                 title: "Detecting Next.js framework",
@@ -407,7 +413,8 @@ export const executeInitCommand = async () => {
                 collapseSubtasks: false,
               },
             },
-          ),
+          );
+        },
       },
     ],
     {

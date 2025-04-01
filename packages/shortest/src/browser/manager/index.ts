@@ -99,7 +99,7 @@ export class BrowserManager {
     return this.context;
   }
 
-  async recreateContext(): Promise<BrowserContext> {
+  recreateContext(): Promise<BrowserContext> {
     return this.clearContext();
   }
 

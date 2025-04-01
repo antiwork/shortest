@@ -61,7 +61,7 @@ const main = async () => {
   }
 };
 
-main().catch(async (error) => {
+main().catch((error) => {
   const log = getLogger();
   log.trace("Handling error in main catch block");
   if (!(error instanceof ShortestError)) throw error;

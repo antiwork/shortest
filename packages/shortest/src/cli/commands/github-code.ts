@@ -29,15 +29,17 @@ githubCodeCommand
     new Option("--log-level <level>", "Set logging level").choices(LOG_LEVELS),
   )
   .action(async function () {
-    await executeCommand(this.name(), this.optsWithGlobals(), async () =>
-      executeGithubCodeCommand(this.opts().secret),
+    await executeCommand(
+      this.name(),
+      this.optsWithGlobals(),
+      async () => await executeGithubCodeCommand(this.opts().secret),
     );
   })
   .showHelpAfterError("(add --help for additional information)");
 
 const executeGithubCodeCommand = async (secret: string) => {
   const github = new GitHubTool(secret);
-  const { code, timeRemaining } = github.generateTOTPCode();
+  const { code, timeRemaining } = await github.generateTOTPCode();
 
   console.log("\n" + pc.bgCyan(pc.black(" GitHub 2FA Code ")));
   console.log(pc.cyan("Code: ") + pc.bold(code));

@@ -20,8 +20,10 @@ generateCommand
     ).default(false),
   )
   .action(async function () {
-    await executeCommand(this.name(), this.optsWithGlobals(), async () =>
-      executeGenerateCommand(this.opts()),
+    await executeCommand(
+      this.name(),
+      this.optsWithGlobals(),
+      async () => await executeGenerateCommand(this.opts()),
     );
   })
   .showHelpAfterError("(add --help for additional information)");

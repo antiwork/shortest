@@ -18,8 +18,10 @@ analyzeCommand
     ),
   )
   .action(async function () {
-    await executeCommand(this.name(), this.optsWithGlobals(), async () =>
-      executeAnalyzeCommand(this.opts()),
+    await executeCommand(
+      this.name(),
+      this.optsWithGlobals(),
+      async () => await executeAnalyzeCommand(this.opts()),
     );
   })
   .showHelpAfterError("(add --help for additional information)");
