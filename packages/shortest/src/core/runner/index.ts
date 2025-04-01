@@ -1,29 +1,47 @@
 import { pathToFileURL } from "url";
+
 import { glob } from "glob";
+
 import { APIRequest, BrowserContext } from "playwright";
+
 import * as playwright from "playwright";
+
 import { request, APIRequestContext } from "playwright";
+
 import { z } from "zod";
+
 import { AIClient, AIClientResponse } from "@/ai/client";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { BrowserManager } from "@/browser/manager";
+
 import { TestCompiler } from "@/core/compiler";
+
 import { TestCase } from "@/core/runner/test-case";
+
 import {
   EXPRESSION_PLACEHOLDER,
   parseShortestTestFile,
 } from "@/core/runner/test-file-parser";
+
 import { TestReporter } from "@/core/runner/test-reporter";
+
 import { TestRun } from "@/core/runner/test-run";
+
 import { TestRunRepository } from "@/core/runner/test-run-repository";
+
 import { getLogger, Log } from "@/log";
+
 import {
   TestContext,
   InternalActionEnum,
   ShortestStrictConfig,
   TestFileContext,
 } from "@/types";
+
 import { assertDefined } from "@/utils/assert";
+
 import {
   CacheError,
   getErrorDetails,

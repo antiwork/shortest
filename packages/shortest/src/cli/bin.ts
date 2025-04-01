@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import pc from "picocolors";
+
 import {
   shortestCommand,
   githubCodeCommand,
@@ -11,7 +12,9 @@ import {
   planCommand,
   generateCommand,
 } from "@/cli/commands";
+
 import { getLogger } from "@/log/index";
+
 import { ShortestError } from "@/utils/errors";
 
 process.removeAllListeners("warning");

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+
 import { assert, assertDefined } from "@/utils/assert";
+
 import { ShortestError } from "@/utils/errors";
 
 describe("assert", () => {

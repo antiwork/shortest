@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+
 import { LogGroup } from "../app/(dashboard)/dashboard/types";
 
 export const useLogGroups = (logs: string | undefined) => {

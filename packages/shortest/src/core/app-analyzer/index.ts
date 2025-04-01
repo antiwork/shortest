@@ -1,10 +1,17 @@
 import fs from "fs/promises";
+
 import path from "path";
+
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
+
 import { NextJsAnalyzer } from "@/core/app-analyzer/next-js-analyzer";
+
 import { AppAnalysis } from "@/core/app-analyzer/types";
+
 import { getProjectInfo } from "@/core/framework-detector";
+
 import { getLogger } from "@/log";
+
 import { ShortestError, getErrorDetails } from "@/utils/errors";
 
 export interface FrameworkInfo {

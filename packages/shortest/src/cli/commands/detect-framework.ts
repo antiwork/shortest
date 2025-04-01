@@ -1,6 +1,9 @@
 import { Command, Option } from "commander";
+
 import { executeCommand } from "@/cli/utils/command-builder";
+
 import { detectFramework } from "@/core/framework-detector";
+
 import { LOG_LEVELS } from "@/log/config";
 
 export const detectFrameworkCommand = new Command(

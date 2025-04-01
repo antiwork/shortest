@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
 import { Log } from "@/log/log";
+
 import { LogOutput } from "@/log/output";
+
 import { ConfigError } from "@/utils/errors";
 
 vi.mock("@/log/output", () => ({

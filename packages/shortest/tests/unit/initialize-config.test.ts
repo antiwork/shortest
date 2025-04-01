@@ -1,5 +1,7 @@
 import fs from "fs/promises";
+
 import path from "path";
+
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 describe("initializeConfig", () => {

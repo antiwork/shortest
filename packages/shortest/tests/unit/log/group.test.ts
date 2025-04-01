@@ -1,5 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
 import { LogGroup } from "@/log/group";
+
 import { Log } from "@/log/log";
 
 describe("LogGroup", () => {

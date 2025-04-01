@@ -1,10 +1,17 @@
 import { execSync } from "child_process";
+
 import { URL } from "url";
+
 import pc from "picocolors";
+
 import { Browser, BrowserContext, chromium } from "playwright";
+
 import { getLogger, Log } from "@/log/index";
+
 import { ShortestConfig } from "@/types/config";
+
 import { ShortestError } from "@/utils/errors";
+
 import { getInstallationCommand } from "@/utils/platform";
 
 export class BrowserManager {

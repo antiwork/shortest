@@ -8,23 +8,36 @@ declare global {
 }
 
 import * as fs from "fs/promises";
+
 import { join } from "path";
+
 import { Page } from "playwright";
+
 import * as actions from "@/browser/actions";
+
 import { BaseBrowserTool } from "@/browser/core";
+
 import { GitHubTool } from "@/browser/integrations/github";
+
 import { MailosaurTool } from "@/browser/integrations/mailosaur";
+
 import { BrowserManager } from "@/browser/manager";
+
 import { TestRunRepository } from "@/core/runner/test-run-repository";
+
 import { getConfig, initializeConfig } from "@/index";
+
 import { getLogger, Log } from "@/log/index";
+
 import { TestContext, BrowserToolConfig, ShortestConfig } from "@/types";
+
 import {
   ActionInput,
   ToolResult,
   BetaToolType,
   InternalActionEnum,
 } from "@/types/browser";
+
 import { getErrorDetails, ToolError, TestError } from "@/utils/errors";
 
 export class BrowserTool extends BaseBrowserTool {

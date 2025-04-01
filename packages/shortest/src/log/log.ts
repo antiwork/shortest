@@ -1,11 +1,19 @@
 import { Writable } from "node:stream";
+
 import pc from "picocolors";
+
 import { z } from "zod";
+
 import { LOG_LEVELS, LogLevel, LogConfig, LogConfigSchema } from "@/log/config";
+
 import { LogEvent } from "@/log/event";
+
 import { LogGroup } from "@/log/group";
+
 import { LogOutput } from "@/log/output";
+
 import { formatZodError } from "@/utils/errors";
+
 import { ConfigError } from "@/utils/errors";
 
 /**

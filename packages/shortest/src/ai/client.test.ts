@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { AIClient } from "./client";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { createTestCase } from "@/core/runner/test-case";
+
 import { TestRun } from "@/core/runner/test-run";
+
 import { ActionInput, ToolResult } from "@/types/browser";
+
 import { AIError } from "@/utils/errors";
 
 vi.mock("ai", () => ({

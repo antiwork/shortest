@@ -1,7 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+
 import { LOG_LEVELS } from "@/log/config";
+
 import { LogEvent } from "@/log/event";
+
 import { LogGroup } from "@/log/group";
+
 import { LogOutput } from "@/log/output";
 
 // Mock only what we need to verify - the colors and console output

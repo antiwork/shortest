@@ -1,4 +1,5 @@
 import { Page } from "playwright";
+
 import { ToolError } from "@/utils/errors";
 
 export const keyboardShortcuts: Record<string, string | string[]> = {

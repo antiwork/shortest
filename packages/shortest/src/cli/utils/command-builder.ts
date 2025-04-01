@@ -1,5 +1,7 @@
 import { LogLevel } from "@/log/config";
+
 import { getLogger } from "@/log/index";
+
 import { getErrorDetails } from "@/utils/errors";
 
 interface GlobalOptions {

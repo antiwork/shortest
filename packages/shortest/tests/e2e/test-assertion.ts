@@ -1,4 +1,5 @@
 import pc from "picocolors";
+
 import { test } from "@/index";
 
 export const main = async () => {

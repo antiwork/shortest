@@ -80,7 +80,6 @@ export default [
           "error",
           { blankLine: "always", prev: "expression", next: "expression" },
           { blankLine: "always", prev: "import", next: "*" },
-          { blankLine: "never", prev: "import", next: "import" },
         ],
       "prettier/prettier": [
         "error",

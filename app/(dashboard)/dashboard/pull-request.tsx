@@ -1,6 +1,7 @@
 "use client";
 
 import { experimental_useObject as useObject } from "ai/react";
+
 import {
   GitPullRequestDraft,
   GitPullRequest,
@@ -13,18 +14,31 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+
 import dynamic from "next/dynamic";
+
 import Link from "next/link";
+
 import { useState, useCallback, useEffect } from "react";
+
 import useSWR from "swr";
+
 import { LogView } from "./log-view";
+
 import { PullRequest, TestFile, LogGroup } from "./types";
+
 import { TestFileSchema } from "@/app/api/generate-tests/schema";
+
 import { Button } from "@/components/ui/button";
+
 import { Checkbox } from "@/components/ui/checkbox";
+
 import { Input } from "@/components/ui/input";
+
 import { useLogGroups } from "@/hooks/use-log-groups";
+
 import { useToast } from "@/hooks/use-toast";
+
 import {
   commitChangesToPullRequest,
   getPullRequestInfo,
@@ -33,6 +47,7 @@ import {
   fetchBuildStatus,
   getWorkflowLogs,
 } from "@/lib/github";
+
 import { cn } from "@/lib/utils";
 
 const ReactDiffViewer = dynamic(() => import("react-diff-viewer"), {

@@ -1,5 +1,7 @@
 import { simpleGit, SimpleGit } from "simple-git";
+
 import { getLogger } from "@/log";
+
 import { getErrorDetails } from "@/utils/errors";
 
 export interface GitInfo {

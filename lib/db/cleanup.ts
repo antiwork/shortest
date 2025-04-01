@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
+
 import { sql } from "drizzle-orm";
+
 import { db, client } from "@/lib/db/drizzle";
 
 dotenv.config({ path: ".env.local" });

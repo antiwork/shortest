@@ -1,11 +1,19 @@
 import { join } from "path";
+
 import dotenv from "dotenv";
+
 import { expect as jestExpect } from "expect";
+
 import { APIRequest } from "@/browser/core/api-request";
+
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
+
 import { TestCompiler } from "@/core/compiler";
+
 import { createTestCase, TestCase } from "@/core/runner/test-case";
+
 import { getLogger } from "@/log";
+
 import {
   TestAPI,
   TestContext,
@@ -13,8 +21,11 @@ import {
   ShortestStrictConfig,
   CLIOptions,
 } from "@/types";
+
 import { parseConfig } from "@/utils/config";
+
 import { ConfigError, ShortestError } from "@/utils/errors";
+
 // to include the global expect in the generated d.ts file
 import "./globals";
 

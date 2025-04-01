@@ -1,12 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { createAnthropicBash20241022 } from "@/ai/tools/anthropic/bash_20241022";
+
 import { createAnthropicComputer20241022 } from "@/ai/tools/anthropic/computer_20241022";
+
 import { createCheckEmailTool } from "@/ai/tools/custom/check_email";
+
 import { createGithubLoginTool } from "@/ai/tools/custom/github_login";
+
 import { createNavigateTool } from "@/ai/tools/custom/navigate";
+
 import { createRunCallbackTool } from "@/ai/tools/custom/run_callback";
+
 import { createSleepTool } from "@/ai/tools/custom/sleep";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { createToolRegistry } from "@/tools/index";
 
 describe("tools/index", () => {

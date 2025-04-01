@@ -1,8 +1,13 @@
 import { Command, Option } from "commander";
+
 import pc from "picocolors";
+
 import { GitHubTool } from "@/browser/integrations/github";
+
 import { executeCommand } from "@/cli/utils/command-builder";
+
 import { ENV_LOCAL_FILENAME } from "@/constants";
+
 import { LOG_LEVELS } from "@/log/config";
 
 export const githubCodeCommand = new Command("github-code")

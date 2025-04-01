@@ -1,7 +1,9 @@
 "use client";
 
 import { Loader2, ChevronRight, ChevronDown } from "lucide-react";
+
 import { useRef, useState } from "react";
+
 import { LogGroup } from "./types";
 
 interface LogViewProps {

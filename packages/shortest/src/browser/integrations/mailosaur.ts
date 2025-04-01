@@ -1,4 +1,5 @@
 import Mailosaur from "mailosaur";
+
 import { ToolError } from "@/utils/errors";
 
 export class MailosaurTool {

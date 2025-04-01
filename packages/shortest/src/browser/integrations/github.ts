@@ -1,7 +1,11 @@
 import dotenv from "dotenv";
+
 import { authenticator } from "otplib";
+
 import { ENV_LOCAL_FILENAME } from "@/constants";
+
 import { BrowserToolInterface } from "@/types/browser";
+
 import { ConfigError, ShortestError } from "@/utils/errors";
 
 export class GitHubTool {

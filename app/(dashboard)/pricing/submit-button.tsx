@@ -1,7 +1,9 @@
 "use client";
 
 import { ArrowRight, Loader2 } from "lucide-react";
+
 import { useFormStatus } from "react-dom";
+
 import { Button } from "@/components/ui/button";
 
 export const SubmitButton = () => {

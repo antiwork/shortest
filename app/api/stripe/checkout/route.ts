@@ -1,5 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
+
 import { NextRequest, NextResponse } from "next/server";
+
 import { stripe, handleSubscriptionChange } from "@/lib/payments/stripe";
 
 export const GET = async (request: NextRequest) => {

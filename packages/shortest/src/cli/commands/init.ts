@@ -1,37 +1,62 @@
 import { spawn } from "node:child_process";
+
 import { readFile } from "node:fs/promises";
+
 import { Writable } from "node:stream";
+
 import { join } from "path";
+
 import type { Readable } from "stream";
+
 import { select, input, confirm, password } from "@inquirer/prompts";
+
 import { ListrInquirerPromptAdapter } from "@listr2/prompt-adapter-inquirer";
+
 import { Command, Option } from "commander";
+
 import {
   Listr,
   SimpleRenderer,
   ListrTaskWrapper as TaskWrapper,
   DefaultRenderer,
 } from "listr2";
+
 import { detect, resolveCommand } from "package-manager-detector";
+
 import pc from "picocolors";
+
 import { generateConfigFile } from "./init/generate-config-file";
+
 import { DOT_SHORTEST_DIR_NAME } from "@/cache";
+
 import { executeCommand } from "@/cli/utils/command-builder";
+
 import { CONFIG_FILENAME, ENV_LOCAL_FILENAME } from "@/constants";
+
 import {
   AppAnalyzer,
   detectSupportedFramework,
   FrameworkInfo,
 } from "@/core/app-analyzer";
+
 import { detectFramework } from "@/core/framework-detector";
+
 import { TestGenerator } from "@/core/test-generator";
+
 import { TestPlanner } from "@/core/test-planner";
+
 import { getLogger } from "@/log";
+
 import { LOG_LEVELS } from "@/log/config";
+
 import { testPatternSchema } from "@/types/config";
+
 import { addToGitignore } from "@/utils/add-to-gitignore";
+
 import { assertDefined } from "@/utils/assert";
+
 import { EnvFile } from "@/utils/env-file";
+
 import { ShortestError } from "@/utils/errors";
 
 export const initCommand = new Command("init")

@@ -1,5 +1,7 @@
 import { z } from "zod";
+
 import { getLogger } from "@/log/index";
+
 import {
   configSchema,
   ShortestConfig,
@@ -7,6 +9,7 @@ import {
   CLIOptions,
   cliOptionsSchema,
 } from "@/types";
+
 import { formatZodError, ConfigError } from "@/utils/errors";
 
 /**

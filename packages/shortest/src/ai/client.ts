@@ -1,4 +1,5 @@
 import { LanguageModelV1FinishReason } from "@ai-sdk/provider";
+
 import {
   CoreMessage,
   Tool,
@@ -6,22 +7,34 @@ import {
   LanguageModelV1,
   NoSuchToolError,
 } from "ai";
+
 import { SYSTEM_PROMPT } from "@/ai/prompts";
+
 import { createProvider } from "@/ai/provider";
+
 import { AIJSONResponse, extractJsonPayload } from "@/ai/utils/json";
+
 import { BrowserTool } from "@/browser/core/browser-tool";
+
 import { TestRun } from "@/core/runner/test-run";
+
 import { getConfig } from "@/index";
+
 import { getLogger, Log } from "@/log";
+
 import { createToolRegistry, ToolRegistry } from "@/tools/index";
+
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
+
 import { AIConfig } from "@/types/config";
+
 import {
   getErrorDetails,
   AIError,
   AIErrorType,
   asShortestError,
 } from "@/utils/errors";
+
 import { sleep } from "@/utils/sleep";
 
 /**
