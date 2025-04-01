@@ -88,6 +88,7 @@ export default [
         },
       ],
       "prefer-promise-reject-errors": "error",
+      "object-shorthand": "error",
       "zod/require-zod-schema-types": "error",
     },
     settings: {
