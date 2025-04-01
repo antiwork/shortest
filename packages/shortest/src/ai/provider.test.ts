@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createProvider } from "@/ai/provider";
+import { createProvider } from "./provider";
 import { AIConfig } from "@/types";
 
 vi.mock("@ai-sdk/anthropic", () => ({

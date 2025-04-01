@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AIClient } from "@/ai/client";
+import { AIClient } from "./client";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { createTestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";
