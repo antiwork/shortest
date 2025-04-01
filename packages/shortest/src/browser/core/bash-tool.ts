@@ -43,7 +43,7 @@ export class BashTool {
       });
 
       child.on("error", (err) => {
-        reject(`Error spawning process: ${err.message}`);
+        reject(new Error(`Error spawning process: ${err.message}`));
         throw asShortestError(err);
       });
     });
