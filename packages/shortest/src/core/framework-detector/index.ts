@@ -1,23 +1,13 @@
 import { existsSync } from "fs";
-
 import fs from "fs/promises";
-
 import path from "path";
-
 import { listFrameworks } from "@netlify/framework-info";
-
 import { Framework } from "@netlify/framework-info/lib/types";
-
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
-
 import { FrameworkInfo } from "@/core/app-analyzer";
-
 import { getPaths } from "@/core/app-analyzer/utils/get-tree-structure";
-
 import { getLogger } from "@/log";
-
 import { getErrorDetails, ShortestError } from "@/utils/errors";
-
 import { getGitInfo, GitInfo } from "@/utils/get-git-info";
 
 export interface ProjectInfo {

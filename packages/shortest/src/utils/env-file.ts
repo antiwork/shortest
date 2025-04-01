@@ -1,9 +1,6 @@
 import { existsSync } from "fs";
-
 import { readFile, writeFile } from "node:fs/promises";
-
 import os from "os";
-
 import { join } from "path";
 
 export class EnvFile {

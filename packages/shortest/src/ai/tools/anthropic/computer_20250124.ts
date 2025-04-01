@@ -1,11 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
-
 import { Tool } from "ai";
-
 import { BrowserTool } from "@/browser/core/browser-tool";
-
 import { getLogger } from "@/log";
-
 import { InternalActionEnum } from "@/types/browser";
 
 /**

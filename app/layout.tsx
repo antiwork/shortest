@@ -1,9 +1,6 @@
 import "./globals.css";
-
 import { Analytics } from "@vercel/analytics/react";
-
 import type { Metadata, Viewport } from "next";
-
 import { Manrope } from "next/font/google";
 
 export const metadata: Metadata = {

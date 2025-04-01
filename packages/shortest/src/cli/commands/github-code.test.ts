@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-
 import { githubCodeCommand } from "./github-code";
-
 import { GitHubTool } from "@/browser/integrations/github";
 
 vi.mock("@/cli/utils/command-builder", () => ({

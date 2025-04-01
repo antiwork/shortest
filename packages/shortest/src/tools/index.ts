@@ -1,23 +1,13 @@
 import { z } from "zod";
-
 import { createAnthropicBash20241022 } from "@/ai/tools/anthropic/bash_20241022";
-
 import { createAnthropicBash20250124 } from "@/ai/tools/anthropic/bash_20250124";
-
 import { createAnthropicComputer20241022 } from "@/ai/tools/anthropic/computer_20241022";
-
 import { createAnthropicComputer20250124 } from "@/ai/tools/anthropic/computer_20250124";
-
 import { createCheckEmailTool } from "@/ai/tools/custom/check_email";
-
 import { createGithubLoginTool } from "@/ai/tools/custom/github_login";
-
 import { createNavigateTool } from "@/ai/tools/custom/navigate";
-
 import { createRunCallbackTool } from "@/ai/tools/custom/run_callback";
-
 import { createSleepTool } from "@/ai/tools/custom/sleep";
-
 import {
   anthropicToolTypeSchema,
   toolFactorySchema,

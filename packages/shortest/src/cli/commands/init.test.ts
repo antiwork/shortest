@@ -1,9 +1,6 @@
 import { Command } from "commander";
-
 import { describe, test, expect, vi, beforeEach } from "vitest";
-
 import { initCommand } from "./init";
-
 import { executeCommand } from "@/cli/utils/command-builder";
 
 vi.mock("@/cli/utils/command-builder", () => ({

@@ -1,13 +1,8 @@
 import { existsSync } from "fs";
-
 import * as fs from "node:fs/promises";
-
 import os from "os";
-
 import path from "path";
-
 import { describe, expect, it, vi, beforeEach } from "vitest";
-
 import { EnvFile } from "./env-file";
 
 vi.mock("fs", () => ({

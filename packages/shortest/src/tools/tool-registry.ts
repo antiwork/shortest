@@ -1,13 +1,8 @@
 import { Tool } from "ai";
-
 import { z } from "zod";
-
 import { BrowserTool } from "@/browser/core/browser-tool";
-
 import { getLogger, Log } from "@/log";
-
 import { AnthropicModel } from "@/types/config";
-
 import { ShortestError } from "@/utils/errors";
 
 const TOOL_ENTRY_CATEGORIES = ["provider", "custom"] as const;

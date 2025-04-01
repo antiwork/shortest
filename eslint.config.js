@@ -78,8 +78,8 @@ export default [
       "import/order": ["error", { alphabetize: { order: "asc" } }],
       "padding-line-between-statements": [
           "error",
-          { blankLine: "always", prev: "expression", next: "expression" },
           { blankLine: "always", prev: "import", next: "*" },
+          { blankLine: "never", prev: "import", next: "import" },
         ],
       "prettier/prettier": [
         "error",

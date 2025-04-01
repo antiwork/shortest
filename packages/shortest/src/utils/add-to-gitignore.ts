@@ -1,7 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
-
 import os from "os";
-
 import { join } from "path";
 
 // eslint-disable-next-line zod/require-zod-schema-types

@@ -1,19 +1,11 @@
 import pc from "picocolors";
-
 import * as playwright from "playwright";
-
 import { request } from "playwright";
-
 import { BrowserTool } from "@/browser/core/browser-tool";
-
 import { GitHubTool } from "@/browser/integrations/github";
-
 import { BrowserManager } from "@/browser/manager";
-
 import { createTestCase } from "@/core/runner/test-case";
-
 import { TestRun } from "@/core/runner/test-run";
-
 import { getConfig, initializeConfig } from "@/index";
 
 export const main = async () => {

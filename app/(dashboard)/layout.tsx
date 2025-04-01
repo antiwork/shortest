@@ -1,15 +1,9 @@
 import { ClerkProvider, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-
 import { Star } from "lucide-react";
-
 import Link from "next/link";
-
 import { Logo as LogoIcon } from "@/components/logo";
-
 import { Button } from "@/components/ui/button";
-
 import { Toaster } from "@/components/ui/toaster";
-
 import { getGitHubStarCount } from "@/lib/github-stars";
 
 const GitHubIcon = ({ className }: { className?: string }) => (

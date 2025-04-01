@@ -1,13 +1,8 @@
 import { SignedIn, SignedOut } from "@clerk/nextjs";
-
 import { Code } from "bright";
-
 import { ArrowRight } from "lucide-react";
-
 import Link from "next/link";
-
 import AntiworkFooter from "@/components/ui/antiwork-footer";
-
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {

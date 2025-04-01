@@ -1,13 +1,9 @@
 "use server";
 
 import { currentUser } from "@clerk/nextjs/server";
-
 import { redirect } from "next/navigation";
-
 import { createCheckoutSession, createCustomerPortalSession } from "./stripe";
-
 import { getUserByClerkId } from "@/lib/db/queries";
-
 import { User } from "@/lib/db/schema";
 
 export const checkoutAction = async (formData: FormData) => {

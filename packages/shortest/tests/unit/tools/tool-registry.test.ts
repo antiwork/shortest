@@ -1,13 +1,8 @@
 import { Tool } from "ai";
-
 import { describe, expect, it, vi, beforeEach } from "vitest";
-
 import { z } from "zod";
-
 import { BrowserTool } from "@/browser/core/browser-tool";
-
 import { ToolRegistry } from "@/tools/tool-registry";
-
 import { ShortestError } from "@/utils/errors";
 
 describe("ToolRegistry", () => {

@@ -1,11 +1,7 @@
 import { Command, Option } from "commander";
-
 import { executeCommand } from "@/cli/utils/command-builder";
-
 import { AppAnalyzer, detectSupportedFramework } from "@/core/app-analyzer";
-
 import { getLogger } from "@/log";
-
 import { LOG_LEVELS } from "@/log/config";
 
 export const analyzeCommand = new Command("analyze").description(

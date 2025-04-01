@@ -1,5 +1,4 @@
 import pc from "picocolors";
-
 import { z, ZodError } from "zod";
 
 export class ShortestError extends Error {

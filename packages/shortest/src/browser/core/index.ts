@@ -1,7 +1,5 @@
 import { BrowserToolOptions, ActionInput, ToolResult } from "@/types/browser";
-
 import { BetaToolType } from "@/types/browser";
-
 import { ToolError } from "@/utils/errors";
 
 export abstract class BaseBrowserTool {

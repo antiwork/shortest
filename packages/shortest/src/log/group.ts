@@ -1,5 +1,4 @@
 import { Log } from "@/log";
-
 import { LogEvent } from "@/log/event";
 
 /**
