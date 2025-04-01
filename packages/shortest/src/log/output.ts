@@ -1,13 +1,8 @@
 import { Writable } from "node:stream";
-
 import pc from "picocolors";
-
 import { LogFormat, LOG_LEVELS } from "@/log/config";
-
 import { LogEvent } from "@/log/event";
-
 import { LogGroup } from "@/log/group";
-
 import { ConfigError } from "@/utils/errors";
 
 /**

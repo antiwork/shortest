@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-
 import { createHash } from "./create-hash";
 
 describe("createHash", () => {

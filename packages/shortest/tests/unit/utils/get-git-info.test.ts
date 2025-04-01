@@ -1,5 +1,4 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-
 import { getGitInfo } from "@/utils/get-git-info";
 
 const mockBranch = vi.fn();

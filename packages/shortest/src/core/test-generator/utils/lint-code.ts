@@ -1,7 +1,5 @@
 import { createRequire } from "module";
-
 import { getLogger } from "@/log";
-
 import { getErrorDetails } from "@/utils/errors";
 
 const require = createRequire(import.meta.url);

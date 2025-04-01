@@ -1,7 +1,5 @@
 import { anthropic } from "@ai-sdk/anthropic";
-
 import { streamObject } from "ai";
-
 import { GenerateTestsInput, TestFileSchema } from "./schema";
 
 export const POST = async (req: Request) => {

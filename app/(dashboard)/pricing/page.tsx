@@ -1,11 +1,7 @@
 import { Check } from "lucide-react";
-
 import Link from "next/link";
-
 import { SubmitButton } from "./submit-button";
-
 import { checkoutAction } from "@/lib/payments/actions";
-
 import { getStripePrices, getStripeProducts } from "@/lib/payments/stripe";
 
 // Prices are fresh for one hour max

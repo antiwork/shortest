@@ -1,35 +1,23 @@
 import fs from "fs/promises";
-
 import { createRequire } from "module";
-
 import path from "path";
-
 import * as parser from "@babel/parser";
-
 import * as t from "@babel/types";
-
 import {
   FileAnalysisResult,
   BaseAnalyzer,
   AppAnalysis,
   LayoutInfo,
 } from "./types";
-
 import { DOT_SHORTEST_DIR_PATH } from "@/cache";
-
 import { FrameworkInfo } from "@/core/app-analyzer";
-
 import {
   getPaths,
   getTreeStructure,
 } from "@/core/app-analyzer/utils/get-tree-structure";
-
 import { getLogger } from "@/log";
-
 import { assertDefined } from "@/utils/assert";
-
 import { getErrorDetails, ShortestError } from "@/utils/errors";
-
 import { getGitInfo } from "@/utils/get-git-info";
 
 const require = createRequire(import.meta.url);

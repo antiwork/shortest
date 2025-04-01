@@ -1,5 +1,4 @@
 import { anthropic } from "@ai-sdk/anthropic";
-
 import { BashTool } from "@/browser/core/bash-tool";
 
 /**

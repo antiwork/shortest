@@ -1,7 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
-
 import { getLogger } from "@/log";
-
 import { LogConfig } from "@/log/config";
 
 describe("logger singleton", () => {

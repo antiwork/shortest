@@ -1,5 +1,4 @@
 import { BrowserContextOptions } from "playwright";
-
 import { z } from "zod";
 
 export const cliOptionsSchema = z.object({

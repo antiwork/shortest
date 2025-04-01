@@ -1,9 +1,6 @@
 import { Command, Option } from "commander";
-
 import { cleanUpCache } from "@/cache";
-
 import { executeCommand } from "@/cli/utils/command-builder";
-
 import { LOG_LEVELS } from "@/log/config";
 
 export const cacheCommands = new Command("cache").description(

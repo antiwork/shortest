@@ -1,9 +1,7 @@
 "use client";
 
 import { Shuffle } from "lucide-react";
-
 import { useCallback, useState } from "react";
-
 import { Button } from "@/components/ui/button";
 
 export default function AntiworkFooter() {

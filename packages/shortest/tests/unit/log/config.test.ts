@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-
 import { LogConfigSchema, LOG_LEVELS, LOG_FORMATS } from "@/log/config";
 
 describe("LogConfigSchema", () => {

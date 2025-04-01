@@ -1,7 +1,5 @@
 import { promises as fs } from "fs";
-
 import yaml from "js-yaml";
-
 import {
   ConfigSchema,
   Config,

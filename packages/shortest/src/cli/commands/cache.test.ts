@@ -1,11 +1,7 @@
 import { Command } from "commander";
-
 import { describe, test, expect, vi, beforeEach } from "vitest";
-
 import { cacheCommands } from "./cache";
-
 import { cleanUpCache } from "@/cache";
-
 import { executeCommand } from "@/cli/utils/command-builder";
 
 vi.mock("@/cache", () => ({

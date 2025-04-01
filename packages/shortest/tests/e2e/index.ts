@@ -1,15 +1,9 @@
 import fs from "node:fs";
-
 import path from "node:path";
-
 import { describe, test, before } from "node:test";
-
 import { fileURLToPath } from "node:url";
-
 import { glob } from "glob";
-
 import pc from "picocolors";
-
 import { initializeConfig } from "@/index";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

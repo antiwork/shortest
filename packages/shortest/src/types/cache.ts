@@ -1,9 +1,6 @@
 import { TokenUsage } from "./ai";
-
 import { TestStatus } from "@/core/runner";
-
 import { TestCase } from "@/core/runner/test-case";
-
 import { BrowserAction, ActionInput } from "@/types/browser";
 
 export interface CacheAction {

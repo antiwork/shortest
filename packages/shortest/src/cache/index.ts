@@ -1,17 +1,10 @@
 import { existsSync } from "fs";
-
 import * as fs from "fs/promises";
-
 import path from "path";
-
 import { TestRunRepository } from "@/core/runner/test-run-repository";
-
 import { getLogger } from "@/log";
-
 import { CacheEntry } from "@/types/cache";
-
 import { directoryExists } from "@/utils/directory-exists";
-
 import { getErrorDetails } from "@/utils/errors";
 
 export const DOT_SHORTEST_DIR_NAME = ".shortest";

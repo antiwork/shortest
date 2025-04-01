@@ -1,19 +1,13 @@
 import { Command } from "commander";
-
 import { describe, test, expect, vi, beforeEach } from "vitest";
-
 import { shortestCommand } from "./shortest";
-
 import {
   cleanUpCache,
   purgeLegacyCache,
   purgeLegacyScreenshots,
 } from "@/cache";
-
 import { executeCommand } from "@/cli/utils/command-builder";
-
 import { TestRunner } from "@/core/runner";
-
 import { initializeConfig } from "@/index";
 
 vi.mock("@/cli/utils/command-builder", () => ({
