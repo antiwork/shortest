@@ -1,56 +1,31 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { getLogger, Logger } from "@/log";
-import { LogEventType } from "@/log/event";
+import { describe, expect, it, beforeEach, vi } from "vitest";
+import { getLogger } from "@/log";
+import { LogConfig } from "@/log/config";
 
-describe("log", () => {
-  describe("getLogger", () => {
-    it("returns a singleton instance of Logger", () => {
-      const logger1 = getLogger();
-      const logger2 = getLogger();
-      
-      expect(logger1).toBe(logger2);
-    });
+describe("logger singleton", () => {
+  beforeEach(() => {
+    vi.resetModules();
   });
-  
-  describe("Logger", () => {
-    let logger: Logger;
-    let mockEmit: vi.SpyInstance;
-    
-    beforeEach(() => {
-      logger = new Logger();
-      mockEmit = vi.spyOn(logger, "emit").mockImplementation(() => {});
-    });
-    
-    afterEach(() => {
-      vi.resetAllMocks();
-    });
-    
-    it("emits info events", () => {
-      const message = "Info message";
-      logger.info(message);
-      
-      expect(mockEmit).toHaveBeenCalledWith(LogEventType.INFO, message);
-    });
-    
-    it("emits debug events", () => {
-      const message = "Debug message";
-      logger.debug(message);
-      
-      expect(mockEmit).toHaveBeenCalledWith(LogEventType.DEBUG, message);
-    });
-    
-    it("emits warn events", () => {
-      const message = "Warning message";
-      logger.warn(message);
-      
-      expect(mockEmit).toHaveBeenCalledWith(LogEventType.WARN, message);
-    });
-    
-    it("emits error events", () => {
-      const message = "Error message";
-      logger.error(message);
-      
-      expect(mockEmit).toHaveBeenCalledWith(LogEventType.ERROR, message);
-    });
+
+  it("creates new logger instance on first call", () => {
+    const config: Partial<LogConfig> = { level: "debug" };
+    const logger = getLogger(config);
+
+    expect(logger.config.level).toBe("debug");
+  });
+
+  it("returns same instance on subsequent calls", () => {
+    const firstLogger = getLogger();
+    const secondLogger = getLogger({ level: "info" as const });
+
+    expect(firstLogger).toBe(secondLogger);
+  });
+
+  it("ignores config on subsequent calls", () => {
+    const firstLogger = getLogger({ level: "debug" as const });
+    const secondLogger = getLogger({ level: "info" as const });
+
+    expect(firstLogger.config.level).toBe("debug");
+    expect(firstLogger).toBe(secondLogger);
   });
 });

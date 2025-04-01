@@ -1,81 +1,116 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { LOG_LEVELS } from "@/log/config";
+import { LogEvent } from "@/log/event";
+import { LogGroup } from "@/log/group";
 import { LogOutput } from "@/log/output";
-import { LogEvent, LogEventType } from "@/log/event";
+
+vi.mock("picocolors", () => ({
+  default: {
+    white: (str: string) => `white(${str})`,
+    red: (str: string) => `red(${str})`,
+    yellow: (str: string) => `yellow(${str})`,
+    yellowBright: (str: string) => `yellowBright(${str})`,
+    cyan: (str: string) => `cyan(${str})`,
+    green: (str: string) => `green(${str})`,
+    gray: (str: string) => `gray(${str})`,
+    dim: (str: string) => `dim(${str})`,
+  },
+}));
 
 describe("LogOutput", () => {
-  let output: LogOutput;
-  let mockWrite: vi.Mock;
-  
+  const mockTimestamp = "19:00:00";
+  const maxLevelLength = Math.max(...LOG_LEVELS.map((level) => level.length));
+
   beforeEach(() => {
-    mockWrite = vi.fn();
-    output = new LogOutput({
-      write: mockWrite,
-    });
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-01-01T19:00:00"));
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "debug").mockImplementation(() => {});
+    vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   });
-  
+
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
-  
-  describe("constructor", () => {
-    it("initializes with the provided options", () => {
-      expect(output["options"].write).toBe(mockWrite);
+
+  describe("terminal format", () => {
+    it("renders basic log message", () => {
+      const event = new LogEvent("info", "test message");
+      LogOutput.render(event, "terminal");
+
+      expect(console.info).toHaveBeenCalledWith(
+        `cyan(info${" ".repeat(maxLevelLength - 4)}) | ${mockTimestamp} | test message`,
+      );
     });
-    
-    it("uses default options if not provided", () => {
-      const defaultOutput = new LogOutput();
-      expect(defaultOutput["options"].write).toBeDefined();
-    });
-  });
-  
-  describe("onEvent", () => {
-    it("formats and writes events", () => {
-      const event = new LogEvent(LogEventType.INFO, "Test message");
-      
-      output.onEvent(event);
-      
-      expect(mockWrite).toHaveBeenCalledTimes(1);
-      expect(mockWrite).toHaveBeenCalledWith(expect.any(String));
-    });
-    
-    it("includes timestamp in formatted output", () => {
-      const timestamp = Date.now();
-      const event = new LogEvent(LogEventType.INFO, "Test message", timestamp);
-      
-      output.onEvent(event);
-      
-      const formattedOutput = mockWrite.mock.calls[0][0];
-      expect(formattedOutput).toContain(new Date(timestamp).toISOString());
-    });
-    
-    it("includes event type in formatted output", () => {
-      const event = new LogEvent(LogEventType.ERROR, "Test message");
-      
-      output.onEvent(event);
-      
-      const formattedOutput = mockWrite.mock.calls[0][0];
-      expect(formattedOutput).toContain("ERROR");
-    });
-    
-    it("includes message in formatted output", () => {
-      const message = "Test message";
-      const event = new LogEvent(LogEventType.INFO, message);
-      
-      output.onEvent(event);
-      
-      const formattedOutput = mockWrite.mock.calls[0][0];
-      expect(formattedOutput).toContain(message);
-    });
-    
-    it("includes group in formatted output if present", () => {
-      const event = new LogEvent(LogEventType.INFO, "Test message", undefined, {
-        group: "Test Group",
+
+    it("renders message with metadata", () => {
+      const event = new LogEvent("debug", "test with metadata", {
+        userId: 123,
+        details: { key: "value" },
       });
-      
-      output.onEvent(event);
-      
-      const formattedOutput = mockWrite.mock.calls[0][0];
-      expect(formattedOutput).toContain("Test Group");
+      LogOutput.render(event, "terminal");
+
+      expect(console.debug).toHaveBeenCalledWith(
+        `green(debug${" ".repeat(maxLevelLength - 5)}) | ${mockTimestamp} | test with metadata | dim(userId)=123 dim(details)={\n  "key": "value"\n}\n`,
+      );
+    });
+  });
+
+  describe("reporter format", () => {
+    it("renders basic message", () => {
+      const event = new LogEvent("info", "test message");
+      LogOutput.render(event, "reporter");
+
+      expect(process.stdout.write).toHaveBeenCalledWith("test message\n");
+    });
+
+    it("renders grouped message with indentation", () => {
+      const root = new LogGroup({} as any, "Root");
+      const child = new LogGroup({} as any, "Child", root);
+      const event = new LogEvent("info", "test message");
+
+      LogOutput.render(event, "reporter", child);
+
+      expect(process.stdout.write).toHaveBeenCalledWith("    test message\n");
+    });
+  });
+
+  describe("error handling", () => {
+    it("throws on unsupported format", () => {
+      const event = new LogEvent("info", "test");
+      expect(() => LogOutput.render(event, "invalid" as any)).toThrow(
+        "Unsupported log format: invalid",
+      );
+    });
+  });
+
+  describe("log levels", () => {
+    it.each([
+      ["error", "red", "error"],
+      ["warn", "yellow", "warn"],
+      ["info", "cyan", "info"],
+      ["debug", "green", "debug"],
+      ["trace", "gray", "log"],
+    ])("uses correct color and method for %s level", (level, color, method) => {
+      const event = new LogEvent(level as any, "test message");
+      LogOutput.render(event, "terminal");
+
+      const paddedLevel = level.padEnd(maxLevelLength);
+      let message = "test message";
+      if (level === "error") {
+        message = `red(${message})`;
+      }
+      const output = `${color}(${paddedLevel}) | ${mockTimestamp} | ${message}`;
+      const expectedOutput =
+        level === "warn" ? `yellowBright(${output})` : output;
+
+      expect(console[method as keyof Console]).toHaveBeenCalledWith(
+        expectedOutput,
+      );
     });
   });
 });

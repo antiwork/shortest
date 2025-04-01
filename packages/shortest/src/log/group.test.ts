@@ -1,100 +1,97 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { LogGroup } from "@/log/group";
-import { LogEventType } from "@/log/event";
+import { Log } from "@/log/log";
 
 describe("LogGroup", () => {
-  let group: LogGroup;
-  let mockEmit: vi.Mock;
-  
+  let mockLog: { log: ReturnType<typeof vi.fn> };
+
   beforeEach(() => {
-    mockEmit = vi.fn();
-    group = new LogGroup("Test Group", mockEmit);
+    mockLog = {
+      log: vi.fn(),
+    };
   });
-  
-  afterEach(() => {
-    vi.resetAllMocks();
+
+  it("creates a group with name and log instance", () => {
+    const group = new LogGroup(mockLog as unknown as Log, "TestGroup");
+    expect(group.name).toBe("TestGroup");
+    expect(group.parent).toBeUndefined();
   });
-  
-  describe("constructor", () => {
-    it("initializes with the provided name and emit function", () => {
-      expect(group.name).toBe("Test Group");
+
+  it("creates a nested group with parent", () => {
+    const parentGroup = new LogGroup(mockLog as unknown as Log, "Parent");
+    const childGroup = new LogGroup(
+      mockLog as unknown as Log,
+      "Child",
+      parentGroup,
+    );
+    expect(childGroup.parent).toBe(parentGroup);
+  });
+
+  it("returns group identifiers in hierarchical order", () => {
+    const root = new LogGroup(mockLog as unknown as Log, "Root");
+    const parent = new LogGroup(mockLog as unknown as Log, "Parent", root);
+    const child = new LogGroup(mockLog as unknown as Log, "Child", parent);
+
+    expect(child.getGroupIdentifiers()).toEqual(["Root", "Parent", "Child"]);
+  });
+
+  describe("logging methods", () => {
+    let group: LogGroup;
+
+    beforeEach(() => {
+      group = new LogGroup(mockLog as unknown as Log, "TestGroup");
     });
-  });
-  
-  describe("emit", () => {
-    it("calls the provided emit function with the event type, message, and metadata", () => {
-      const type = LogEventType.INFO;
-      const message = "Test message";
-      const metadata = { key: "value" };
-      
-      group.emit(type, message, metadata);
-      
-      expect(mockEmit).toHaveBeenCalledWith(type, message, {
-        ...metadata,
-        group: "Test Group",
+
+    it("logs info messages", () => {
+      group.info("test message", {
+        meta: "data",
+      });
+      expect(mockLog.log).toHaveBeenCalledWith("info", "test message", {
+        meta: "data",
       });
     });
-    
-    it("adds group name to metadata if not provided", () => {
-      group.emit(LogEventType.INFO, "Test message");
-      
-      expect(mockEmit).toHaveBeenCalledWith(
-        LogEventType.INFO,
-        "Test message",
-        { group: "Test Group" }
-      );
+
+    it("logs warn messages", () => {
+      group.warn("test warning", {
+        meta: "data",
+      });
+      expect(mockLog.log).toHaveBeenCalledWith("warn", "test warning", {
+        meta: "data",
+      });
     });
-  });
-  
-  describe("info", () => {
-    it("emits an info event", () => {
-      const message = "Info message";
-      group.info(message);
-      
-      expect(mockEmit).toHaveBeenCalledWith(
-        LogEventType.INFO,
-        message,
-        { group: "Test Group" }
-      );
+
+    it("logs error messages", () => {
+      group.error("test error", {
+        meta: "data",
+      });
+      expect(mockLog.log).toHaveBeenCalledWith("error", "test error", {
+        meta: "data",
+      });
     });
-  });
-  
-  describe("debug", () => {
-    it("emits a debug event", () => {
-      const message = "Debug message";
-      group.debug(message);
-      
-      expect(mockEmit).toHaveBeenCalledWith(
-        LogEventType.DEBUG,
-        message,
-        { group: "Test Group" }
-      );
+
+    it("logs debug messages", () => {
+      group.debug("test debug", {
+        meta: "data",
+      });
+      expect(mockLog.log).toHaveBeenCalledWith("debug", "test debug", {
+        meta: "data",
+      });
     });
-  });
-  
-  describe("warn", () => {
-    it("emits a warn event", () => {
-      const message = "Warning message";
-      group.warn(message);
-      
-      expect(mockEmit).toHaveBeenCalledWith(
-        LogEventType.WARN,
-        message,
-        { group: "Test Group" }
-      );
+
+    it("logs trace messages", () => {
+      group.trace("test trace", {
+        meta: "data",
+      });
+      expect(mockLog.log).toHaveBeenCalledWith("trace", "test trace", {
+        meta: "data",
+      });
     });
-  });
-  
-  describe("error", () => {
-    it("emits an error event", () => {
-      const message = "Error message";
-      group.error(message);
-      
-      expect(mockEmit).toHaveBeenCalledWith(
-        LogEventType.ERROR,
-        message,
-        { group: "Test Group" }
-      );
+
+    it("supports method chaining", () => {
+      const result = group.info("info").debug("debug").warn("warn");
+
+      expect(result).toBe(group);
+      expect(mockLog.log).toHaveBeenCalledTimes(3);
     });
   });
 });

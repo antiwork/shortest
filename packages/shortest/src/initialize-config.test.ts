@@ -1,64 +1,172 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import * as fs from "fs/promises";
+import fs from "fs/promises";
 import path from "path";
-import { initializeConfig } from "@/initialize-config";
-import { DEFAULT_CONFIG } from "@/constants";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 describe("initializeConfig", () => {
-  const mockCwd = "/mock/cwd";
-  const configPath = path.join(mockCwd, "shortest.config.ts");
-  
-  beforeEach(() => {
-    vi.mock("fs/promises");
-    vi.mock("path", () => ({
-      join: vi.fn((...args) => args.join("/")),
-      resolve: vi.fn((...args) => args.join("/")),
-    }));
-    vi.mock("process", () => ({
-      cwd: vi.fn(() => mockCwd),
-    }));
+  const tempDir = path.join(process.cwd(), "temp-test-config");
+
+  beforeEach(async () => {
+    vi.resetModules();
+    delete process.env.ANTHROPIC_API_KEY;
+    await fs.mkdir(tempDir, { recursive: true });
   });
-  
-  afterEach(() => {
-    vi.resetAllMocks();
+
+  afterEach(async () => {
+    await fs.rm(tempDir, { recursive: true, force: true });
   });
-  
-  it("creates config file if it doesn't exist", async () => {
-    vi.mocked(fs.access).mockRejectedValueOnce(new Error("File not found"));
-    
-    await initializeConfig();
-    
-    expect(fs.writeFile).toHaveBeenCalledWith(
-      configPath,
-      expect.stringContaining("export default"),
-      "utf-8"
+
+  test("loads TypeScript config file", async () => {
+    await fs.writeFile(
+      path.join(tempDir, "shortest.config.ts"),
+      `
+      export default {
+        headless: true,
+        baseUrl: "https://example.com",
+        testPattern: ".*",
+        ai: {
+          provider: "anthropic",
+          apiKey: "test-key",
+        }
+    }
+      `,
+    );
+
+    const { initializeConfig } = await import("@/index");
+    const config = await initializeConfig({ configDir: tempDir });
+    expect(config).toEqual({
+      headless: true,
+      baseUrl: "https://example.com",
+      browser: {},
+      testPattern: ".*",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+        model: "claude-3-5-sonnet-20241022",
+      },
+      caching: {
+        enabled: true,
+      },
+    });
+  });
+
+  test("loads JavaScript config file", async () => {
+    await fs.writeFile(
+      path.join(tempDir, "shortest.config.js"),
+      `
+      export default {
+        headless: true,
+        baseUrl: "https://example.com",
+        testPattern: ".*",
+        ai: {
+          provider: "anthropic",
+          apiKey: "test-key",
+          model: "claude-3-5-sonnet-20241022",
+        },
+      }
+      `,
+    );
+
+    const { initializeConfig } = await import("@/index");
+    const config = await initializeConfig({ configDir: tempDir });
+    expect(config).toEqual({
+      headless: true,
+      baseUrl: "https://example.com",
+      browser: {},
+      testPattern: ".*",
+      ai: {
+        provider: "anthropic",
+        apiKey: "test-key",
+        model: "claude-3-5-sonnet-20241022",
+      },
+      caching: {
+        enabled: true,
+      },
+    });
+  });
+
+  test("throws when multiple config files exist", async () => {
+    await fs.writeFile(
+      path.join(tempDir, "shortest.config.ts"),
+      `
+      export default {
+        headless: true,
+        baseUrl: "https://example.com",
+        testPattern: ".*",
+        anthropicKey: "test-key",
+      }
+      `,
+    );
+
+    await fs.writeFile(
+      path.join(tempDir, "shortest.config.js"),
+      `
+      export default {
+        headless: true,
+        baseUrl: "https://example.com",
+        testPattern: ".*",
+        anthropicKey: "test-key",
+      }
+      `,
+    );
+
+    const { initializeConfig } = await import("@/index");
+    await expect(initializeConfig({ configDir: tempDir })).rejects.toThrow(
+      "Multiple config files found",
     );
   });
-  
-  it("doesn't create config file if it already exists", async () => {
-    vi.mocked(fs.access).mockResolvedValueOnce(undefined);
-    
-    await initializeConfig();
-    
-    expect(fs.writeFile).not.toHaveBeenCalled();
+
+  test("throws when no config file exists", async () => {
+    const { initializeConfig } = await import("@/index");
+    await expect(
+      initializeConfig({ configDir: tempDir }),
+    ).rejects.toMatchObject({
+      name: "ConfigError",
+      type: "no-config",
+      message: "No config file found. Please create one.",
+    });
   });
-  
-  it("handles errors gracefully", async () => {
-    vi.mocked(fs.access).mockRejectedValueOnce(new Error("File not found"));
-    vi.mocked(fs.writeFile).mockRejectedValueOnce(new Error("Write error"));
-    
-    await expect(initializeConfig()).rejects.toThrow("Write error");
-  });
-  
-  it("creates config with default values", async () => {
-    vi.mocked(fs.access).mockRejectedValueOnce(new Error("File not found"));
-    
-    await initializeConfig();
-    
-    expect(fs.writeFile).toHaveBeenCalledWith(
-      configPath,
-      expect.stringContaining(JSON.stringify(DEFAULT_CONFIG, null, 2)),
-      "utf-8"
-    );
+
+  describe("CLI options", async () => {
+    beforeEach(async () => {
+      await fs.writeFile(
+        path.join(tempDir, "shortest.config.ts"),
+        `
+      export default {
+        headless: true,
+        baseUrl: "https://example.com",
+        testPattern: ".*",
+        ai: {
+          provider: "anthropic",
+          apiKey: "test-key",
+        }
+      }
+      `,
+      );
+    });
+
+    test("overwrites config options", async () => {
+      const cliOptions = {
+        headless: true,
+        baseUrl: "https://other.example.com",
+        testPattern: "**/*.test.ts",
+        noCache: true,
+      };
+      const { initializeConfig } = await import("@/index");
+      const config = await initializeConfig({ cliOptions, configDir: tempDir });
+      expect(config).toEqual({
+        headless: true,
+        baseUrl: "https://other.example.com",
+        browser: {},
+        testPattern: "**/*.test.ts",
+        ai: {
+          provider: "anthropic",
+          apiKey: "test-key",
+          model: "claude-3-5-sonnet-20241022",
+        },
+        caching: {
+          enabled: false,
+        },
+      });
+    });
   });
 });
