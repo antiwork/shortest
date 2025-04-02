@@ -11,7 +11,7 @@ const generatePrompt = (
         You are about to process an API request. Your goal is to dynamically populate variables (like <Bearer API KEY>) with actual values, either inferred or retrieved. Follow these steps:
         - Analyze the REQUEST OBJECT: extract all necessary values (e.g., HTTP method, headers, authorization tokens).
         - Use the CONFIG OBJECT for the base URL, timeout, headers, storageState (used for cookies) or other reusable settings.
-        - Assemble the final bashh command using these values and return it as a clean, actionable string.
+        - Assemble the final bash command using these values and return it as a clean, actionable string.
           Your output should look like a ready-to-execute bash command with no extraneous text.
         - Ensure the bash command uses the appropriate HTTP request package for the operating system:
           - For Linux/macOS, use 'cURL'.
