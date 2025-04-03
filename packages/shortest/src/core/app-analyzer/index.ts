@@ -13,7 +13,7 @@ export interface FrameworkInfo {
   dirPath: string;
 }
 
-export const SUPPORTED_FRAMEWORKS_IDS = ["next"];
+export const SUPPORTED_FRAMEWORKS_IDS = ["next", "rails"];
 // eslint-disable-next-line zod/require-zod-schema-types
 export type SupportedFrameworkId = (typeof SUPPORTED_FRAMEWORKS_IDS)[number];
 

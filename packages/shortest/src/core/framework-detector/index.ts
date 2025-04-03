@@ -56,26 +56,12 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
     }
   }
 
-  let frameworks: Framework[] = [];
   const frameworkInfos: FrameworkInfo[] = [];
-
-  const nextJsDirPath = await detectNextJsDirPathFromConfig();
-
-  if (nextJsDirPath) {
-    frameworks = await listFrameworks({ projectDir: nextJsDirPath });
-    frameworks.map((framework) => {
-      frameworkInfos.push({
-        id: framework.id,
-        name: framework.name,
-        dirPath: nextJsDirPath,
-      });
-    });
-  }
+  await detectNextJsFramework(frameworkInfos);
+  await detectRailsFramework(frameworkInfos);
 
   log.trace("Frameworks detected", { frameworkInfos });
-
   await fs.mkdir(DOT_SHORTEST_DIR_PATH, { recursive: true });
-
   try {
     const VERSION = 2;
 
@@ -104,6 +90,26 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
   }
 };
 
+const detectNextJsFramework = async (frameworkInfos: FrameworkInfo[]) => {
+  const log = getLogger();
+  log.trace("Detecting Next.js framework");
+  const nextJsDirPath = await detectNextJsDirPathFromConfig();
+  log.trace("Possible Next.js framework detected", { nextJsDirPath });
+
+  if (nextJsDirPath) {
+    const frameworks: Framework[] = await listFrameworks({
+      projectDir: nextJsDirPath,
+    });
+    frameworks.map((framework) => {
+      frameworkInfos.push({
+        id: framework.id,
+        name: framework.name,
+        dirPath: nextJsDirPath,
+      });
+    });
+  }
+};
+
 const detectNextJsDirPathFromConfig = async (): Promise<string | undefined> => {
   const log = getLogger();
   const paths = await getPaths(process.cwd());
@@ -118,6 +124,45 @@ const detectNextJsDirPathFromConfig = async (): Promise<string | undefined> => {
       /next/i.test(dirPath),
     );
     return path.join(process.cwd(), nextNamedDir || nextDirConfigPaths[0]);
+  }
+
+  return undefined;
+};
+
+const detectRailsFramework = async (frameworkInfos: FrameworkInfo[]) => {
+  const log = getLogger();
+  log.trace("Detecting Rails framework");
+  const railsDirPath = await detectRailsDirPath();
+  log.trace("Possible Rails framework detected", { railsDirPath });
+
+  if (railsDirPath) {
+    frameworkInfos.push({
+      id: "rails",
+      name: "Ruby on Rails",
+      dirPath: railsDirPath,
+    });
+  }
+};
+
+const detectRailsDirPath = async (): Promise<string | undefined> => {
+  const log = getLogger();
+  const paths = await getPaths(process.cwd());
+
+  const hasGemfile = paths.some((filePath) => /Gemfile$/.test(filePath));
+  const hasConfigApplication = paths.some((filePath) =>
+    /config\/application\.rb$/.test(filePath),
+  );
+  const hasAppDirectory = paths.some((filePath) =>
+    /^app\/(controllers|models|views)/.test(filePath),
+  );
+
+  if (hasGemfile && (hasConfigApplication || hasAppDirectory)) {
+    log.trace("Detected Rails application", {
+      hasGemfile,
+      hasConfigApplication,
+      hasAppDirectory,
+    });
+    return process.cwd();
   }
 
   return undefined;
