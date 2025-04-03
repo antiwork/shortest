@@ -56,26 +56,11 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
     }
   }
 
-  let frameworks: Framework[] = [];
   const frameworkInfos: FrameworkInfo[] = [];
-
-  const nextJsDirPath = await detectNextJsDirPathFromConfig();
-
-  if (nextJsDirPath) {
-    frameworks = await listFrameworks({ projectDir: nextJsDirPath });
-    frameworks.map((framework) => {
-      frameworkInfos.push({
-        id: framework.id,
-        name: framework.name,
-        dirPath: nextJsDirPath,
-      });
-    });
-  }
+  await detectNextJsFramework(frameworkInfos);
 
   log.trace("Frameworks detected", { frameworkInfos });
-
   await fs.mkdir(DOT_SHORTEST_DIR_PATH, { recursive: true });
-
   try {
     const VERSION = 2;
 
@@ -101,6 +86,26 @@ export const detectFramework = async (options: { force?: boolean } = {}) => {
   } catch (error) {
     log.error("Failed to save project information", getErrorDetails(error));
     throw new ShortestError("Failed to save project information");
+  }
+};
+
+const detectNextJsFramework = async (frameworkInfos: FrameworkInfo[]) => {
+  const log = getLogger();
+  log.trace("Detecting Next.js framework");
+  const nextJsDirPath = await detectNextJsDirPathFromConfig();
+  log.trace("Possible Next.js framework detected", { nextJsDirPath });
+
+  if (nextJsDirPath) {
+    const frameworks: Framework[] = await listFrameworks({
+      projectDir: nextJsDirPath,
+    });
+    frameworks.map((framework) => {
+      frameworkInfos.push({
+        id: framework.id,
+        name: framework.name,
+        dirPath: nextJsDirPath,
+      });
+    });
   }
 };
 
