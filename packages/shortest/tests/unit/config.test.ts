@@ -31,7 +31,7 @@ describe("Config parsing", () => {
       expect(config.testPattern).toBe("**/*.test.ts");
       expect(config.ai).toEqual({
         apiKey: "foo",
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-4-sonnet-20250514",
         provider: "anthropic",
       });
       expect(config.caching).toEqual({
@@ -142,7 +142,7 @@ describe("Config parsing", () => {
           expect(config.ai).toEqual({
             apiKey: "env-api-key",
             provider: "anthropic",
-            model: "claude-3-5-sonnet-20241022",
+            model: "claude-4-sonnet-20250514",
           });
         });
       });
@@ -164,7 +164,7 @@ describe("Config parsing", () => {
           expect(config.ai).toEqual({
             apiKey: "shortest-env-api-key",
             provider: "anthropic",
-            model: "claude-3-5-sonnet-20241022",
+            model: "claude-4-sonnet-20250514",
           });
         });
       });
@@ -176,7 +176,7 @@ describe("Config parsing", () => {
           expect(config.ai).toEqual({
             apiKey: "explicit-api-key",
             provider: "anthropic",
-            model: "claude-3-5-sonnet-20241022",
+            model: "claude-4-sonnet-20250514",
           });
         });
       });
@@ -216,7 +216,7 @@ describe("Config parsing", () => {
           ai: { ...baseConfig.ai, model: "invalid-model" as any },
         };
         expect(() => parseConfig(userConfig)).toThrowError(
-          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.model(?:\u001b\[\d+m)?: Invalid enum value\. Expected 'claude-3-5-sonnet-20241022' | 'claude-3-5-sonnet-latest', received 'invalid-model'(?:\s\(received: "invalid-model"\))?/,
+          /Invalid shortest\.config\n(?:\u001b\[\d+m)?ai\.model(?:\u001b\[\d+m)?: Invalid enum value\. Expected 'claude-4-sonnet-20250514' | 'claude-4-sonnet-latest' | 'claude-4-opus-20250514' | 'claude-4-opus-latest' | 'claude-3-5-sonnet-20241022' | 'claude-3-5-sonnet-latest' | 'claude-3-7-sonnet-20250219' | 'claude-3-7-sonnet-latest', received 'invalid-model'(?:\s\(received: "invalid-model"\))?/,
         );
       });
     });
@@ -242,7 +242,7 @@ describe("Config parsing", () => {
           expect(config.ai).toEqual({
             provider: "anthropic",
             apiKey: "deprecated-api-key",
-            model: "claude-3-5-sonnet-20241022",
+            model: "claude-4-sonnet-20250514",
           });
         });
       });

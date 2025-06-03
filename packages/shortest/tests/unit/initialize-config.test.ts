@@ -41,7 +41,7 @@ describe("initializeConfig", () => {
       ai: {
         provider: "anthropic",
         apiKey: "test-key",
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-4-sonnet-20250514",
       },
       caching: {
         enabled: true,
@@ -76,7 +76,7 @@ describe("initializeConfig", () => {
       ai: {
         provider: "anthropic",
         apiKey: "test-key",
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-4-sonnet-20250514",
       },
       caching: {
         enabled: true,
@@ -161,7 +161,7 @@ describe("initializeConfig", () => {
         ai: {
           provider: "anthropic",
           apiKey: "test-key",
-          model: "claude-3-5-sonnet-20241022",
+          model: "claude-4-sonnet-20250514",
         },
         caching: {
           enabled: false,

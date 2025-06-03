@@ -16,6 +16,10 @@ export type CLIOptions = z.infer<typeof cliOptionsSchema>;
  * @see https://docs.anthropic.com/en/docs/about-claude/models/all-models
  */
 export const ANTHROPIC_MODELS = [
+  "claude-4-sonnet-20250514",
+  "claude-4-sonnet-latest",
+  "claude-4-opus-20250514",
+  "claude-4-opus-latest",
   "claude-3-5-sonnet-20241022",
   "claude-3-5-sonnet-latest",
   "claude-3-7-sonnet-20250219",
