@@ -1,11 +1,9 @@
 import pc from "picocolors";
-import * as playwright from "playwright";
-import { request } from "playwright";
-import { BrowserTool } from "@/browser/core/browser-tool";
 import { BrowserManager } from "@/browser/manager";
 import { createTestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";
 import { getConfig } from "@/index";
+import { createBrowserTool } from "./test-helpers";
 
 export const main = async () => {
   const browserManager = new BrowserManager(getConfig());
@@ -23,31 +21,7 @@ export const main = async () => {
     const context = await browserManager.launch();
     const page = context.pages()[0];
 
-    const browserTool = new BrowserTool(page, browserManager, {
-      width: 1920,
-      height: 1080,
-      testContext: {
-        page,
-        browser: browserManager.getBrowser()!,
-        testRun,
-        currentStepIndex: 0,
-        playwright: {
-          ...playwright,
-          request: {
-            ...request,
-            newContext: async (options?: {
-              extraHTTPHeaders?: Record<string, string>;
-            }) => {
-              const requestContext = await request.newContext({
-                baseURL: getConfig().baseUrl,
-                ...options,
-              });
-              return requestContext;
-            },
-          },
-        },
-      },
-    });
+    const browserTool = createBrowserTool(page, browserManager, testRun);
 
     // Navigate to a page with a sign in button
     await page.goto("http://localhost:3000");

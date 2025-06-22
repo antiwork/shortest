@@ -1,12 +1,11 @@
 import Mailosaur from "mailosaur";
 import pc from "picocolors";
-import * as playwright from "playwright";
-import { chromium, request } from "playwright";
-import { BrowserTool } from "@/browser/core/browser-tool";
+import { chromium } from "playwright";
 import { BrowserManager } from "@/browser/manager";
 import { createTestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";
 import { getConfig, initializeConfig } from "@/index";
+import { createBrowserTool } from "./test-helpers";
 
 export const main = async () => {
   console.log(pc.cyan("\n📧 Testing Email"));
@@ -49,29 +48,9 @@ export const main = async () => {
     const testRun = TestRun.create(testCase);
     testRun.markRunning();
 
-    const browserTool = new BrowserTool(page, browserManager, {
+    const browserTool = createBrowserTool(page, browserManager, testRun, {
       width: 1280,
       height: 720,
-      testContext: {
-        page,
-        browser: browserManager.getBrowser()!,
-        playwright: {
-          ...playwright,
-          request: {
-            ...request,
-            newContext: async (options?: {
-              extraHTTPHeaders?: Record<string, string>;
-            }) => {
-              const requestContext = await request.newContext({
-                baseURL: config.baseUrl,
-                ...options,
-              });
-              return requestContext;
-            },
-          },
-        },
-        testRun,
-      },
     });
 
     // 3. Test render_email tool

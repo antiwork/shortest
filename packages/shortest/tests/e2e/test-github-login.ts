@@ -1,12 +1,10 @@
 import pc from "picocolors";
-import * as playwright from "playwright";
-import { request } from "playwright";
-import { BrowserTool } from "@/browser/core/browser-tool";
 import { GitHubTool } from "@/browser/integrations/github";
 import { BrowserManager } from "@/browser/manager";
 import { createTestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";
 import { getConfig, initializeConfig } from "@/index";
+import { createBrowserTool } from "./test-helpers";
 
 export const main = async () => {
   const browserManager = new BrowserManager(getConfig());
@@ -25,31 +23,7 @@ export const main = async () => {
     const testRun = TestRun.create(testCase);
     testRun.markRunning();
 
-    let browserTool = new BrowserTool(page, browserManager, {
-      width: 1920,
-      height: 1080,
-      testContext: {
-        page,
-        browser: browserManager.getBrowser()!,
-        testRun,
-        currentStepIndex: 0,
-        playwright: {
-          ...playwright,
-          request: {
-            ...request,
-            newContext: async (options?: {
-              extraHTTPHeaders?: Record<string, string>;
-            }) => {
-              const requestContext = await request.newContext({
-                baseURL: getConfig().baseUrl,
-                ...options,
-              });
-              return requestContext;
-            },
-          },
-        },
-      },
-    });
+    let browserTool = createBrowserTool(page, browserManager, testRun);
 
     console.log(pc.cyan("\n🧹 Clearing initial session..."));
     const result = await browserTool.execute({ action: "clear_session" });
@@ -61,31 +35,7 @@ export const main = async () => {
     page = context.pages()[0];
 
     // Update browserTool with new page
-    browserTool = new BrowserTool(page, browserManager, {
-      width: 1920,
-      height: 1080,
-      testContext: {
-        page,
-        browser: browserManager.getBrowser()!,
-        testRun,
-        currentStepIndex: 0,
-        playwright: {
-          ...playwright,
-          request: {
-            ...request,
-            newContext: async (options?: {
-              extraHTTPHeaders?: Record<string, string>;
-            }) => {
-              const requestContext = await request.newContext({
-                baseURL: getConfig().baseUrl,
-                ...options,
-              });
-              return requestContext;
-            },
-          },
-        },
-      },
-    });
+    browserTool = createBrowserTool(page, browserManager, testRun);
 
     // Continue with fresh page reference
     await page.waitForSelector('button:has-text("Sign in")', {
@@ -116,31 +66,7 @@ export const main = async () => {
     const newPage = newContext.pages()[0];
 
     // Create new browser tool instance
-    browserTool = new BrowserTool(page, browserManager, {
-      width: 1920,
-      height: 1080,
-      testContext: {
-        page,
-        browser: browserManager.getBrowser()!,
-        testRun,
-        currentStepIndex: 0,
-        playwright: {
-          ...playwright,
-          request: {
-            ...request,
-            newContext: async (options?: {
-              extraHTTPHeaders?: Record<string, string>;
-            }) => {
-              const requestContext = await request.newContext({
-                baseURL: getConfig().baseUrl,
-                ...options,
-              });
-              return requestContext;
-            },
-          },
-        },
-      },
-    });
+    browserTool = createBrowserTool(page, browserManager, testRun);
 
     console.log(pc.cyan("\n🔍 Checking login state..."));
     await newPage.goto("http://localhost:3000");
