@@ -23,10 +23,10 @@ export const createBrowserTool = (
   page: playwright.Page,
   browserManager: BrowserManager,
   testRun: TestRun,
-  options: { width?: number; height?: number } = {}
+  options: { width?: number; height?: number } = {},
 ): BrowserTool => {
   const { width = 1920, height = 1080 } = options;
-  
+
   return new BrowserTool(page, browserManager, {
     width,
     height,

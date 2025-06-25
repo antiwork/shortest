@@ -1,10 +1,10 @@
 import pc from "picocolors";
+import { createBrowserTool } from "./test-helpers";
 import { GitHubTool } from "@/browser/integrations/github";
 import { BrowserManager } from "@/browser/manager";
 import { createTestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";
 import { getConfig, initializeConfig } from "@/index";
-import { createBrowserTool } from "./test-helpers";
 
 export const main = async () => {
   const browserManager = new BrowserManager(getConfig());

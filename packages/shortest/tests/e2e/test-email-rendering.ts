@@ -1,11 +1,11 @@
 import Mailosaur from "mailosaur";
 import pc from "picocolors";
 import { chromium } from "playwright";
+import { createBrowserTool } from "./test-helpers";
 import { BrowserManager } from "@/browser/manager";
 import { createTestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";
 import { getConfig, initializeConfig } from "@/index";
-import { createBrowserTool } from "./test-helpers";
 
 export const main = async () => {
   console.log(pc.cyan("\n📧 Testing Email"));
