@@ -73,7 +73,7 @@
     "node": ">=18"
   },
   "peerDependencies": {
-    "@ai-sdk/anthropic": "^1.1.15",
+    "@ai-sdk/anthropic": "^1.2.12",
     "@ai-sdk/provider": "^1.0.10",
     "ai": "^4.1.53",
     "dotenv": "^16.4.5",
