@@ -35,7 +35,7 @@ describe("ToolRegistry", () => {
 
       const tools = registry.getTools(
         "anthropic",
-        "claude-3-5-sonnet-latest",
+        "claude-sonnet-4-5-latest",
         mockBrowserTool,
       );
       expect(tools).toHaveProperty("mockTool");
@@ -68,7 +68,7 @@ describe("ToolRegistry", () => {
 
       const tools = registry.getTools(
         "anthropic",
-        "claude-3-5-sonnet-latest",
+        "claude-sonnet-4-5-latest",
         mockBrowserTool,
       );
       expect(tools).toHaveProperty("customTool");
@@ -81,11 +81,11 @@ describe("ToolRegistry", () => {
         factory: (_browserTool: BrowserTool) => createMockTool("computer"),
       };
 
-      registry.registerTool("anthropic_computer_20241022", computerToolEntry);
+      registry.registerTool("anthropic_computer_20250124", computerToolEntry);
 
       const tools = registry.getTools(
         "anthropic",
-        "claude-3-5-sonnet-latest",
+        "claude-sonnet-4-5-latest",
         mockBrowserTool,
       );
       expect(tools).toHaveProperty("computer");
@@ -98,11 +98,11 @@ describe("ToolRegistry", () => {
         factory: () => createMockTool("bash"),
       };
 
-      registry.registerTool("anthropic_bash_20241022", bashToolEntry);
+      registry.registerTool("anthropic_bash_20250124", bashToolEntry);
 
       const tools = registry.getTools(
         "anthropic",
-        "claude-3-5-sonnet-latest",
+        "claude-sonnet-4-5-latest",
         mockBrowserTool,
       );
       expect(tools).toHaveProperty("bash");
@@ -128,12 +128,12 @@ describe("ToolRegistry", () => {
       };
 
       registry.registerTool("custom_tool", customToolEntry);
-      registry.registerTool("anthropic_computer_20241022", providerToolEntry);
-      registry.registerTool("anthropic_bash_20241022", bashToolEntry);
+      registry.registerTool("anthropic_computer_20250124", providerToolEntry);
+      registry.registerTool("anthropic_bash_20250124", bashToolEntry);
 
       const tools = registry.getTools(
         "anthropic",
-        "claude-3-5-sonnet-latest",
+        "claude-sonnet-4-5-latest",
         mockBrowserTool,
       );
 
@@ -154,7 +154,7 @@ describe("ToolRegistry", () => {
 
       const tools = registry.getTools(
         "anthropic",
-        "claude-3-5-sonnet-latest",
+        "claude-sonnet-4-5-latest",
         mockBrowserTool,
       );
 
@@ -173,6 +173,7 @@ describe("ToolRegistry", () => {
       registry.registerTool("anthropic_computer_20241022", computerToolLatest);
       registry.registerTool("anthropic_computer_20250124", computerToolLatest);
 
+      // Test claude-4-5 family (uses 20241022)
       const tools35Latest = registry.getTools(
         "anthropic",
         "claude-3-5-sonnet-latest",
@@ -183,21 +184,23 @@ describe("ToolRegistry", () => {
         "claude-3-5-sonnet-20241022",
         mockBrowserTool,
       );
-      const tools37Latest = registry.getTools(
+      
+      // Test claude-4-5 family (uses 20250124)
+      const tools45Latest = registry.getTools(
         "anthropic",
-        "claude-3-7-sonnet-latest",
+        "claude-sonnet-4-5-latest",
         mockBrowserTool,
       );
-      const tools37Fixed = registry.getTools(
+      const tools45Fixed = registry.getTools(
         "anthropic",
-        "claude-3-7-sonnet-20250219",
+        "claude-sonnet-4-5-20250929",
         mockBrowserTool,
       );
 
       expect(tools35Latest).toHaveProperty("computer");
       expect(tools35Fixed).toHaveProperty("computer");
-      expect(tools37Latest).toHaveProperty("computer");
-      expect(tools37Fixed).toHaveProperty("computer");
+      expect(tools45Latest).toHaveProperty("computer");
+      expect(tools45Fixed).toHaveProperty("computer");
     });
   });
 
@@ -210,7 +213,7 @@ describe("ToolRegistry", () => {
       expect(() => {
         getProviderToolEntry(
           "anthropic",
-          "claude-3-5-sonnet-latest",
+          "claude-sonnet-4-5-latest",
           "computer",
         );
       }).toThrow(ShortestError);
@@ -218,11 +221,11 @@ describe("ToolRegistry", () => {
       expect(() => {
         getProviderToolEntry(
           "anthropic",
-          "claude-3-5-sonnet-latest",
+          "claude-sonnet-4-5-latest",
           "computer",
         );
       }).toThrow(
-        "computer tool not found for key: anthropic_computer_20241022",
+        "computer tool not found for key: anthropic_computer_20250124",
       );
     });
   });
