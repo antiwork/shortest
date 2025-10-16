@@ -6,6 +6,14 @@ vi.mock("@ai-sdk/anthropic", () => ({
   createAnthropic: vi.fn(() => (model: string) => ({ model })),
 }));
 
+vi.mock("@ai-sdk/openai", () => ({
+  createOpenAI: vi.fn(() => (model: string) => ({ model })),
+}));
+
+vi.mock("@ai-sdk/google", () => ({
+  createGoogleGenerativeAI: vi.fn(() => (model: string) => ({ model })),
+}));
+
 describe("createProvider", () => {
   it("creates an Anthropic provider with correct config", () => {
     const config: AIConfig = {
@@ -16,6 +24,28 @@ describe("createProvider", () => {
 
     const provider = createProvider(config);
     expect(provider).toEqual({ model: "claude-3-5-sonnet-20241022" });
+  });
+
+  it("creates an OpenAI provider with correct config", () => {
+    const config: AIConfig = {
+      provider: "openai",
+      apiKey: "test-key",
+      model: "gpt-4o",
+    };
+
+    const provider = createProvider(config);
+    expect(provider).toEqual({ model: "gpt-4o" });
+  });
+
+  it("creates a Google provider with correct config", () => {
+    const config: AIConfig = {
+      provider: "google",
+      apiKey: "test-key",
+      model: "gemini-2.0-flash-exp",
+    };
+
+    const provider = createProvider(config);
+    expect(provider).toEqual({ model: "gemini-2.0-flash-exp" });
   });
 
   it("throws AIError for unsupported provider", () => {

@@ -28,19 +28,74 @@ export const ANTHROPIC_MODELS = [
 export const anthropicModelSchema = z.enum(ANTHROPIC_MODELS);
 export type AnthropicModel = z.infer<typeof anthropicModelSchema>;
 
-const aiSchema = z
-  .object({
+/**
+ * List of OpenAI models that are supported by the AI client.
+ *
+ * @see https://sdk.vercel.ai/providers/ai-sdk-providers/openai#model-capabilities
+ * @see https://platform.openai.com/docs/models
+ */
+export const OPENAI_MODELS = [
+  "gpt-4o",
+  "gpt-4o-mini",
+  "gpt-4-turbo",
+  "gpt-4",
+  "gpt-3.5-turbo",
+] as const;
+export const openaiModelSchema = z.enum(OPENAI_MODELS);
+export type OpenAIModel = z.infer<typeof openaiModelSchema>;
+
+/**
+ * List of Google (Gemini) models that are supported by the AI client.
+ *
+ * @see https://sdk.vercel.ai/providers/ai-sdk-providers/google-generative-ai#model-capabilities
+ * @see https://ai.google.dev/gemini-api/docs/models/gemini
+ */
+export const GOOGLE_MODELS = [
+  "gemini-2.0-flash-exp",
+  "gemini-1.5-pro",
+  "gemini-1.5-flash",
+] as const;
+export const googleModelSchema = z.enum(GOOGLE_MODELS);
+export type GoogleModel = z.infer<typeof googleModelSchema>;
+
+const SHORTEST_ENV_PREFIX = "SHORTEST_";
+const getShortestEnvName = (key: string) => `${SHORTEST_ENV_PREFIX}${key}`;
+
+const aiSchema = z.discriminatedUnion("provider", [
+  z.object({
     provider: z.literal("anthropic"),
     apiKey: z
       .string()
       .default(
         () =>
           process.env[getShortestEnvName("ANTHROPIC_API_KEY")] ||
-          process.env.ANTHROPIC_API_KEY!,
+          process.env.ANTHROPIC_API_KEY\!,
       ),
     model: z.enum(ANTHROPIC_MODELS).default(ANTHROPIC_MODELS[0]),
-  })
-  .strict();
+  }).strict(),
+  z.object({
+    provider: z.literal("openai"),
+    apiKey: z
+      .string()
+      .default(
+        () =>
+          process.env[getShortestEnvName("OPENAI_API_KEY")] ||
+          process.env.OPENAI_API_KEY\!,
+      ),
+    model: z.enum(OPENAI_MODELS).default(OPENAI_MODELS[0]),
+  }).strict(),
+  z.object({
+    provider: z.literal("google"),
+    apiKey: z
+      .string()
+      .default(
+        () =>
+          process.env[getShortestEnvName("GOOGLE_API_KEY")] ||
+          process.env.GOOGLE_GENERATIVE_AI_API_KEY\!,
+      ),
+    model: z.enum(GOOGLE_MODELS).default(GOOGLE_MODELS[0]),
+  }).strict(),
+]);
 export type AIConfig = z.infer<typeof aiSchema>;
 
 const cachingSchema = z
@@ -82,13 +137,9 @@ export const configSchema = z
 export const userConfigSchema = configSchema.extend({
   browser: browserSchema.optional(),
   testPattern: testPatternSchema.optional(),
-  ai: aiSchema.strict().partial().optional(),
+  ai: aiSchema.partial().optional(),
   caching: cachingSchema.strict().partial().optional(),
 });
-
-const SHORTEST_ENV_PREFIX = "SHORTEST_";
-
-const getShortestEnvName = (key: string) => `${SHORTEST_ENV_PREFIX}${key}`;
 
 // User-provided config type - allows partial/optional AI settings
 // Used when reading config from shortest.config.ts
