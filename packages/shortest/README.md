@@ -201,6 +201,16 @@ pnpm shortest --headless        # Run in headless mode using
 
 You can find example tests in the [`examples`](./examples) directory.
 
+### Redacted failure reports
+
+Use `--report` to write a Markdown report bundle for failed runs:
+
+```bash
+pnpm shortest app/login.test.ts --report
+```
+
+Reports are written to `.shortest/reports` by default. Use `--report-dir <path>` to choose a different output directory. Report text is redacted on a best-effort basis and screenshots from the failed run are copied into the report bundle, but screenshots are not machine-redacted, so review the full bundle before sharing it.
+
 ### GitHub 2FA login setup
 
 Shortest currently supports login using Github 2FA. For GitHub authentication tests:

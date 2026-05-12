@@ -205,6 +205,16 @@ pnpm shortest --headless        # Run in headless mode using
 
 You can find example tests in the [`examples`](./examples) directory.
 
+### Redacted failure reports
+
+Use `--report` to write a Markdown report bundle for failed runs:
+
+```bash
+pnpm shortest app/login.test.ts --report
+```
+
+Reports are written to `.shortest/reports` by default. Use `--report-dir <path>` to choose a different output directory. Report text is redacted on a best-effort basis and screenshots from the failed run are copied into the report bundle, but screenshots are not machine-redacted, so review the full bundle before sharing it.
+
 ### CI setup
 
 You can run Shortest in your CI/CD pipeline by running tests in headless mode. Make sure to add your Anthropic API key to your CI/CD pipeline secrets.

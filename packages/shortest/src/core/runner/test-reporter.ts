@@ -115,6 +115,10 @@ export class TestReporter {
     this.reporterLog.error(pc.red(`${context}: ${message}`));
   }
 
+  info(message: string) {
+    this.reporterLog.info(message);
+  }
+
   reportAssertion(
     step: string,
     status: "passed" | "failed",

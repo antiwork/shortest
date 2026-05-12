@@ -1,3 +1,4 @@
+import { join } from "path";
 import { pathToFileURL } from "url";
 import { glob } from "glob";
 import {
@@ -21,6 +22,8 @@ import { TestReporter } from "@/core/runner/test-reporter";
 import { TestRun } from "@/core/runner/test-run";
 import { TestRunRepository } from "@/core/runner/test-run-repository";
 import { getLogger, Log } from "@/log";
+import { writeFailureReport as writeFailureReportFile } from "@/report/failure-report-writer";
+import type { FailureReportOptions } from "@/report/types";
 import {
   TestContext,
   InternalActionEnum,
@@ -45,6 +48,10 @@ export const FileResultSchema = z.object({
 });
 export type FileResult = z.infer<typeof FileResultSchema>;
 
+interface TestRunnerOptions {
+  report?: FailureReportOptions;
+}
+
 export class TestRunner {
   private config: ShortestStrictConfig;
   private cwd: string;
@@ -54,10 +61,16 @@ export class TestRunner {
   private testContext: TestContext | null = null;
   private testFileContext: TestFileContext | null = null;
   private log: Log;
+  private options: TestRunnerOptions;
 
-  constructor(cwd: string, config: ShortestStrictConfig) {
+  constructor(
+    cwd: string,
+    config: ShortestStrictConfig,
+    options: TestRunnerOptions = {},
+  ) {
     this.config = config;
     this.cwd = cwd;
+    this.options = options;
     this.compiler = new TestCompiler();
     this.reporter = new TestReporter();
     this.log = getLogger();
@@ -414,14 +427,13 @@ export class TestRunner {
             await hook(testContext);
           }
 
-          await TestRunRepository.getRepositoryForTestCase(testCase).saveRun(
-            testRun,
-          );
+          const repository =
+            TestRunRepository.getRepositoryForTestCase(testCase);
+          await repository.saveRun(testRun);
+          await this.writeFailureReport(testRun);
 
           try {
-            await TestRunRepository.getRepositoryForTestCase(
-              testCase,
-            ).applyRetentionPolicy();
+            await repository.applyRetentionPolicy();
           } catch (error) {
             this.log.error(
               "Failed to apply retention policy",
@@ -544,5 +556,43 @@ export class TestRunner {
     if (this.testContext) return this.testContext;
 
     return { ...assertDefined(this.testFileContext), testRun };
+  }
+
+  private async writeFailureReport(testRun: TestRun): Promise<void> {
+    const reportOptions = this.options.report ?? {
+      enabled: false,
+      outputDir: ".shortest/reports",
+    };
+
+    if (!reportOptions.enabled || testRun.status !== "failed") return;
+
+    try {
+      const reportPath = await writeFailureReportFile(
+        {
+          runId: testRun.runId,
+          testName: testRun.testCase.name,
+          filePath: testRun.testCase.filePath,
+          reason: testRun.reason,
+          tokenUsage: testRun.tokenUsage,
+          steps: testRun.getSteps(),
+          screenshotSourceDir: join(
+            this.cwd,
+            ".shortest",
+            "cache",
+            testRun.runId,
+          ),
+        },
+        { ...reportOptions, cwd: this.cwd },
+      );
+
+      if (reportPath) {
+        this.reporter.info(`Failure report written: ${reportPath}`);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown report error";
+      this.log.error("Failed to write failure report", getErrorDetails(error));
+      this.reporter.error("Failure report", message);
+    }
   }
 }

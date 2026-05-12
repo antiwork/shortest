@@ -50,7 +50,7 @@ generateCommand.copyInheritedSettings(shortestCommand);
 const main = async () => {
   try {
     await shortestCommand.parseAsync();
-    process.exit(0);
+    process.exit(process.exitCode ?? 0);
   } catch (error) {
     const log = getLogger();
     log.trace("Handling error on main()");

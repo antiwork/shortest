@@ -71,6 +71,12 @@ describe("shortest command", () => {
     expect(
       shortestCommand.options.find((opt) => opt.long === "--no-cache"),
     ).toBeDefined();
+    expect(
+      shortestCommand.options.find((opt) => opt.long === "--report"),
+    ).toBeDefined();
+    expect(
+      shortestCommand.options.find((opt) => opt.long === "--report-dir"),
+    ).toBeDefined();
   });
 
   test("shortestCommand calls executeCommand with correct parameters", async () => {
@@ -101,7 +107,14 @@ describe("shortest command", () => {
 
   test("executeTestRunnerCommand executes test runner with correct options", async () => {
     await shortestCommand.parseAsync(
-      ["test-file.ts:123", "--headless", "--no-cache"],
+      [
+        "test-file.ts:123",
+        "--headless",
+        "--no-cache",
+        "--report",
+        "--report-dir",
+        "artifacts/reports",
+      ],
       { from: "user" },
     );
 
@@ -121,9 +134,60 @@ describe("shortest command", () => {
     expect(purgeLegacyScreenshots).toHaveBeenCalled();
 
     expect(TestRunner).toHaveBeenCalled();
+    expect(TestRunner).toHaveBeenCalledWith(
+      process.cwd(),
+      { testPattern: "test-pattern" },
+      {
+        report: {
+          enabled: true,
+          outputDir: "artifacts/reports",
+        },
+      },
+    );
     expect(mockInitialize).toHaveBeenCalled();
     expect(mockExecute).toHaveBeenCalledWith("test-pattern", 123);
 
     expect(cleanUpCache).toHaveBeenCalled();
+  });
+
+  test("passes default disabled report options to test runner", async () => {
+    await shortestCommand.parseAsync(["test-file.ts"], { from: "user" });
+
+    const callback = vi.mocked(executeCommand).mock.calls[0][2];
+
+    await callback({});
+
+    expect(TestRunner).toHaveBeenCalledWith(
+      process.cwd(),
+      { testPattern: "test-pattern" },
+      {
+        report: {
+          enabled: false,
+          outputDir: ".shortest/reports",
+        },
+      },
+    );
+  });
+
+  test("accepts report-dir without enabling reports", async () => {
+    await shortestCommand.parseAsync(
+      ["test-file.ts", "--report-dir", "custom-reports"],
+      { from: "user" },
+    );
+
+    const callback = vi.mocked(executeCommand).mock.calls[0][2];
+
+    await callback({});
+
+    expect(TestRunner).toHaveBeenCalledWith(
+      process.cwd(),
+      { testPattern: "test-pattern" },
+      {
+        report: {
+          enabled: false,
+          outputDir: "custom-reports",
+        },
+      },
+    );
   });
 });

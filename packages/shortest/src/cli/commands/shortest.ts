@@ -52,6 +52,12 @@ shortestCommand
     cliOptionsSchema.shape.baseUrl._def.defaultValue(),
   )
   .option("--no-cache", "Disable test action caching")
+  .option("--report", "Write redacted failure reports for failed runs")
+  .option(
+    "--report-dir <path>",
+    "Directory for redacted failure reports",
+    ".shortest/reports",
+  )
   .argument(
     "[test-pattern]",
     "Test pattern to run",
@@ -96,7 +102,12 @@ const executeTestRunnerCommand = async (testPattern: string, options: any) => {
 
   try {
     log.trace("Initializing TestRunner");
-    const runner = new TestRunner(process.cwd(), config);
+    const runner = new TestRunner(process.cwd(), config, {
+      report: {
+        enabled: Boolean(options.report),
+        outputDir: options.reportDir ?? ".shortest/reports",
+      },
+    });
     await runner.initialize();
     const success = await runner.execute(config.testPattern, lineNumber);
     process.exitCode = success ? 0 : 1;

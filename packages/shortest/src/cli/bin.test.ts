@@ -113,4 +113,34 @@ describe("CLI bin structure", () => {
       commands.shortestCommand,
     );
   });
+
+  test("preserves process exit code set by command actions", async () => {
+    const commands = await import("@/cli/commands");
+
+    vi.spyOn(commands.shortestCommand, "addCommand").mockImplementation(
+      () => commands.shortestCommand,
+    );
+    vi.spyOn(commands.shortestCommand, "parseAsync").mockImplementation(
+      async () => {
+        await Promise.resolve();
+        process.exitCode = 1;
+        return commands.shortestCommand;
+      },
+    );
+    vi.spyOn(commands.initCommand, "copyInheritedSettings").mockImplementation(
+      () => commands.initCommand,
+    );
+    vi.spyOn(
+      commands.githubCodeCommand,
+      "copyInheritedSettings",
+    ).mockImplementation(() => commands.githubCodeCommand);
+    vi.spyOn(
+      commands.cacheCommands,
+      "copyInheritedSettings",
+    ).mockImplementation(() => commands.cacheCommands);
+
+    await import("@/cli/bin");
+
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
 });
