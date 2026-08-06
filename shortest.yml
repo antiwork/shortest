@@ -1,6 +1,0 @@
-# This is an example config file for Shortest.
-# You can use it to configure Shortest for your repository.
-
-owner/repo:
-  test_patterns:
-    - "**/*.test.*"
